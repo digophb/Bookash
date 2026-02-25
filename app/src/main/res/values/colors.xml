@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#3B1D6A</color>
-    <color name="primary_variant">#2A1449</color>
-    <color name="secondary">#7B5FC4</color>
-    <color name="secondary_variant">#5E3A99</color>
-    <color name="accent">#9B6FD9</color>
-    <color name="background">#F8F5FF</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="text_primary">#1A1A2E</color>
-    <color name="text_secondary">#6B6B8D</color>
-    <color name="error">#E53935</color>
-    <color name="success">#43A047</color>
+    <!-- Fundo principal -->
+    <color name="background">#1B4B97</color>
+    
+    <!-- Primary - Botões -->
+    <color name="primary">#3EBDB2</color>
+    <color name="primary_variant">#2A9A90</color>
+    
+    <!-- Texto -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#E3C931</color>
+    <color name="text_dark">#1B4B97</color>
+    
+    <!-- Destaques -->
+    <color name="highlight_primary">#4868B1</color>
+    <color name="highlight_secondary">#7FA1E0</color>
+    
+    <!-- Outros -->
     <color name="white">#FFFFFF</color>
-    <color name="divider">#E8E0F0</color>
+    <color name="surface">#4868B1</color>
+    <color name="error">#FF6B6B</color>
+    <color name="success">#3EBDB2</color>
+    <color name="divider">#7FA1E0</color>
 </resources>

@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background">
 
+    <!-- Header com gradiente -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/primary"
+        android:background="@color/highlight_primary"
         android:padding="24dp"
         android:paddingTop="48dp">
 
@@ -19,19 +21,20 @@
             android:layout_height="wrap_content"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="@color/white" />
+            android:textColor="@color/text_secondary" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Bem-vindo ao Bookash!"
             android:textSize="16sp"
-            android:textColor="@color/white"
+            android:textColor="@color/text_primary"
             android:alpha="0.9"
             android:layout_marginTop="4dp" />
 
     </LinearLayout>
 
+    <!-- Conteúdo Principal -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -39,13 +42,13 @@
         android:gravity="center"
         android:padding="24dp">
 
+        <!-- Card de Saldo -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/surface"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
-            xmlns:app="http://schemas.android.com/apk/res-auto">
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -58,31 +61,93 @@
                     android:layout_height="wrap_content"
                     android:text="Saldo Total"
                     android:textSize="14sp"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/highlight_secondary" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="R$ 0,00"
-                    android:textSize="32sp"
+                    android:textSize="36sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary"
+                    android:textColor="@color/text_secondary"
                     android:layout_marginTop="8dp" />
+
+                <!-- Receitas e Despesas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <!-- Receitas -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Receitas"
+                            android:textSize="12sp"
+                            android:textColor="@color/highlight_secondary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="R$ 0,00"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                    <!-- Despesas -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="end">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Despesas"
+                            android:textSize="12sp"
+                            android:textColor="@color/highlight_secondary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="R$ 0,00"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/error"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <Button
+        <!-- Botão Sair -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/logoutButton"
             android:layout_width="wrap_content"
             android:layout_height="56dp"
             android:text="Sair"
             android:textSize="16sp"
+            android:textColor="@color/text_primary"
             android:layout_marginTop="48dp"
-            android:backgroundTint="@color/error"
-            android:textColor="@color/white"
-            android:paddingHorizontal="32dp" />
+            android:paddingHorizontal="32dp"
+            app:backgroundTint="@color/highlight_secondary"
+            app:cornerRadius="16dp" />
 
     </LinearLayout>
 
