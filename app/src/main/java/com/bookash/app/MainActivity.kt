@@ -13,7 +13,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 class MainActivity : AppCompatActivity() {
 
     private lateinit var welcomeText: TextView
-    private lateinit var monthSelector: TextView
+    private lateinit var monthText: TextView
     private lateinit var balanceValue: TextView
     private lateinit var incomeValue: TextView
     private lateinit var expenseValue: TextView
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews() {
         welcomeText = findViewById(R.id.welcomeText)
-        monthSelector = findViewById(R.id.monthSelector)
+        monthText = findViewById(R.id.monthText)
         balanceValue = findViewById(R.id.balanceValue)
         incomeValue = findViewById(R.id.incomeValue)
         expenseValue = findViewById(R.id.expenseValue)
@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
         // Definir mês atual
         val currentMonth = java.text.SimpleDateFormat("MMMM 'de' yyyy", java.util.Locale("pt", "BR"))
             .format(java.util.Date())
-        monthSelector.text = currentMonth.capitalize()
+        monthText.text = currentMonth.capitalize()
         
         // Carregar saldo (exemplo)
         balanceValue.text = "R$ 0,00"
