@@ -141,6 +141,48 @@
                         android:textStyle="bold"
                         android:layout_marginTop="4dp" />
 
+                    <!-- Ganhos do Dia -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp"
+                        android:padding="12dp"
+                        android:background="@drawable/bg_ganhos_dia">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_trending_up"
+                            android:tint="@color/primary" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ganhos de hoje"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/dailyIncomeValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textColor="@color/primary"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
                     <!-- Divider -->
                     <View
                         android:layout_width="match_parent"
@@ -377,7 +419,7 @@
         app:tint="@color/background"
         app:fabSize="normal"
         app:elevation="8dp"
-        android:layout_marginBottom="100dp" />
+        android:layout_marginBottom="88dp" />
 
     <!-- ====== BOTTOM NAVIGATION ====== -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

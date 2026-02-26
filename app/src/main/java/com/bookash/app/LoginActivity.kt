@@ -1,5 +1,6 @@
 package com.bookash.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -46,7 +47,7 @@ class LoginActivity : AppCompatActivity() {
         }
         
         loginButton.setOnClickListener {
-            val email = emailInput.text.toString()
+            val email = emailInput.text.toString().trim()
             val password = passwordInput.text.toString()
             
             if (email.isBlank() || password.isBlank()) {
@@ -63,6 +64,9 @@ class LoginActivity : AppCompatActivity() {
     }
     
     private fun login(email: String, password: String) {
+        loginButton.isEnabled = false
+        loginButton.text = "Entrando..."
+        
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
@@ -72,32 +76,53 @@ class LoginActivity : AppCompatActivity() {
                     conn.setRequestProperty("apikey", SUPABASE_KEY)
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.doOutput = true
+                    conn.connectTimeout = 15000
+                    conn.readTimeout = 15000
                     
                     val body = """{"email":"$email","password":"$password"}"""
-                    conn.outputStream.write(body.toByteArray())
+                    conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
                     
                     if (conn.responseCode == 200) {
                         val response = conn.inputStream.bufferedReader().readText()
                         val json = JSONObject(response)
-                        json.getString("access_token")
+                        
+                        val token = json.getString("access_token")
+                        val user = json.optJSONObject("user")
+                        val userName = user?.optJSONObject("user_metadata")?.optString("name", null)
+                        val userEmail = user?.optString("email", email)
+                        
+                        // Salvar dados do usuário
+                        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                        prefs.putString(KEY_TOKEN, token)
+                        prefs.putString("user_email", userEmail)
+                        if (!userName.isNullOrEmpty()) {
+                            prefs.putString("user_name", userName)
+                        }
+                        prefs.apply()
+                        
+                        token
                     } else {
                         null
                     }
                 }
                 
-                if (result != null) {
-                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                        .edit()
-                        .putString(KEY_TOKEN, result)
-                        .apply()
+                withContext(Dispatchers.Main) {
+                    loginButton.isEnabled = true
+                    loginButton.text = "Entrar"
                     
-                    startActivity(Intent(this@LoginActivity, MainActivity::class.java))
-                    finish()
-                } else {
-                    Toast.makeText(this@LoginActivity, "Email ou senha incorretos", Toast.LENGTH_SHORT).show()
+                    if (result != null) {
+                        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                        finish()
+                    } else {
+                        Toast.makeText(this@LoginActivity, "Email ou senha incorretos", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@LoginActivity, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.Main) {
+                    loginButton.isEnabled = true
+                    loginButton.text = "Entrar"
+                    Toast.makeText(this@LoginActivity, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

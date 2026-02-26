@@ -15,6 +15,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var welcomeText: TextView
     private lateinit var monthText: TextView
     private lateinit var balanceValue: TextView
+    private lateinit var dailyIncomeValue: TextView
     private lateinit var incomeValue: TextView
     private lateinit var expenseValue: TextView
     private lateinit var transactionsRecycler: RecyclerView
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         welcomeText = findViewById(R.id.welcomeText)
         monthText = findViewById(R.id.monthText)
         balanceValue = findViewById(R.id.balanceValue)
+        dailyIncomeValue = findViewById(R.id.dailyIncomeValue)
         incomeValue = findViewById(R.id.incomeValue)
         expenseValue = findViewById(R.id.expenseValue)
         transactionsRecycler = findViewById(R.id.transactionsRecycler)
@@ -108,8 +110,14 @@ class MainActivity : AppCompatActivity() {
     private fun loadUserData() {
         // Carregar dados do usuário logado
         val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
-        val userName = prefs.getString("user_name", "Usuário") ?: "Usuário"
-        welcomeText.text = "Olá, $userName"
+        val userName = prefs.getString("user_name", null)
+        
+        if (userName != null && userName.isNotEmpty()) {
+            welcomeText.text = "Olá, $userName"
+        } else {
+            // Buscar nome do Supabase se não estiver salvo
+            welcomeText.text = "Olá!"
+        }
         
         // Definir mês atual
         val currentMonth = java.text.SimpleDateFormat("MMMM 'de' yyyy", java.util.Locale("pt", "BR"))
@@ -118,6 +126,7 @@ class MainActivity : AppCompatActivity() {
         
         // Carregar saldo (exemplo)
         balanceValue.text = "R$ 0,00"
+        dailyIncomeValue.text = "R$ 0,00"
         incomeValue.text = "R$ 0,00"
         expenseValue.text = "R$ 0,00"
     }
