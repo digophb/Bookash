@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showMoreMenu() {
-        val options = arrayOf("Gerenciar Categorias", "Gerenciar Contas", "Configurações", "Sair")
+        val options = arrayOf("Gerenciar Categorias", "Gerenciar Contas", "Sair")
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Mais Opções")
@@ -88,8 +88,7 @@ class MainActivity : AppCompatActivity() {
                 when (which) {
                     0 -> startActivity(android.content.Intent(this, CategoriesActivity::class.java))
                     1 -> startActivity(android.content.Intent(this, AccountsActivity::class.java))
-                    2 -> Toast.makeText(this, "Configurações em desenvolvimento", Toast.LENGTH_SHORT).show()
-                    3 -> logout()
+                    2 -> logout()
                 }
             }
             .show()

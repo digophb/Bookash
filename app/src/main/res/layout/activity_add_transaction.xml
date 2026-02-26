@@ -196,9 +196,9 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:startIconDrawable="@drawable/ic_category"
-                app:startIconTint="@color/highlight_secondary"
+                app:startIconTint="@color/primary"
                 app:endIconDrawable="@drawable/ic_dropdown"
-                app:endIconTint="@color/highlight_secondary">
+                app:endIconTint="@color/primary">
 
                 <AutoCompleteTextView
                     android:id="@+id/categoryDropdown"
@@ -206,6 +206,8 @@
                     android:layout_height="wrap_content"
                     android:inputType="none"
                     android:textColor="@color/text_primary"
+                    android:popupBackground="@color/surface"
+                    android:dropDownSelector="@color/primary"
                     android:hint="Categoria" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -222,16 +224,17 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:startIconDrawable="@drawable/ic_account"
-                app:startIconTint="@color/highlight_secondary"
+                app:startIconTint="@color/primary"
                 app:endIconDrawable="@drawable/ic_dropdown"
-                app:endIconTint="@color/highlight_secondary">
+                app:endIconTint="@color/primary">
 
                 <AutoCompleteTextView
                     android:id="@+id/accountDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:textColor="@color/text_primary" />
+                    android:textColor="@color/text_primary"
+                    android:popupBackground="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
 

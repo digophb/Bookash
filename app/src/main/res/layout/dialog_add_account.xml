@@ -64,14 +64,15 @@
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusBottomEnd="12dp"
         app:endIconDrawable="@drawable/ic_dropdown"
-        app:endIconTint="@color/highlight_secondary">
+        app:endIconTint="@color/primary">
 
         <AutoCompleteTextView
             android:id="@+id/typeDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none"
-            android:textColor="@color/text_primary" />
+            android:textColor="@color/text_primary"
+            android:popupBackground="@color/surface" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -79,7 +80,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ícone"
+        android:text="Selecione o banco"
         android:textColor="@color/text_primary"
         android:textSize="14sp"
         android:layout_marginBottom="8dp" />
@@ -87,46 +88,62 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center">
 
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:id="@+id/iconNubank"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@drawable/ic_bank_nubank"
             android:padding="8dp"
             android:background="@color/surface"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true" />
 
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:id="@+id/iconItau"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@drawable/ic_bank_itau"
             android:padding="8dp"
             android:background="@color/surface"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true" />
 
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:id="@+id/iconBradesco"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@drawable/ic_bank_bradesco"
             android:padding="8dp"
             android:background="@color/surface"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true" />
 
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:id="@+id/iconBB"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@drawable/ic_bank_bb"
             android:padding="8dp"
             android:background="@color/surface"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true" />
 
         <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:id="@+id/iconWallet"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@drawable/ic_wallet"
             android:padding="8dp"
-            android:background="@color/surface" />
+            android:background="@color/surface"
+            android:clickable="true"
+            android:focusable="true" />
 
     </LinearLayout>
 

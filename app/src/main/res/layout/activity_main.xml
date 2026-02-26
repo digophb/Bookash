@@ -414,15 +414,14 @@
         android:id="@+id/fabAdd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="100dp"
         android:src="@drawable/ic_add"
         android:contentDescription="Adicionar transação"
         app:backgroundTint="@color/primary"
         app:tint="@color/background"
         app:fabSize="normal"
-        app:elevation="8dp"
-        android:layout_marginBottom="188dp" />
+        app:elevation="8dp" />
 
     <!-- ====== BOTTOM NAVIGATION ====== -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
