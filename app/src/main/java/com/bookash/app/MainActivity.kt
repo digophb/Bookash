@@ -1,108 +1,138 @@
 package com.bookash.app
 
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
+import androidx.core.widget.NestedScrollView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.card.MaterialCardView
 
 class MainActivity : AppCompatActivity() {
-    
+
     private lateinit var welcomeText: TextView
-    private lateinit var logoutButton: Button
+    private lateinit var monthSelector: TextView
+    private lateinit var balanceValue: TextView
+    private lateinit var incomeValue: TextView
+    private lateinit var expenseValue: TextView
+    private lateinit var progressIndicator: View
+    private lateinit var transactionsRecycler: RecyclerView
+    private lateinit var bottomNavigation: BottomNavigationView
+    private lateinit var fabAdd: FloatingActionButton
+    private lateinit var nestedScroll: NestedScrollView
     
-    companion object {
-        private const val SUPABASE_URL = "https://gqbxasjoxxslpaxjqfeg.supabase.co"
-        private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs"
-        private const val PREFS_NAME = "bookash_prefs"
-        private const val KEY_TOKEN = "access_token"
-    }
-    
+    private lateinit var transactionAdapter: TransactionAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        
+
+        initViews()
+        setupBottomNavigation()
+        setupTransactionsList()
+        setupFab()
+        setupScrollBehavior()
+        loadUserData()
+        loadTransactions()
+    }
+
+    private fun initViews() {
         welcomeText = findViewById(R.id.welcomeText)
-        logoutButton = findViewById(R.id.logoutButton)
-        
-        loadUserInfo()
-        
-        logoutButton.setOnClickListener {
-            logout()
-        }
+        monthSelector = findViewById(R.id.monthSelector)
+        balanceValue = findViewById(R.id.balanceValue)
+        incomeValue = findViewById(R.id.incomeValue)
+        expenseValue = findViewById(R.id.expenseValue)
+        progressIndicator = findViewById(R.id.progressIndicator)
+        transactionsRecycler = findViewById(R.id.transactionsRecycler)
+        bottomNavigation = findViewById(R.id.bottomNavigation)
+        fabAdd = findViewById(R.id.fabAdd)
+        nestedScroll = findViewById(R.id.nestedScroll)
     }
-    
-    private fun loadUserInfo() {
-        lifecycleScope.launch {
-            try {
-                val token = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, null)
-                
-                if (token == null) {
-                    startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-                    finish()
-                    return@launch
+
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    // Já está na home
+                    true
                 }
-                
-                val userName = withContext(Dispatchers.IO) {
-                    val url = URL("$SUPABASE_URL/auth/v1/user")
-                    val conn = url.openConnection() as HttpURLConnection
-                    conn.requestMethod = "GET"
-                    conn.setRequestProperty("apikey", SUPABASE_KEY)
-                    conn.setRequestProperty("Authorization", "Bearer $token")
-                    
-                    if (conn.responseCode == 200) {
-                        val response = conn.inputStream.bufferedReader().readText()
-                        val json = JSONObject(response)
-                        val metadata = json.optJSONObject("user_metadata")
-                        metadata?.optString("name") ?: "Usuário"
-                    } else {
-                        null
-                    }
+                R.id.nav_transactions -> {
+                    // Navegar para transações
+                    true
                 }
-                
-                if (userName != null) {
-                    welcomeText.text = "Olá, $userName!"
-                } else {
-                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
-                    startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-                    finish()
+                R.id.nav_planning -> {
+                    // Navegar para planejamento
+                    true
                 }
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Erro ao carregar usuário", Toast.LENGTH_SHORT).show()
+                R.id.nav_reports -> {
+                    // Navegar para relatórios
+                    true
+                }
+                R.id.nav_more -> {
+                    // Navegar para mais
+                    true
+                }
+                else -> false
             }
         }
     }
-    
-    private fun logout() {
-        lifecycleScope.launch {
-            try {
-                val token = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, null)
-                
-                if (token != null) {
-                    withContext(Dispatchers.IO) {
-                        val url = URL("$SUPABASE_URL/auth/v1/logout")
-                        val conn = url.openConnection() as HttpURLConnection
-                        conn.requestMethod = "POST"
-                        conn.setRequestProperty("apikey", SUPABASE_KEY)
-                        conn.setRequestProperty("Authorization", "Bearer $token")
-                        conn.connect()
-                    }
-                }
-                
-                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
-                startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-                finish()
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Erro ao sair", Toast.LENGTH_SHORT).show()
-            }
+
+    private fun setupTransactionsList() {
+        transactionAdapter = TransactionAdapter()
+        transactionsRecycler.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = transactionAdapter
+            isNestedScrollingEnabled = false
         }
+    }
+
+    private fun setupFab() {
+        fabAdd.setOnClickListener {
+            // Abrir modal de adicionar transação
+            showAddTransactionDialog()
+        }
+    }
+
+    private fun setupScrollBehavior() {
+        nestedScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, _ ->
+            if (scrollY > 0) {
+                fabAdd.hide()
+                bottomNavigation.visibility = View.GONE
+            } else {
+                fabAdd.show()
+                bottomNavigation.visibility = View.VISIBLE
+            }
+        })
+    }
+
+    private fun loadUserData() {
+        // Carregar dados do usuário logado
+        val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
+        val userName = prefs.getString("user_name", "Usuário") ?: "Usuário"
+        welcomeText.text = "Olá, $userName"
+        
+        // Definir mês atual
+        val currentMonth = java.text.SimpleDateFormat("MMMM 'de' yyyy", java.util.Locale("pt", "BR"))
+            .format(java.util.Date())
+        monthSelector.text = currentMonth.capitalize()
+        
+        // Carregar saldo (exemplo)
+        balanceValue.text = "R$ 0,00"
+        incomeValue.text = "R$ 0,00"
+        expenseValue.text = "R$ 0,00"
+    }
+
+    private fun loadTransactions() {
+        // Carregar transações do Supabase
+        // Por enquanto, lista vazia
+        val transactions = listOf<Transaction>()
+        transactionAdapter.submitList(transactions)
+    }
+
+    private fun showAddTransactionDialog() {
+        // TODO: Implementar modal de adicionar transação
     }
 }

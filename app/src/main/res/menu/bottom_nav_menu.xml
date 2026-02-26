@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_nav_home"
+        android:title="Início" />
+    
+    <item
+        android:id="@+id/nav_transactions"
+        android:icon="@drawable/ic_nav_transactions"
+        android:title="Transações" />
+    
+    <item
+        android:id="@+id/nav_planning"
+        android:icon="@drawable/ic_nav_planning"
+        android:title="Planejamento" />
+    
+    <item
+        android:id="@+id/nav_reports"
+        android:icon="@drawable/ic_nav_reports"
+        android:title="Relatórios" />
+    
+    <item
+        android:id="@+id/nav_more"
+        android:icon="@drawable/ic_nav_more"
+        android:title="Mais" />
+        
+</menu>
