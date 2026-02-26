@@ -189,3 +189,4 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_ADD_TRANSACTION = 1001
     }
+}
