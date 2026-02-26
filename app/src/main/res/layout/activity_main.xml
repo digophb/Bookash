@@ -389,8 +389,6 @@
         app:itemIconTint="@color/selector_bottom_nav"
         app:itemTextColor="@color/selector_bottom_nav"
         app:labelVisibilityMode="labeled"
-        app:menu="@menu/bottom_nav_menu"
-        app:itemTextAppearanceActive="@style/BottomNavActive"
-        app:itemTextAppearanceInactive="@style/BottomNavInactive" />
+        app:menu="@menu/bottom_nav_menu" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
