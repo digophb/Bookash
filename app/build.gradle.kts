@@ -41,6 +41,15 @@ dependencies {
     // CardView
     implementation("androidx.cardview:cardview:1.0.0")
     
+    // CoordinatorLayout
+    implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
+    
+    // SwipeRefreshLayout (para NestedScrollView)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    
+    // RecyclerView
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
