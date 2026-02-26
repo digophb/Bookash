@@ -12,8 +12,9 @@
         android:theme="@style/Theme.Bookash"
         android:usesCleartextTraffic="true">
         
+        <!-- Onboarding - Tela inicial -->
         <activity
-            android:name=".LoginActivity"
+            android:name=".OnboardingActivity"
             android:exported="true"
             android:theme="@style/Theme.Bookash">
             <intent-filter>
@@ -22,10 +23,18 @@
             </intent-filter>
         </activity>
         
+        <!-- Login -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
+        <!-- Registro -->
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
         
+        <!-- Main -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Círculo de fundo -->
+    <path
+        android:fillColor="#7FA1E0"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" />
+    
+    <!-- Gráfico de barras -->
+    <path
+        android:fillColor="#E3C931"
+        android:pathData="M7,13h2v5H7z" />
+    <path
+        android:fillColor="#3EBDB2"
+        android:pathData="M11,9h2v9h-2z" />
+    <path
+        android:fillColor="#E3C931"
+        android:pathData="M15,11h2v7h-2z" />
+    
+    <!-- Seta para baixo (indicando gastos) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,4l-3,4h2v3h2V8h2L12,4z" />
+</vector>
