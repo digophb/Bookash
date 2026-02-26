@@ -80,15 +80,28 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showMoreMenu() {
-        val options = arrayOf("Gerenciar Categorias", "Gerenciar Contas", "Sair")
+        val options = arrayOf("Gerenciar", "Sair")
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Mais Opções")
             .setItems(options) { _, which ->
                 when (which) {
+                    0 -> showManageMenu()
+                    1 -> logout()
+                }
+            }
+            .show()
+    }
+    
+    private fun showManageMenu() {
+        val options = arrayOf("Categorias", "Contas")
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Gerenciar")
+            .setItems(options) { _, which ->
+                when (which) {
                     0 -> startActivity(android.content.Intent(this, CategoriesActivity::class.java))
                     1 -> startActivity(android.content.Intent(this, AccountsActivity::class.java))
-                    2 -> logout()
                 }
             }
             .show()
