@@ -9,10 +9,17 @@
     <path
         android:fillColor="#4868B1"
         android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" />
+    
+    <!-- Fatias do gráfico -->
     <path
         android:fillColor="#3EBDB2"
-        android:pathData="M12,2v10l7.07,7.07C21.54,16.14 24,13.32 24,10c0,-4.42 -3.58,-8 -8,-8 -1.57,0 -3.04,0.45 -4.28,1.23L12,2z" />
+        android:pathData="M12,12V4c-4.42,0 -8,3.58 -8,8h8z" />
     <path
         android:fillColor="#E3C931"
-        android:pathData="M12,12V2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10c0,-0.34 -0.02,-0.67 -0.05,-1H12z" />
+        android:pathData="M12,12v8c4.42,0 8,-3.58 8,-8H12z" />
+    
+    <!-- Linha central -->
+    <path
+        android:fillColor="#7FA1E0"
+        android:pathData="M12,6v6h6c0,-3.31 -2.69,-6 -6,-6z" />
 </vector>
