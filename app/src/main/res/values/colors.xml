@@ -41,6 +41,9 @@
     <color name="text_dark_secondary">#65532F</color>
     <color name="text_muted">#7A8F87</color>
     
+    <!-- Alias para compatibilidade -->
+    <color name="highlight_secondary">#A3BBAD</color>
+    
     <!-- ====== ESTADOS ====== -->
     <color name="success">#2E7D6A</color>
     <color name="success_light">#E8F5F0</color>
