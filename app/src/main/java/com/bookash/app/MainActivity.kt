@@ -170,57 +170,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddTransactionDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_transaction, null)
-        
-        val typeToggle = dialogView.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.typeToggle)
-        val descriptionInput = dialogView.findViewById<TextInputEditText>(R.id.descriptionInput)
-        val amountInput = dialogView.findViewById<TextInputEditText>(R.id.amountInput)
-        val categoryInput = dialogView.findViewById<TextInputEditText>(R.id.categoryInput)
-        
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Nova Transação")
-            .setView(dialogView)
-            .setPositiveButton("Salvar") { dialog, _ ->
-                val type = if (typeToggle.checkedButtonId == R.id.btnIncome) "income" else "expense"
-                val description = descriptionInput.text.toString()
-                val amountStr = amountInput.text.toString()
-                val category = categoryInput.text.toString()
-                
-                if (description.isBlank() || amountStr.isBlank()) {
-                    Toast.makeText(this, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-                
-                val amount = amountStr.replace(",", ".").replace("R$", "").replace(" ", "").toDoubleOrNull() ?: 0.0
-                
-                saveTransaction(type, description, amount, category)
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        startActivityForResult(android.content.Intent(this, AddTransactionActivity::class.java), REQUEST_ADD_TRANSACTION)
     }
-
-    private fun saveTransaction(type: String, description: String, amount: Double, category: String) {
-        // TODO: Salvar no Supabase
-        Toast.makeText(this, "Transação salva: $type - $description - R$ $amount", Toast.LENGTH_SHORT).show()
+    
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
         
-        // Atualizar UI
-        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-        
-        if (type == "income") {
-            val current = incomeValue.text.toString()
-                .replace("R$", "").replace(" ", "").replace(".", "")
-                .replace(",", ".").toDoubleOrNull() ?: 0.0
-            incomeValue.text = formatter.format(current + amount)
+        if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK && data != null) {
+            val type = data.getStringExtra("type") ?: "income"
+            val value = data.getDoubleExtra("value", 0.0)
+            val description = data.getStringExtra("description") ?: ""
             
-            val daily = dailyIncomeValue.text.toString()
-                .replace("R$", "").replace(" ", "").replace(".", "")
-                .replace(",", ".").toDoubleOrNull() ?: 0.0
-            dailyIncomeValue.text = formatter.format(daily + amount)
-        } else {
-            val current = expenseValue.text.toString()
-                .replace("R$", "").replace(" ", "").replace(".", "")
-                .replace(",", ".").toDoubleOrNull() ?: 0.0
-            expenseValue.text = formatter.format(current + amount)
+            Toast.makeText(this, "${if (type == "income") "Receita" else "Despesa"} salva: $description - R$ ${String.format("%.2f", value)}", Toast.LENGTH_SHORT).show()
         }
     }
-}
+    
+    companion object {
+        private const val REQUEST_ADD_TRANSACTION = 1001
+    }
