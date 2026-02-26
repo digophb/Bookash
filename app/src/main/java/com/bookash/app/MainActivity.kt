@@ -70,10 +70,29 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_transactions -> true
                 R.id.nav_planning -> true
                 R.id.nav_reports -> true
-                R.id.nav_more -> true
+                R.id.nav_more -> {
+                    showMoreMenu()
+                    false
+                }
                 else -> false
             }
         }
+    }
+    
+    private fun showMoreMenu() {
+        val options = arrayOf("Gerenciar Categorias", "Gerenciar Contas", "Configurações", "Sair")
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Mais Opções")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> startActivity(android.content.Intent(this, CategoriesActivity::class.java))
+                    1 -> startActivity(android.content.Intent(this, AccountsActivity::class.java))
+                    2 -> Toast.makeText(this, "Configurações em desenvolvimento", Toast.LENGTH_SHORT).show()
+                    3 -> logout()
+                }
+            }
+            .show()
     }
 
     private fun setupTransactionsList() {

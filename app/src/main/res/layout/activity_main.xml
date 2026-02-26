@@ -422,7 +422,7 @@
         app:tint="@color/background"
         app:fabSize="normal"
         app:elevation="8dp"
-        android:layout_marginBottom="88dp" />
+        android:layout_marginBottom="188dp" />
 
     <!-- ====== BOTTOM NAVIGATION ====== -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

@@ -44,6 +44,18 @@
             android:name=".AddTransactionActivity"
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
+        
+        <!-- Categorias -->
+        <activity
+            android:name=".CategoriesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
+        <!-- Contas -->
+        <activity
+            android:name=".AccountsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
             
     </application>
 
