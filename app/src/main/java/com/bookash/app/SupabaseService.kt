@@ -56,6 +56,20 @@ object SupabaseService {
         }
     }
     
+    suspend fun deleteCategory(categoryId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$BASE_URL/rest/v1/categories?id=eq.$categoryId").openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
     private fun parseCategories(jsonArray: JSONArray): List<Category> {
         val list = mutableListOf<Category>()
         for (i in 0 until jsonArray.length()) {
@@ -103,6 +117,20 @@ object SupabaseService {
             
             val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}"}"""
             conn.outputStream.write(body.toByteArray())
+            
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    suspend fun deleteAccount(accountId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Prefer", "return=minimal")
             
             conn.responseCode in 200..299
         } catch (e: Exception) {

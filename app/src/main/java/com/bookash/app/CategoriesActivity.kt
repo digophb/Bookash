@@ -20,6 +20,7 @@ class CategoriesActivity : AppCompatActivity() {
     private lateinit var emptyState: View
     
     private val categories = mutableListOf<Category>()
+    private lateinit var categoryAdapter: CategoryAdapter
     private var selectedColor = "#357266"
     private var selectedIcon = "category"
 
@@ -35,7 +36,11 @@ class CategoriesActivity : AppCompatActivity() {
             finish()
         }
 
+        categoryAdapter = CategoryAdapter { category ->
+            showDeleteCategoryDialog(category)
+        }
         categoriesRecycler.layoutManager = LinearLayoutManager(this)
+        categoriesRecycler.adapter = categoryAdapter
         
         fabAddCategory.setOnClickListener {
             showAddCategoryDialog()
@@ -56,8 +61,30 @@ class CategoriesActivity : AppCompatActivity() {
             } else {
                 emptyState.visibility = View.GONE
                 categoriesRecycler.visibility = View.VISIBLE
-                // TODO: Implementar adapter
-                Toast.makeText(this@CategoriesActivity, "${categories.size} categorias carregadas", Toast.LENGTH_SHORT).show()
+                categoryAdapter.submitList(categories)
+            }
+        }
+    }
+    
+    private fun showDeleteCategoryDialog(category: Category) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Excluir categoria")
+            .setMessage("Deseja excluir \"${category.name}\"?")
+            .setPositiveButton("Excluir") { _, _ ->
+                deleteCategory(category)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun deleteCategory(category: Category) {
+        lifecycleScope.launch {
+            val success = SupabaseService.deleteCategory(category.id)
+            if (success) {
+                Toast.makeText(this@CategoriesActivity, "Categoria excluída", Toast.LENGTH_SHORT).show()
+                loadCategories()
+            } else {
+                Toast.makeText(this@CategoriesActivity, "Erro ao excluir", Toast.LENGTH_SHORT).show()
             }
         }
     }

@@ -19,6 +19,7 @@ class AccountsActivity : AppCompatActivity() {
     private lateinit var emptyState: View
     
     private val accounts = mutableListOf<Account>()
+    private lateinit var accountAdapter: AccountAdapter
     private var selectedIcon = "wallet"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +34,9 @@ class AccountsActivity : AppCompatActivity() {
             finish()
         }
 
+        accountAdapter = AccountAdapter()
         accountsRecycler.layoutManager = LinearLayoutManager(this)
+        accountsRecycler.adapter = accountAdapter
         
         fabAddAccount.setOnClickListener {
             showAddAccountDialog()
@@ -54,7 +57,7 @@ class AccountsActivity : AppCompatActivity() {
             } else {
                 emptyState.visibility = View.GONE
                 accountsRecycler.visibility = View.VISIBLE
-                Toast.makeText(this@AccountsActivity, "${accounts.size} contas carregadas", Toast.LENGTH_SHORT).show()
+                accountAdapter.submitList(accounts)
             }
         }
     }
