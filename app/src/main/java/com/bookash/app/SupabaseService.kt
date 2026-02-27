@@ -127,9 +127,11 @@ object SupabaseService {
     
     // ============== TRANSACTIONS ==============
     
-    suspend fun getTransactions(limit: Int = 20): List<Transaction> = withContext(Dispatchers.IO) {
+    suspend fun getTransactions(userId: String, limit: Int = 50): List<Transaction> = withContext(Dispatchers.IO) {
         try {
-            val conn = URL("$BASE_URL/rest/v1/transactions?order=date.desc&limit=$limit&select=*").openConnection() as HttpURLConnection
+            val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&order=date.desc&limit=$limit&select=*"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
             conn.setRequestProperty("Authorization", "Bearer $API_KEY")
@@ -155,7 +157,25 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
-            val body = """{"type":"${transaction.type}","amount":${transaction.amount},"description":"${transaction.description}","category":"${transaction.category}","date":"${transaction.date}"}"""
+            val body = buildString {
+                append("{")
+                append("\"user_id\":\"${transaction.userId}\",")
+                append("\"type\":\"${transaction.type}\",")
+                append("\"amount\":${transaction.amount},")
+                append("\"description\":\"${transaction.description}\",")
+                append("\"category\":\"${transaction.category}\",")
+                append("\"date\":\"${transaction.date}\",")
+                append("\"status\":\"${transaction.status}\"")
+                if (transaction.accountId.isNotEmpty()) {
+                    append(",\"account_id\":\"${transaction.accountId}\"")
+                }
+                if (transaction.isRecurring) {
+                    append(",\"is_recurring\":true")
+                    append(",\"recurrence_period\":\"${transaction.recurrencePeriod}\"")
+                    append(",\"recurrence_count\":${transaction.recurrenceCount}")
+                }
+                append("}")
+            }
             conn.outputStream.write(body.toByteArray())
             
             conn.responseCode in 200..299
@@ -171,11 +191,14 @@ object SupabaseService {
             val type = json.optString("type")
             list.add(Transaction(
                 id = json.optString("id"),
+                userId = json.optString("user_id"),
                 description = json.optString("description"),
                 category = json.optString("category"),
                 amount = json.optDouble("amount", 0.0),
                 type = type,
                 date = json.optString("date"),
+                status = json.optString("status", "paid"),
+                accountId = json.optString("account_id", ""),
                 iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
             ))
         }

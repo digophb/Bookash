@@ -187,7 +187,16 @@ class MainActivity : AppCompatActivity() {
     
     private fun loadTransactions() {
         lifecycleScope.launch {
-            val loadedTransactions = SupabaseService.getTransactions()
+            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
+            val userId = prefs.getString("user_id", "") ?: ""
+            
+            if (userId.isEmpty()) {
+                emptyState.visibility = View.VISIBLE
+                transactionsRecycler.visibility = View.GONE
+                return@launch
+            }
+            
+            val loadedTransactions = SupabaseService.getTransactions(userId)
             transactions.clear()
             transactions.addAll(loadedTransactions)
             

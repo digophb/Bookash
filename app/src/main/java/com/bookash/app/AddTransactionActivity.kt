@@ -250,21 +250,31 @@ class AddTransactionActivity : AppCompatActivity() {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val dateStr = formatter.format(Date(selectedDate))
         
+        // Pegar user_id e token
+        val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
+        val userId = prefs.getString("user_id", "") ?: ""
+        val token = prefs.getString("access_token", "") ?: ""
+        
+        // Encontrar account_id selecionado
+        val selectedAccount = accounts.find { it.name == account }
+        
         val transaction = Transaction(
             id = "",
+            userId = userId,
             description = description,
             category = category,
             amount = value,
             type = transactionType,
             date = dateStr,
+            status = if (isReceived) "paid" else "pending",
+            accountId = selectedAccount?.id ?: "",
+            isRecurring = isRecurring,
+            recurrencePeriod = recurrenceType,
+            recurrenceCount = installments,
             iconRes = if (transactionType == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
         )
         
         lifecycleScope.launch {
-            // Pegar token do usuário
-            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
-            val token = prefs.getString("access_token", "") ?: ""
-            
             val success = SupabaseService.saveTransaction(transaction, token)
             
             if (success) {

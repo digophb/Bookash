@@ -92,8 +92,10 @@ class LoginActivity : AppCompatActivity() {
                         val userEmail = user?.optString("email", email)
                         
                         // Salvar dados do usuário
+                        val userId = user?.optString("id", "")
                         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                         prefs.putString(KEY_TOKEN, token)
+                        prefs.putString("user_id", userId)
                         prefs.putString("user_email", userEmail)
                         if (!userName.isNullOrEmpty()) {
                             prefs.putString("user_name", userName)
