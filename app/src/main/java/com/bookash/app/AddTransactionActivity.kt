@@ -5,13 +5,13 @@ import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -38,6 +38,9 @@ class AddTransactionActivity : AppCompatActivity() {
     private var isRecurring: Boolean = false
     private var recurrenceType: String = "Mensal"
     private var installments: Int = 1
+    
+    private val categories = mutableListOf<Category>()
+    private val accounts = mutableListOf<Account>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,9 +49,9 @@ class AddTransactionActivity : AppCompatActivity() {
         initViews()
         setupTypeToggle()
         setupSwitches()
-        setupDropdowns()
         setupDatePicker()
         setupSaveButton()
+        loadData()
     }
 
     private fun initViews() {
@@ -69,6 +72,37 @@ class AddTransactionActivity : AppCompatActivity() {
         
         updateDateDisplay()
     }
+    
+    private fun loadData() {
+        lifecycleScope.launch {
+            // Carregar categorias
+            val loadedCategories = SupabaseService.getCategories("income")
+            categories.clear()
+            categories.addAll(loadedCategories)
+            updateCategoryDropdown()
+            
+            // Carregar contas
+            val loadedAccounts = SupabaseService.getAccounts()
+            accounts.clear()
+            accounts.addAll(loadedAccounts)
+            updateAccountDropdown()
+        }
+    }
+    
+    private fun updateCategoryDropdown() {
+        val names = categories.map { it.name }.toTypedArray()
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, names)
+        categoryDropdown.setAdapter(adapter)
+    }
+    
+    private fun updateAccountDropdown() {
+        val names = accounts.map { it.name }.toTypedArray()
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, names)
+        accountDropdown.setAdapter(adapter)
+        if (names.isNotEmpty()) {
+            accountDropdown.setText(names[0], false)
+        }
+    }
 
     private fun setupTypeToggle() {
         typeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -78,21 +112,31 @@ class AddTransactionActivity : AppCompatActivity() {
                         transactionType = "income"
                         titleText.text = "Nova Receita"
                         receivedSwitch.text = "Recebido"
-                        updateCategoryList(true)
-                        updateColors(R.color.primary)
+                        updateColors(R.color.income)
+                        lifecycleScope.launch {
+                            val cats = SupabaseService.getCategories("income")
+                            categories.clear()
+                            categories.addAll(cats)
+                            updateCategoryDropdown()
+                        }
                     }
                     R.id.btnExpense -> {
                         transactionType = "expense"
                         titleText.text = "Nova Despesa"
                         receivedSwitch.text = "Pago"
-                        updateCategoryList(false)
-                        updateColors(R.color.error)
+                        updateColors(R.color.expense)
+                        lifecycleScope.launch {
+                            val cats = SupabaseService.getCategories("expense")
+                            categories.clear()
+                            categories.addAll(cats)
+                            updateCategoryDropdown()
+                        }
                     }
                     R.id.btnTransfer -> {
                         transactionType = "transfer"
                         titleText.text = "Nova Transferência"
                         receivedSwitch.text = "Realizado"
-                        updateColors(R.color.highlight_secondary)
+                        updateColors(R.color.transfer)
                     }
                 }
             }
@@ -102,12 +146,10 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun setupSwitches() {
-        // Switch Recebido/Pago
         receivedSwitch.setOnCheckedChangeListener { _, isChecked ->
             isReceived = isChecked
         }
         
-        // Switch Repetir
         repeatSwitch.setOnCheckedChangeListener { _, isChecked ->
             isRecurring = isChecked
             if (isChecked) {
@@ -122,16 +164,14 @@ class AddTransactionActivity : AppCompatActivity() {
         val periodDropdown = dialogView.findViewById<AutoCompleteTextView>(R.id.periodDropdown)
         val installmentsInput = dialogView.findViewById<TextInputEditText>(R.id.installmentsInput)
         
-        // Configurar dropdown de período
         val periods = arrayOf("Diário", "Semanal", "Mensal", "Anual")
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, periods)
         periodDropdown.setAdapter(adapter)
         periodDropdown.setText(recurrenceType, false)
         
-        // Configurar parcelas
         installmentsInput.setText(installments.toString())
         
-        MaterialAlertDialogBuilder(this)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle("Configurar Recorrência")
             .setView(dialogView)
             .setPositiveButton("Confirmar") { _, _ ->
@@ -141,38 +181,12 @@ class AddTransactionActivity : AppCompatActivity() {
             .setNegativeButton("Cancelar") { _, _ ->
                 repeatSwitch.isChecked = false
             }
-            .setOnDismissListener {
-                if (!isRecurring) {
-                    repeatSwitch.isChecked = false
-                }
-            }
             .show()
-    }
-
-    private fun updateCategoryList(isIncome: Boolean) {
-        val categories = if (isIncome) {
-            arrayOf("Salário", "Freelance", "Investimentos", "Vendas", "Empréstimos", "Outros")
-        } else {
-            arrayOf("Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Compras", "Contas", "Outros")
-        }
-        
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories)
-        categoryDropdown.setAdapter(adapter)
     }
 
     private fun updateColors(colorRes: Int) {
         val color = getColor(colorRes)
         saveButton.setBackgroundColor(color)
-    }
-
-    private fun setupDropdowns() {
-        updateCategoryList(true)
-        
-        // Contas
-        val accounts = arrayOf("Carteira", "Conta Corrente", "Poupança", "Nubank", "Itaú", "Bradesco")
-        val accountAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, accounts)
-        accountDropdown.setAdapter(accountAdapter)
-        accountDropdown.setText("Carteira", false)
     }
 
     private fun setupDatePicker() {
@@ -188,12 +202,6 @@ class AddTransactionActivity : AppCompatActivity() {
             }
             
             datePicker.show(supportFragmentManager, "datePicker")
-        }
-        
-        dateInput.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                dateInput.performClick()
-            }
         }
     }
 
@@ -238,27 +246,34 @@ class AddTransactionActivity : AppCompatActivity() {
         val category = categoryDropdown.text.toString()
         val account = accountDropdown.text.toString()
         val notes = notesInput.text.toString()
-        val status = if (isReceived) "received" else "pending"
         
-        // TODO: Salvar no Supabase
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dateStr = formatter.format(Date(selectedDate))
         
-        val resultIntent = android.content.Intent().apply {
-            putExtra("type", transactionType)
-            putExtra("value", value)
-            putExtra("description", description)
-            putExtra("category", category)
-            putExtra("account", account)
-            putExtra("date", selectedDate)
-            putExtra("status", status)
-            putExtra("isRecurring", isRecurring)
-            if (isRecurring) {
-                putExtra("recurrenceType", recurrenceType)
-                putExtra("installments", installments)
+        val transaction = Transaction(
+            id = "",
+            description = description,
+            category = category,
+            amount = value,
+            type = transactionType,
+            date = dateStr,
+            iconRes = if (transactionType == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+        )
+        
+        lifecycleScope.launch {
+            // Pegar token do usuário
+            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
+            val token = prefs.getString("access_token", "") ?: ""
+            
+            val success = SupabaseService.saveTransaction(transaction, token)
+            
+            if (success) {
+                Toast.makeText(this@AddTransactionActivity, "Transação salva!", Toast.LENGTH_SHORT).show()
+                setResult(RESULT_OK)
+                finish()
+            } else {
+                Toast.makeText(this@AddTransactionActivity, "Erro ao salvar transação", Toast.LENGTH_SHORT).show()
             }
-            putExtra("notes", notes)
         }
-        
-        setResult(RESULT_OK, resultIntent)
-        finish()
     }
 }

@@ -43,6 +43,40 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="16dp" />
+        
+        <!-- Estado Vazio -->
+        <LinearLayout
+            android:id="@+id/emptyState"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+            
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_category"
+                android:tint="@color/text_secondary"
+                android:alpha="0.5" />
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nenhuma categoria"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp" />
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Toque no + para adicionar"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp" />
+        
+        </LinearLayout>
 
     </LinearLayout>
 

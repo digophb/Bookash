@@ -8,14 +8,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.NestedScrollView
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -32,8 +32,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fabAdd: FloatingActionButton
     private lateinit var nestedScroll: NestedScrollView
     private lateinit var avatarCard: MaterialCardView
+    private lateinit var emptyState: View
     
     private lateinit var transactionAdapter: TransactionAdapter
+    private val transactions = mutableListOf<Transaction>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         fabAdd = findViewById(R.id.fabAdd)
         nestedScroll = findViewById(R.id.nestedScroll)
         avatarCard = findViewById(R.id.avatarCard)
+        emptyState = findViewById(R.id.emptyState)
     }
 
     private fun setupBottomNavigation() {
@@ -100,11 +103,17 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Gerenciar")
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> startActivity(android.content.Intent(this, CategoriesActivity::class.java))
-                    1 -> startActivity(android.content.Intent(this, AccountsActivity::class.java))
+                    0 -> startActivity(Intent(this, CategoriesActivity::class.java))
+                    1 -> startActivity(Intent(this, AccountsActivity::class.java))
                 }
             }
             .show()
+    }
+    
+    private fun logout() {
+        getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
     }
 
     private fun setupTransactionsList() {
@@ -118,7 +127,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupFab() {
         fabAdd.setOnClickListener {
-            showAddTransactionDialog()
+            startActivityForResult(Intent(this, AddTransactionActivity::class.java), REQUEST_ADD_TRANSACTION)
         }
     }
 
@@ -135,25 +144,11 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Conta")
             .setItems(options) { dialog, which ->
                 when (which) {
-                    0 -> {
-                        // Perfil - TODO
-                        Toast.makeText(this, "Perfil em desenvolvimento", Toast.LENGTH_SHORT).show()
-                    }
-                    1 -> {
-                        logout()
-                    }
+                    0 -> Toast.makeText(this, "Perfil em desenvolvimento", Toast.LENGTH_SHORT).show()
+                    1 -> logout()
                 }
             }
             .show()
-    }
-
-    private fun logout() {
-        // Limpar dados salvos
-        getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
-        
-        // Ir para tela de login
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
     }
 
     private fun setupScrollBehavior() {
@@ -188,32 +183,62 @@ class MainActivity : AppCompatActivity() {
         val currentMonth = java.text.SimpleDateFormat("MMMM 'de' yyyy", java.util.Locale("pt", "BR"))
             .format(java.util.Date())
         monthText.text = currentMonth.capitalize()
-        
-        balanceValue.text = "R$ 0,00"
-        dailyIncomeValue.text = "R$ 0,00"
-        incomeValue.text = "R$ 0,00"
-        expenseValue.text = "R$ 0,00"
-    }
-
-    private fun loadTransactions() {
-        val transactions = listOf<Transaction>()
-        transactionAdapter.submitList(transactions)
-    }
-
-    private fun showAddTransactionDialog() {
-        startActivityForResult(android.content.Intent(this, AddTransactionActivity::class.java), REQUEST_ADD_TRANSACTION)
     }
     
+    private fun loadTransactions() {
+        lifecycleScope.launch {
+            val loadedTransactions = SupabaseService.getTransactions()
+            transactions.clear()
+            transactions.addAll(loadedTransactions)
+            
+            if (transactions.isEmpty()) {
+                emptyState.visibility = View.VISIBLE
+                transactionsRecycler.visibility = View.GONE
+            } else {
+                emptyState.visibility = View.GONE
+                transactionsRecycler.visibility = View.VISIBLE
+                transactionAdapter.submitList(transactions)
+            }
+            
+            // Calcular totais
+            updateTotals()
+        }
+    }
+    
+    private fun updateTotals() {
+        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+        
+        var totalIncome = 0.0
+        var totalExpense = 0.0
+        var dailyIncome = 0.0
+        
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(java.util.Date())
+        
+        transactions.forEach { t ->
+            if (t.type == "income") {
+                totalIncome += t.amount
+                if (t.date == today) {
+                    dailyIncome += t.amount
+                }
+            } else {
+                totalExpense += t.amount
+            }
+        }
+        
+        val balance = totalIncome - totalExpense
+        
+        balanceValue.text = formatter.format(balance)
+        incomeValue.text = formatter.format(totalIncome)
+        expenseValue.text = formatter.format(totalExpense)
+        dailyIncomeValue.text = formatter.format(dailyIncome)
+    }
+
     @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         
-        if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK && data != null) {
-            val type = data.getStringExtra("type") ?: "income"
-            val value = data.getDoubleExtra("value", 0.0)
-            val description = data.getStringExtra("description") ?: ""
-            
-            Toast.makeText(this, "${if (type == "income") "Receita" else "Despesa"} salva: $description - R$ ${String.format("%.2f", value)}", Toast.LENGTH_SHORT).show()
+        if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK) {
+            loadTransactions()
         }
     }
     

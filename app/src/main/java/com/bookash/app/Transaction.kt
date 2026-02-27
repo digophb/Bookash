@@ -5,7 +5,7 @@ data class Transaction(
     val description: String,
     val category: String,
     val amount: Double,
-    val type: String, // "income" ou "expense"
+    val type: String,
     val date: String,
-    val iconRes: Int
+    val iconRes: Int = 0
 )
