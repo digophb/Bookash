@@ -1,6 +1,7 @@
 package com.bookash.app
 
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -55,7 +56,8 @@ class AccountAdapter(
                 "poupança", "poupanca" -> "Poupança"
                 "carteira" -> "Carteira"
                 "digital" -> "Conta Digital"
-                else -> account.type
+                "outros" -> "Outros"
+                else -> account.type.replaceFirstChar { it.uppercase() }
             }
             
             // Saldo formatado
@@ -90,13 +92,42 @@ class AccountAdapter(
         }
         
         private fun getIconResource(iconName: String): Int {
-            return when (iconName.lowercase()) {
+            val icon = iconName.lowercase().trim()
+            return when (icon) {
+                // Bancos principais
                 "nubank" -> R.drawable.ic_bank_nubank
                 "itau" -> R.drawable.ic_bank_itau
                 "bradesco" -> R.drawable.ic_bank_bradesco
                 "bb", "bancodobrasil" -> R.drawable.ic_bank_bb
-                "wallet", "carteira" -> R.drawable.ic_wallet
-                else -> R.drawable.ic_account
+                "caixa" -> R.drawable.ic_bank_caixa
+                "santander" -> R.drawable.ic_bank_santander
+                
+                // Bancos digitais
+                "inter" -> R.drawable.ic_bank_inter
+                "c6" -> R.drawable.ic_bank_c6
+                "original" -> R.drawable.ic_bank_original
+                "next" -> R.drawable.ic_bank_next
+                "digio" -> R.drawable.ic_bank_digio
+                "neon" -> R.drawable.ic_bank_neon
+                
+                // Outros bancos
+                "bmg" -> R.drawable.ic_bank_bmg
+                "safra" -> R.drawable.ic_bank_safra
+                "btg" -> R.drawable.ic_bank_btg
+                "votorantim" -> R.drawable.ic_bank_votorantim
+                "banrisul" -> R.drawable.ic_bank_banrisul
+                "nordeste" -> R.drawable.ic_bank_nordeste
+                
+                // Pagamentos
+                "pagseguro" -> R.drawable.ic_bank_pagseguro
+                "mercadopago" -> R.drawable.ic_bank_mercadopago
+                "picpay" -> R.drawable.ic_bank_picpay
+                
+                // Carteira / outros
+                "wallet", "carteira" -> R.drawable.ic_bank_wallet
+                
+                // Fallback
+                else -> R.drawable.ic_bank_wallet
             }
         }
     }

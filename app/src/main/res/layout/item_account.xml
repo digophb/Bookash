@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="4dp"
+    android:layout_marginVertical="6dp"
     app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp">
@@ -19,27 +19,32 @@
         <!-- Icon -->
         <ImageView
             android:id="@+id/accountIcon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginEnd="12dp"
             android:src="@drawable/ic_wallet"
-            android:padding="8dp" />
+            android:padding="8dp"
+            android:background="@drawable/bg_circle" />
 
-        <!-- Info -->
+        <!-- Info (Nome + Tipo) -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginEnd="12dp">
 
             <TextView
                 android:id="@+id/accountName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Nubank"
+                android:text="Nubank Conta Principal"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:lineSpacingMultiplier="1.1" />
 
             <TextView
                 android:id="@+id/accountType"
@@ -47,35 +52,22 @@
                 android:layout_height="wrap_content"
                 android:text="Conta Corrente"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
 
         </LinearLayout>
 
         <!-- Balance -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/accountBalance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="end"
-            android:layout_marginEnd="8dp">
-
-            <TextView
-                android:id="@+id/accountBalance"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="R$ 1.000,00"
-                android:textColor="@color/income"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Saldo"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-        </LinearLayout>
+            android:text="R$ 1.000,00"
+            android:textColor="@color/income"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="sans-serif-medium" />
 
         <!-- Action Buttons -->
         <LinearLayout
@@ -86,31 +78,34 @@
             <!-- Edit button -->
             <ImageButton
                 android:id="@+id/editButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_edit"
-                android:tint="@color/accent" />
+                android:tint="@color/accent"
+                android:scaleType="centerInside" />
 
             <!-- Archive button -->
             <ImageButton
                 android:id="@+id/archiveButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_archive"
-                android:tint="@color/text_secondary" />
+                android:tint="@color/text_secondary"
+                android:scaleType="centerInside" />
 
             <!-- Delete button -->
             <ImageButton
                 android:id="@+id/deleteButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_delete"
-                android:tint="@color/expense" />
+                android:tint="@color/expense"
+                android:scaleType="centerInside" />
 
         </LinearLayout>
 
