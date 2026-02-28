@@ -57,6 +57,18 @@
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
         
+        <!-- Tags -->
+        <activity
+            android:name=".TagsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
+        <!-- Adicionar/Editar Tag -->
+        <activity
+            android:name=".AddTagActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
         <!-- Contas -->
         <activity
             android:name=".AccountsActivity"

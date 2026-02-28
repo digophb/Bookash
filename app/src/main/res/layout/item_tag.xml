@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp">
+
+        <!-- Color Indicator -->
+        <View
+            android:id="@+id/tagColor"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/circle_color" />
+
+        <!-- Tag Name -->
+        <TextView
+            android:id="@+id/tagName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Nome da Tag"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:layout_marginStart="16dp" />
+
+        <!-- Edit Button -->
+        <ImageView
+            android:id="@+id/btnEdit"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_edit"
+            android:tint="@color/primary"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="6dp" />
+
+        <!-- Delete Button -->
+        <ImageView
+            android:id="@+id/btnDelete"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_delete"
+            android:tint="@color/error"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="6dp"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

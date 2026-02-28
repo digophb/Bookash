@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showManageMenu() {
-        val options = arrayOf("Categorias", "Contas")
+        val options = arrayOf("Categorias", "Contas", "Tags")
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Gerenciar")
@@ -105,6 +105,7 @@ class MainActivity : AppCompatActivity() {
                 when (which) {
                     0 -> startActivity(Intent(this, CategoriesActivity::class.java))
                     1 -> startActivity(Intent(this, AccountsActivity::class.java))
+                    2 -> startActivity(Intent(this, TagsActivity::class.java))
                 }
             }
             .show()
