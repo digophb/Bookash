@@ -111,7 +111,9 @@ class RegisterActivity : AppCompatActivity() {
                         Log.d(TAG, "Response: $response")
                         val json = JSONObject(response)
                         
-                        val userId = json.optString("id", "")
+                        // O ID do usuário está dentro de "user" na resposta do Supabase
+                        val userJson = json.optJSONObject("user")
+                        val userId = userJson?.optString("id", "") ?: json.optString("id", "")
                         val accessToken = json.optString("access_token", "")
                         Log.d(TAG, "User ID: $userId")
                         
