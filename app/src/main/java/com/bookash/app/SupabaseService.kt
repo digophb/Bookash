@@ -93,13 +93,15 @@ object SupabaseService {
         val list = mutableListOf<Category>()
         for (i in 0 until jsonArray.length()) {
             val json = jsonArray.getJSONObject(i)
-            list.add(Category(
+            val category = Category(
                 id = json.optString("id"),
                 name = json.optString("name"),
                 type = json.optString("type"),
                 color = json.optString("color", "#357266"),
                 icon = json.optString("icon", "category")
-            ))
+            )
+            android.util.Log.d("SupabaseService", "Category parsed: name=${category.name}, color=${category.color}, icon=${category.icon}")
+            list.add(category)
         }
         return list
     }
