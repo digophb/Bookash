@@ -21,7 +21,8 @@ data class Category(
     val name: String,
     val type: String,
     val color: String = "#357266",
-    val icon: String = "category"
+    val icon: String = "category",
+    val userId: String = ""
 )
 
 data class Account(
@@ -30,5 +31,6 @@ data class Account(
     val balance: Double = 0.0,
     val type: String = "corrente",
     val icon: String = "wallet",
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val userId: String = ""
 )

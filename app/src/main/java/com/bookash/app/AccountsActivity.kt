@@ -59,7 +59,7 @@ class AccountsActivity : AppCompatActivity() {
     private fun loadAccounts() {
         if (userId == null) {
             emptyState.visibility = View.VISIBLE
-            tagsRecycler.visibility = View.GONE
+            accountsRecycler.visibility = View.GONE
             return
         }
         

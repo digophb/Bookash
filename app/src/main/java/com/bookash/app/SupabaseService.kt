@@ -232,7 +232,8 @@ object SupabaseService {
                 name = json.optString("name"),
                 type = json.optString("type"),
                 color = json.optString("color", "#357266"),
-                icon = json.optString("icon", "category")
+                icon = json.optString("icon", "category"),
+                userId = json.optString("user_id", "")
             )
             list.add(category)
         }

@@ -77,17 +77,17 @@ class AddTransactionActivity : AppCompatActivity() {
     }
     
     private fun loadData() {
+        if (userId == null) return
+        
         lifecycleScope.launch {
-            userId
-            
             // Carregar categorias
-            val loadedCategories = SupabaseService.getCategories(userId, "income")
+            val loadedCategories = SupabaseService.getCategories(userId!!, "income")
             categories.clear()
             categories.addAll(loadedCategories)
             updateCategoryDropdown()
             
             // Carregar contas
-            val loadedAccounts = SupabaseService.getAccounts(userId)
+            val loadedAccounts = SupabaseService.getAccounts(userId!!)
             accounts.clear()
             accounts.addAll(loadedAccounts)
             updateAccountDropdown()
@@ -112,18 +112,19 @@ class AddTransactionActivity : AppCompatActivity() {
     private fun setupTypeToggle() {
         typeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
-                userId
                 when (checkedId) {
                     R.id.btnIncome -> {
                         transactionType = "income"
                         titleText.text = "Nova Receita"
                         receivedSwitch.text = "Recebido"
                         updateColors(R.color.income)
-                        lifecycleScope.launch {
-                            val cats = SupabaseService.getCategories(userId, "income")
-                            categories.clear()
-                            categories.addAll(cats)
-                            updateCategoryDropdown()
+                        if (userId != null) {
+                            lifecycleScope.launch {
+                                val cats = SupabaseService.getCategories(userId!!, "income")
+                                categories.clear()
+                                categories.addAll(cats)
+                                updateCategoryDropdown()
+                            }
                         }
                     }
                     R.id.btnExpense -> {
@@ -131,7 +132,19 @@ class AddTransactionActivity : AppCompatActivity() {
                         titleText.text = "Nova Despesa"
                         receivedSwitch.text = "Pago"
                         updateColors(R.color.expense)
-                        lifecycleScope.launch {
+                        if (userId != null) {
+                            lifecycleScope.launch {
+                                val cats = SupabaseService.getCategories(userId!!, "expense")
+                                categories.clear()
+                                categories.addAll(cats)
+                                updateCategoryDropdown()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
                             val cats = SupabaseService.getCategories(userId, "expense")
                             categories.clear()
                             categories.addAll(cats)
