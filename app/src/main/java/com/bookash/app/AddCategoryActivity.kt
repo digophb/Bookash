@@ -126,6 +126,12 @@ class AddCategoryActivity : AppCompatActivity() {
     }
 
     private fun saveCategory() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         val name = nameInput.text.toString().trim()
         
         if (name.isEmpty()) {
@@ -137,7 +143,7 @@ class AddCategoryActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             // Verificar se já existe categoria com mesmo nome e tipo
-            val exists = SupabaseService.categoryExists(name, editingCategoryType, editingCategoryId)
+            val exists = SupabaseService.categoryExists(name, editingCategoryType, userId, editingCategoryId)
             
             if (exists) {
                 btnSave.isEnabled = true
@@ -160,7 +166,7 @@ class AddCategoryActivity : AppCompatActivity() {
             val success = if (editingCategoryId != null) {
                 SupabaseService.updateCategory(category)
             } else {
-                SupabaseService.saveCategory(category)
+                SupabaseService.saveCategory(category, userId)
             }
 
             btnSave.isEnabled = true

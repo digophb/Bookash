@@ -110,6 +110,12 @@ class AddTagActivity : AppCompatActivity() {
     }
 
     private fun saveTag() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         val name = nameInput.text.toString().trim()
         
         if (name.isEmpty()) {
@@ -121,7 +127,7 @@ class AddTagActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             // Verificar se já existe tag com mesmo nome
-            val exists = SupabaseService.tagExists(name, editingTagId)
+            val exists = SupabaseService.tagExists(name, userId, editingTagId)
             
             if (exists) {
                 btnSave.isEnabled = true
@@ -138,7 +144,7 @@ class AddTagActivity : AppCompatActivity() {
             val success = if (editingTagId != null) {
                 SupabaseService.updateTag(tag)
             } else {
-                SupabaseService.saveTag(tag)
+                SupabaseService.saveTag(tag, userId)
             }
 
             btnSave.isEnabled = true

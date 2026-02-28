@@ -112,6 +112,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun logout() {
+        UserSession.clear()
         getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
         startActivity(Intent(this, LoginActivity::class.java))
         finish()
@@ -187,16 +188,15 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun loadTransactions() {
+        val userId = UserSession.getUserId()
+        
+        if (userId == null) {
+            emptyState.visibility = View.VISIBLE
+            transactionsRecycler.visibility = View.GONE
+            return
+        }
+        
         lifecycleScope.launch {
-            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
-            val userId = prefs.getString("user_id", "") ?: ""
-            
-            if (userId.isEmpty()) {
-                emptyState.visibility = View.VISIBLE
-                transactionsRecycler.visibility = View.GONE
-                return@launch
-            }
-            
             val loadedTransactions = SupabaseService.getTransactions(userId)
             transactions.clear()
             transactions.addAll(loadedTransactions)
@@ -237,7 +237,10 @@ class MainActivity : AppCompatActivity() {
         
         // Calculate balance from active accounts
         lifecycleScope.launch {
-            val activeAccounts = SupabaseService.getAccounts(archived = false)
+            val userId = UserSession.getUserId()
+            if (userId == null) return@launch
+            
+            val activeAccounts = SupabaseService.getAccounts(userId, archived = false)
             val accountsBalance = activeAccounts.sumOf { it.balance }
             
             val balance = totalIncome - totalExpense + accountsBalance

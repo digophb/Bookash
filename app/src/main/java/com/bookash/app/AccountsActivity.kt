@@ -54,8 +54,14 @@ class AccountsActivity : AppCompatActivity() {
     }
 
     private fun loadAccounts() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         lifecycleScope.launch {
-            val loadedAccounts = SupabaseService.getAccounts(archived = false)
+            val loadedAccounts = SupabaseService.getAccounts(userId, archived = false)
             accounts.clear()
             accounts.addAll(loadedAccounts)
             
@@ -109,8 +115,14 @@ class AccountsActivity : AppCompatActivity() {
     }
     
     private fun showArchivedAccountsBottomSheet() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         lifecycleScope.launch {
-            val archivedAccounts = SupabaseService.getAccounts(archived = true)
+            val archivedAccounts = SupabaseService.getAccounts(userId, archived = true)
             
             if (archivedAccounts.isEmpty()) {
                 ToastManager.showInfo(this@AccountsActivity, "Nenhuma conta arquivada")

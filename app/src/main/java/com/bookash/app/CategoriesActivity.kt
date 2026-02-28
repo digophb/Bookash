@@ -47,8 +47,14 @@ class CategoriesActivity : AppCompatActivity() {
     }
 
     private fun loadCategories() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         lifecycleScope.launch {
-            val loadedCategories = SupabaseService.getCategories()
+            val loadedCategories = SupabaseService.getCategories(userId)
             categories.clear()
             categories.addAll(loadedCategories)
             

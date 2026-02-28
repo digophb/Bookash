@@ -47,8 +47,14 @@ class TagsActivity : AppCompatActivity() {
     }
 
     private fun loadTags() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         lifecycleScope.launch {
-            val loadedTags = SupabaseService.getTags()
+            val loadedTags = SupabaseService.getTags(userId)
             tags.clear()
             tags.addAll(loadedTags)
             

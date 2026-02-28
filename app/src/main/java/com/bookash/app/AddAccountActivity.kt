@@ -133,6 +133,12 @@ class AddAccountActivity : AppCompatActivity() {
     }
 
     private fun saveAccount() {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         val name = nameInput.text.toString().trim()
 
         if (name.isEmpty()) {
@@ -158,7 +164,7 @@ class AddAccountActivity : AppCompatActivity() {
             val success = if (editingAccountId != null) {
                 SupabaseService.updateAccount(account)
             } else {
-                SupabaseService.saveAccount(account)
+                SupabaseService.saveAccount(account, userId)
             }
 
             btnSave.isEnabled = true

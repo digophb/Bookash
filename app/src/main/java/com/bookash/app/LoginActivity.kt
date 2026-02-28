@@ -41,7 +41,11 @@ class LoginActivity : AppCompatActivity() {
         
         // Verificar se já está logado
         val token = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, null)
-        if (token != null) {
+        val savedUserId = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("user_id", null)
+        
+        if (token != null && savedUserId != null) {
+            // Inicializar UserSession
+            UserSession.setUserId(savedUserId)
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }
@@ -101,6 +105,14 @@ class LoginActivity : AppCompatActivity() {
                             prefs.putString("user_name", userName)
                         }
                         prefs.apply()
+                        
+                        // Inicializar UserSession
+                        if (!userId.isNullOrEmpty()) {
+                            UserSession.setUserId(userId)
+                            if (!userEmail.isNullOrEmpty()) {
+                                UserSession.setUserEmail(userEmail)
+                            }
+                        }
                         
                         token
                     } else {
