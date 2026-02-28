@@ -432,7 +432,8 @@ object SupabaseService {
                 balance = json.optDouble("balance", 0.0),
                 type = json.optString("type", "corrente"),
                 icon = json.optString("icon", "wallet"),
-                isArchived = json.optBoolean("is_archived", false)
+                isArchived = json.optBoolean("is_archived", false),
+                userId = json.optString("user_id", "")
             ))
         }
         return list
@@ -545,12 +546,13 @@ object SupabaseService {
     
     // ============== TAGS ==============
     
-    suspend fun getTags(): List<Tag> = withContext(Dispatchers.IO) {
+    suspend fun getTags(userId: String): List<Tag> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[TAGS] READ - Iniciando busca")
+        Log.d(TAG, "[TAGS] READ - Iniciando busca para userId: $userId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/tags?select=*&order=created_at.desc").openConnection() as HttpURLConnection
+            val url = "$BASE_URL/rest/v1/tags?user_id=eq.$userId&select=*&order=created_at.desc"
+            val conn = URL(url).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
             conn.setRequestProperty("Authorization", "Bearer $API_KEY")
@@ -574,9 +576,9 @@ object SupabaseService {
         }
     }
     
-    suspend fun saveTag(tag: Tag): Boolean = withContext(Dispatchers.IO) {
+    suspend fun saveTag(tag: Tag, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[TAGS] CREATE - Iniciando: name='${tag.name}'")
+        Log.d(TAG, "[TAGS] CREATE - Iniciando: name='${tag.name}', userId=$userId")
         
         try {
             val conn = URL("$BASE_URL/rest/v1/tags").openConnection() as HttpURLConnection
@@ -587,7 +589,7 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
-            val body = """{"name":"${tag.name}","color":"${tag.color}"}"""
+            val body = """{"name":"${tag.name}","color":"${tag.color}","user_id":"$userId"}"""
             conn.outputStream.write(body.toByteArray())
             
             val responseCode = conn.responseCode
@@ -669,9 +671,9 @@ object SupabaseService {
         }
     }
     
-    suspend fun tagExists(name: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun tagExists(name: String, userId: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
         try {
-            var url = "$BASE_URL/rest/v1/tags?name=eq.${java.net.URLEncoder.encode(name, "UTF-8")}&select=id"
+            var url = "$BASE_URL/rest/v1/tags?name=eq.${java.net.URLEncoder.encode(name, "UTF-8")}&user_id=eq.$userId&select=id"
             if (excludeId != null) {
                 url += "&id=neq.$excludeId"
             }
