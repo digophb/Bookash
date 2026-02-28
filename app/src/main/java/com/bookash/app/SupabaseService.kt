@@ -70,6 +70,25 @@ object SupabaseService {
         }
     }
     
+    suspend fun updateCategory(category: Category): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$BASE_URL/rest/v1/categories?id=eq.${category.id}").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"name":"${category.name}","type":"${category.type}","color":"${category.color}","icon":"${category.icon}"}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
     private fun parseCategories(jsonArray: JSONArray): List<Category> {
         val list = mutableListOf<Category>()
         for (i in 0 until jsonArray.length()) {

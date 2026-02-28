@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class CategoryAdapter(
+    private val onEditClick: ((Category) -> Unit)? = null,
     private val onDeleteClick: ((Category) -> Unit)? = null
 ) : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
 
@@ -39,6 +40,7 @@ class CategoryAdapter(
         private val categoryIcon: ImageView = itemView.findViewById(R.id.categoryIcon)
         private val categoryName: TextView = itemView.findViewById(R.id.categoryName)
         private val categoryType: TextView = itemView.findViewById(R.id.categoryType)
+        private val editButton: ImageButton = itemView.findViewById(R.id.editButton)
         private val deleteButton: ImageButton = itemView.findViewById(R.id.deleteButton)
 
         fun bind(category: Category) {
@@ -60,6 +62,11 @@ class CategoryAdapter(
             // Ícone baseado no nome
             val iconRes = getIconResource(category.icon)
             categoryIcon.setImageResource(iconRes)
+            
+            // Edit button
+            editButton.setOnClickListener {
+                onEditClick?.invoke(category)
+            }
             
             // Delete button
             deleteButton.setOnClickListener {
