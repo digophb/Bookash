@@ -19,6 +19,7 @@ As migrations NÃO são aplicadas automaticamente. O desenvolvedor deve executá
 | Ordem | Arquivo | Descrição | Status |
 |-------|---------|-----------|--------|
 | 001 | `001_add_is_archived_to_accounts.sql` | Adiciona coluna `is_archived` à tabela accounts | ⏳ Pendente |
+| 002 | `002_create_tags_table.sql` | Cria tabela `tags` com RLS para usuários | ⏳ Pendente |
 
 ## Checklist de Release
 
