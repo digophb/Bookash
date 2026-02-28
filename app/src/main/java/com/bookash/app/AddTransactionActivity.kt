@@ -141,16 +141,6 @@ class AddTransactionActivity : AppCompatActivity() {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-                            val cats = SupabaseService.getCategories(userId, "expense")
-                            categories.clear()
-                            categories.addAll(cats)
-                            updateCategoryDropdown()
-                        }
-                    }
                     R.id.btnTransfer -> {
                         transactionType = "transfer"
                         titleText.text = "Nova Transferência"
