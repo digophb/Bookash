@@ -4,13 +4,18 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
 import java.util.Locale
 
-class AccountAdapter : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
+class AccountAdapter(
+    private val onEditClick: ((Account) -> Unit)? = null,
+    private val onArchiveClick: ((Account) -> Unit)? = null,
+    private val onDeleteClick: ((Account) -> Unit)? = null
+) : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
 
     private val items = mutableListOf<Account>()
 
@@ -37,6 +42,9 @@ class AccountAdapter : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() 
         private val accountName: TextView = itemView.findViewById(R.id.accountName)
         private val accountType: TextView = itemView.findViewById(R.id.accountType)
         private val accountBalance: TextView = itemView.findViewById(R.id.accountBalance)
+        private val editButton: ImageButton = itemView.findViewById(R.id.editButton)
+        private val archiveButton: ImageButton = itemView.findViewById(R.id.archiveButton)
+        private val deleteButton: ImageButton = itemView.findViewById(R.id.deleteButton)
 
         fun bind(account: Account) {
             accountName.text = account.name
@@ -66,6 +74,19 @@ class AccountAdapter : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() 
             // Ícone baseado no banco/tipo
             val iconRes = getIconResource(account.icon)
             accountIcon.setImageResource(iconRes)
+            
+            // Action buttons
+            editButton.setOnClickListener {
+                onEditClick?.invoke(account)
+            }
+            
+            archiveButton.setOnClickListener {
+                onArchiveClick?.invoke(account)
+            }
+            
+            deleteButton.setOnClickListener {
+                onDeleteClick?.invoke(account)
+            }
         }
         
         private fun getIconResource(iconName: String): Int {

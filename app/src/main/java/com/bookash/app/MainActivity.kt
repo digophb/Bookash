@@ -234,12 +234,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        val balance = totalIncome - totalExpense
-        
-        balanceValue.text = formatter.format(balance)
-        incomeValue.text = formatter.format(totalIncome)
-        expenseValue.text = formatter.format(totalExpense)
-        dailyIncomeValue.text = formatter.format(dailyIncome)
+        // Calculate balance from active accounts
+        lifecycleScope.launch {
+            val activeAccounts = SupabaseService.getAccounts(archived = false)
+            val accountsBalance = activeAccounts.sumOf { it.balance }
+            
+            val balance = totalIncome - totalExpense + accountsBalance
+            
+            balanceValue.text = formatter.format(balance)
+            incomeValue.text = formatter.format(totalIncome)
+            expenseValue.text = formatter.format(totalExpense)
+            dailyIncomeValue.text = formatter.format(dailyIncome)
+        }
     }
 
     @Deprecated("Deprecated in Java")

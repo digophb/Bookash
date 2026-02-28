@@ -29,5 +29,6 @@ data class Account(
     val name: String,
     val balance: Double = 0.0,
     val type: String = "corrente",
-    val icon: String = "wallet"
+    val icon: String = "wallet",
+    val isArchived: Boolean = false
 )

@@ -106,9 +106,11 @@ object SupabaseService {
     
     // ============== ACCOUNTS ==============
     
-    suspend fun getAccounts(): List<Account> = withContext(Dispatchers.IO) {
+    suspend fun getAccounts(archived: Boolean = false): List<Account> = withContext(Dispatchers.IO) {
         try {
-            val conn = URL("$BASE_URL/rest/v1/accounts?select=*").openConnection() as HttpURLConnection
+            val endpoint = "$BASE_URL/rest/v1/accounts?is_archived=eq.$archived&select=*&order=created_at.desc"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
             conn.setRequestProperty("Authorization", "Bearer $API_KEY")
@@ -143,6 +145,63 @@ object SupabaseService {
         }
     }
     
+    suspend fun updateAccount(account: Account): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.${account.id}").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}"}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    suspend fun archiveAccount(accountId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"is_archived":true}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    suspend fun reactivateAccount(accountId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"is_archived":false}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
     suspend fun deleteAccount(accountId: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
@@ -166,7 +225,8 @@ object SupabaseService {
                 name = json.optString("name"),
                 balance = json.optDouble("balance", 0.0),
                 type = json.optString("type", "corrente"),
-                icon = json.optString("icon", "wallet")
+                icon = json.optString("icon", "wallet"),
+                isArchived = json.optBoolean("is_archived", false)
             ))
         }
         return list
