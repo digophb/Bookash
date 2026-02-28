@@ -542,4 +542,169 @@ object SupabaseService {
         }
         return list
     }
+    
+    // ============== TAGS ==============
+    
+    suspend fun getTags(): List<Tag> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TAGS] READ - Iniciando busca")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/tags?select=*&order=created_at.desc").openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val tags = parseTags(JSONArray(response))
+                Log.i(TAG, "[TAGS] READ - Sucesso: ${tags.size} tags encontradas (${duration}ms)")
+                tags
+            } else {
+                Log.w(TAG, "[TAGS] READ - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TAGS] READ - Erro após ${duration}ms", e)
+            emptyList()
+        }
+    }
+    
+    suspend fun saveTag(tag: Tag): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TAGS] CREATE - Iniciando: name='${tag.name}'")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/tags").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"name":"${tag.name}","color":"${tag.color}"}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[TAGS] CREATE - Sucesso: '${tag.name}' criada (${duration}ms)")
+                true
+            } else {
+                val errorStream = conn.errorStream?.bufferedReader()?.readText()
+                Log.w(TAG, "[TAGS] CREATE - Falha: HTTP $responseCode, $errorStream (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TAGS] CREATE - Erro ao criar '${tag.name}' após ${duration}ms", e)
+            false
+        }
+    }
+    
+    suspend fun updateTag(tag: Tag): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TAGS] UPDATE - Iniciando: id=${tag.id}, name='${tag.name}'")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/tags?id=eq.${tag.id}").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"name":"${tag.name}","color":"${tag.color}"}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[TAGS] UPDATE - Sucesso: '${tag.name}' atualizada (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[TAGS] UPDATE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TAGS] UPDATE - Erro ao atualizar '${tag.name}' após ${duration}ms", e)
+            false
+        }
+    }
+    
+    suspend fun deleteTag(tagId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TAGS] DELETE - Iniciando: id=$tagId")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/tags?id=eq.$tagId").openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[TAGS] DELETE - Sucesso: tag excluída (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[TAGS] DELETE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TAGS] DELETE - Erro após ${duration}ms", e)
+            false
+        }
+    }
+    
+    suspend fun tagExists(name: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
+        try {
+            var url = "$BASE_URL/rest/v1/tags?name=eq.${java.net.URLEncoder.encode(name, "UTF-8")}&select=id"
+            if (excludeId != null) {
+                url += "&id=neq.$excludeId"
+            }
+            
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            if (conn.responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                jsonArray.length() > 0
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "[TAGS] EXISTS - Erro ao verificar existência", e)
+            false
+        }
+    }
+    
+    private fun parseTags(jsonArray: JSONArray): List<Tag> {
+        val list = mutableListOf<Tag>()
+        for (i in 0 until jsonArray.length()) {
+            val json = jsonArray.getJSONObject(i)
+            list.add(Tag(
+                id = json.optString("id"),
+                name = json.optString("name"),
+                color = json.optString("color", "#357266"),
+                userId = json.optString("user_id", "")
+            ))
+        }
+        return list
+    }
 }
