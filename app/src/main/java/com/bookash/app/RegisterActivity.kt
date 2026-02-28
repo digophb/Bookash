@@ -127,7 +127,7 @@ class RegisterActivity : AppCompatActivity() {
                             prefs.apply()
                             
                             // Inicializar UserSession
-                            UserSession.saveSession(userId, accessToken, email, name)
+                            UserSession.saveSession(this@RegisterActivity, userId, accessToken, email, name)
                             
                             // Passo 2: Inserir na tabela public.users
                             if (accessToken.isNotEmpty()) {

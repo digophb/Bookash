@@ -1,17 +1,12 @@
 package com.bookash.app
 
 import android.content.Context
-import android.content.SharedPreferences
 
 /**
  * UserSession - Gerenciador de sessão do usuário
  * 
  * Singleton que armazena e gerencia o ID do usuário logado.
  * Garante que todas as operações usem o userId correto.
- * 
- * Uso:
- *   UserSession.init(context)
- *   val userId = UserSession.getUserId()
  */
 object UserSession {
     
@@ -21,7 +16,7 @@ object UserSession {
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_NAME = "user_name"
     
-    private lateinit var prefs: SharedPreferences
+    private var prefs: android.content.SharedPreferences? = null
     private var _userId: String? = null
     
     /**
@@ -29,7 +24,17 @@ object UserSession {
      */
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        _userId = prefs.getString(KEY_USER_ID, null)
+        _userId = prefs?.getString(KEY_USER_ID, null)
+    }
+    
+    /**
+     * Garante que prefs está inicializado
+     */
+    private fun ensurePrefs(context: Context? = null): android.content.SharedPreferences {
+        if (prefs == null && context != null) {
+            prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
+        return prefs ?: throw IllegalStateException("UserSession não foi inicializado. Chame init() primeiro.")
     }
     
     /**
@@ -37,7 +42,7 @@ object UserSession {
      */
     fun saveSession(userId: String, token: String, email: String? = null, name: String? = null) {
         _userId = userId
-        prefs.edit().apply {
+        ensurePrefs().edit().apply {
             putString(KEY_USER_ID, userId)
             putString(KEY_ACCESS_TOKEN, token)
             email?.let { putString(KEY_USER_EMAIL, it) }
@@ -47,18 +52,28 @@ object UserSession {
     }
     
     /**
+     * Salva a sessão com contexto (para quando init() não foi chamado)
+     */
+    fun saveSession(context: Context, userId: String, token: String, email: String? = null, name: String? = null) {
+        if (prefs == null) {
+            prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
+        saveSession(userId, token, email, name)
+    }
+    
+    /**
      * Define o usuário logado. Chamado após login bem-sucedido.
      */
     fun setUserId(userId: String) {
         _userId = userId
-        prefs.edit().putString(KEY_USER_ID, userId).apply()
+        ensurePrefs().edit().putString(KEY_USER_ID, userId).apply()
     }
     
     /**
      * Define o email do usuário logado.
      */
     fun setUserEmail(email: String) {
-        prefs.edit().putString(KEY_USER_EMAIL, email).apply()
+        ensurePrefs().edit().putString(KEY_USER_EMAIL, email).apply()
     }
     
     /**
@@ -78,17 +93,17 @@ object UserSession {
     /**
      * Retorna o token de acesso.
      */
-    fun getToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
+    fun getToken(): String? = ensurePrefs().getString(KEY_ACCESS_TOKEN, null)
     
     /**
      * Retorna o email do usuário logado.
      */
-    fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
+    fun getUserEmail(): String? = ensurePrefs().getString(KEY_USER_EMAIL, null)
     
     /**
      * Retorna o nome do usuário.
      */
-    fun getUserName(): String? = prefs.getString(KEY_USER_NAME, null)
+    fun getUserName(): String? = ensurePrefs().getString(KEY_USER_NAME, null)
     
     /**
      * Verifica se há um usuário logado.
@@ -100,13 +115,13 @@ object UserSession {
      */
     fun clear() {
         _userId = null
-        prefs.edit().clear().apply()
+        ensurePrefs().edit().clear().apply()
     }
     
     /**
      * Atualiza o userId em memória (caso tenha sido alterado externamente)
      */
     fun refresh() {
-        _userId = prefs.getString(KEY_USER_ID, null)
+        _userId = ensurePrefs().getString(KEY_USER_ID, null)
     }
 }
