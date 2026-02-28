@@ -10,7 +10,8 @@
         android:label="Bookash"
         android:supportsRtl="true"
         android:theme="@style/Theme.Bookash"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config">
         
         <!-- Onboarding - Tela inicial -->
         <activity

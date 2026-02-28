@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permite todas as conexões (para desenvolvimento) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Configuração específica para o Supabase -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">supabase.co</domain>
+        <domain includeSubdomains="true">gqbxasjoxxslpaxjqfeg.supabase.co</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>
