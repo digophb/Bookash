@@ -48,7 +48,8 @@ class CategoriesActivity : AppCompatActivity() {
 
     private fun loadCategories() {
         lifecycleScope.launch {
-            val loadedCategories = SupabaseService.getCategories()
+            val userId = UserSession.userId
+            val loadedCategories = SupabaseService.getCategories(userId)
             categories.clear()
             categories.addAll(loadedCategories)
             

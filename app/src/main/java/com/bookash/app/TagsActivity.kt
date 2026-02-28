@@ -19,10 +19,14 @@ class TagsActivity : AppCompatActivity() {
     
     private val tags = mutableListOf<Tag>()
     private lateinit var tagAdapter: TagAdapter
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tags)
+        
+        // Obter userId do UserSession
+        userId = UserSession.getUserId()
 
         tagsRecycler = findViewById(R.id.tagsRecycler)
         fabAddTag = findViewById(R.id.fabAddTag)
@@ -47,8 +51,14 @@ class TagsActivity : AppCompatActivity() {
     }
 
     private fun loadTags() {
+        if (userId == null) {
+            emptyState.visibility = View.VISIBLE
+            tagsRecycler.visibility = View.GONE
+            return
+        }
+        
         lifecycleScope.launch {
-            val loadedTags = SupabaseService.getTags()
+            val loadedTags = SupabaseService.getTags(userId!!)
             tags.clear()
             tags.addAll(loadedTags)
             

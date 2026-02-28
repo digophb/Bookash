@@ -25,16 +25,20 @@ object SupabaseService {
     
     // ============== CATEGORIES ==============
     
-    suspend fun getCategories(type: String? = null): List<Category> = withContext(Dispatchers.IO) {
+    /**
+     * Busca categorias do usuário logado.
+     * IMPORTANTE: Sempre filtra por user_id para isolamento de dados.
+     */
+    suspend fun getCategories(userId: String, type: String? = null): List<Category> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         val filter = type ?: "all"
-        Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (filtro: $filter)")
+        Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
             val endpoint = if (type != null) {
-                "$BASE_URL/rest/v1/categories?type=eq.$type&select=*"
+                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&type=eq.$type&select=*"
             } else {
-                "$BASE_URL/rest/v1/categories?select=*"
+                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&select=*"
             }
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -61,9 +65,13 @@ object SupabaseService {
         }
     }
     
-    suspend fun saveCategory(category: Category): Boolean = withContext(Dispatchers.IO) {
+    /**
+     * Salva uma nova categoria para o usuário logado.
+     * IMPORTANTE: Inclui user_id para garantir propriedade do dado.
+     */
+    suspend fun saveCategory(category: Category, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] CREATE - Iniciando: name='${category.name}', type=${category.type}")
+        Log.d(TAG, "[CATEGORIES] CREATE - Iniciando: name='${category.name}', type=${category.type}, userId=$userId")
         
         try {
             val conn = URL("$BASE_URL/rest/v1/categories").openConnection() as HttpURLConnection
@@ -74,7 +82,7 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
-            val body = """{"name":"${category.name}","type":"${category.type}","color":"${category.color}","icon":"${category.icon}"}"""
+            val body = """{"name":"${category.name}","type":"${category.type}","color":"${category.color}","icon":"${category.icon}","user_id":"$userId"}"""
             conn.outputStream.write(body.toByteArray())
             
             val responseCode = conn.responseCode
@@ -230,13 +238,17 @@ object SupabaseService {
     
     // ============== ACCOUNTS ==============
     
-    suspend fun getAccounts(archived: Boolean = false): List<Account> = withContext(Dispatchers.IO) {
+    /**
+     * Busca contas do usuário logado.
+     * IMPORTANTE: Sempre filtra por user_id para isolamento de dados.
+     */
+    suspend fun getAccounts(userId: String, archived: Boolean = false): List<Account> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         val filter = if (archived) "arquivadas" else "ativas"
-        Log.d(TAG, "[ACCOUNTS] GET - Iniciando busca (filtro: $filter)")
+        Log.d(TAG, "[ACCOUNTS] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
-            val endpoint = "$BASE_URL/rest/v1/accounts?is_archived=eq.$archived&select=*&order=created_at.desc"
+            val endpoint = "$BASE_URL/rest/v1/accounts?user_id=eq.$userId&is_archived=eq.$archived&select=*&order=created_at.desc"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -262,9 +274,13 @@ object SupabaseService {
         }
     }
     
-    suspend fun saveAccount(account: Account): Boolean = withContext(Dispatchers.IO) {
+    /**
+     * Salva uma nova conta para o usuário logado.
+     * IMPORTANTE: Inclui user_id para garantir propriedade do dado.
+     */
+    suspend fun saveAccount(account: Account, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[ACCOUNTS] CREATE - Iniciando: name='${account.name}', type=${account.type}")
+        Log.d(TAG, "[ACCOUNTS] CREATE - Iniciando: name='${account.name}', type=${account.type}, userId=$userId")
         
         try {
             val conn = URL("$BASE_URL/rest/v1/accounts").openConnection() as HttpURLConnection
@@ -275,7 +291,7 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
-            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}"}"""
+            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}","user_id":"$userId"}"""
             conn.outputStream.write(body.toByteArray())
             
             val responseCode = conn.responseCode

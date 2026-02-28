@@ -55,7 +55,8 @@ class AccountsActivity : AppCompatActivity() {
 
     private fun loadAccounts() {
         lifecycleScope.launch {
-            val loadedAccounts = SupabaseService.getAccounts(archived = false)
+            val userId = UserSession.userId
+            val loadedAccounts = SupabaseService.getAccounts(userId, archived = false)
             accounts.clear()
             accounts.addAll(loadedAccounts)
             
@@ -110,7 +111,8 @@ class AccountsActivity : AppCompatActivity() {
     
     private fun showArchivedAccountsBottomSheet() {
         lifecycleScope.launch {
-            val archivedAccounts = SupabaseService.getAccounts(archived = true)
+            val userId = UserSession.userId
+            val archivedAccounts = SupabaseService.getAccounts(userId, archived = true)
             
             if (archivedAccounts.isEmpty()) {
                 ToastManager.showInfo(this@AccountsActivity, "Nenhuma conta arquivada")

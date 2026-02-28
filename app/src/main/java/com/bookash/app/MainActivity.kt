@@ -39,6 +39,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Inicializar UserSession
+        UserSession.init(this)
+        
         setContentView(R.layout.activity_main)
 
         initViews()
@@ -237,7 +241,8 @@ class MainActivity : AppCompatActivity() {
         
         // Calculate balance from active accounts
         lifecycleScope.launch {
-            val activeAccounts = SupabaseService.getAccounts(archived = false)
+            val userId = UserSession.userId
+            val activeAccounts = SupabaseService.getAccounts(userId, archived = false)
             val accountsBalance = activeAccounts.sumOf { it.balance }
             
             val balance = totalIncome - totalExpense + accountsBalance

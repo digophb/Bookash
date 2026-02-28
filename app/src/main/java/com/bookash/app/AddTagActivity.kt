@@ -28,10 +28,14 @@ class AddTagActivity : AppCompatActivity() {
 
     private var selectedColor = "#357266"
     private var editingTagId: String? = null
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_tag)
+        
+        // Obter userId do UserSession
+        userId = UserSession.getUserId()
 
         initViews()
         setupAdapters()
@@ -116,12 +120,17 @@ class AddTagActivity : AppCompatActivity() {
             ToastManager.showWarning(this, "Digite um nome para a tag")
             return
         }
+        
+        if (userId == null) {
+            ToastManager.showError(this, "Erro: usuário não identificado")
+            return
+        }
 
         btnSave.isEnabled = false
 
         lifecycleScope.launch {
             // Verificar se já existe tag com mesmo nome
-            val exists = SupabaseService.tagExists(name, editingTagId)
+            val exists = SupabaseService.tagExists(name, userId!!, editingTagId)
             
             if (exists) {
                 btnSave.isEnabled = true
@@ -138,7 +147,7 @@ class AddTagActivity : AppCompatActivity() {
             val success = if (editingTagId != null) {
                 SupabaseService.updateTag(tag)
             } else {
-                SupabaseService.saveTag(tag)
+                SupabaseService.saveTag(tag, userId!!)
             }
 
             btnSave.isEnabled = true

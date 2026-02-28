@@ -17,7 +17,9 @@ object UserSession {
     
     private const val PREFS_NAME = "bookash_session"
     private const val KEY_USER_ID = "user_id"
+    private const val KEY_ACCESS_TOKEN = "access_token"
     private const val KEY_USER_EMAIL = "user_email"
+    private const val KEY_USER_NAME = "user_name"
     
     private lateinit var prefs: SharedPreferences
     private var _userId: String? = null
@@ -28,6 +30,20 @@ object UserSession {
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         _userId = prefs.getString(KEY_USER_ID, null)
+    }
+    
+    /**
+     * Salva os dados do usuário após login/registro.
+     */
+    fun saveSession(userId: String, token: String, email: String? = null, name: String? = null) {
+        _userId = userId
+        prefs.edit().apply {
+            putString(KEY_USER_ID, userId)
+            putString(KEY_ACCESS_TOKEN, token)
+            email?.let { putString(KEY_USER_EMAIL, it) }
+            name?.let { putString(KEY_USER_NAME, it) }
+            apply()
+        }
     }
     
     /**
@@ -60,9 +76,19 @@ object UserSession {
     }
     
     /**
+     * Retorna o token de acesso.
+     */
+    fun getToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
+    
+    /**
      * Retorna o email do usuário logado.
      */
     fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
+    
+    /**
+     * Retorna o nome do usuário.
+     */
+    fun getUserName(): String? = prefs.getString(KEY_USER_NAME, null)
     
     /**
      * Verifica se há um usuário logado.
