@@ -1,5 +1,6 @@
 package com.bookash.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.TextView
@@ -165,13 +166,12 @@ class AddCategoryActivity : AppCompatActivity() {
             btnSave.isEnabled = true
 
             if (success) {
-                val message = if (editingCategoryId != null) {
-                    "Categoria \"${category.name}\" atualizada"
-                } else {
-                    "Categoria \"${category.name}\" criada"
+                // Pass result data to parent activity for toast display
+                val resultIntent = Intent().apply {
+                    putExtra("category_action", if (editingCategoryId != null) "edit" else "create")
+                    putExtra("category_name", category.name)
                 }
-                ToastManager.showSuccess(this@AddCategoryActivity, message)
-                setResult(RESULT_OK)
+                setResult(RESULT_OK, resultIntent)
                 finish()
             } else {
                 ToastManager.showError(this@AddCategoryActivity, "Erro ao salvar categoria")

@@ -108,6 +108,17 @@ class CategoriesActivity : AppCompatActivity() {
         
         if (requestCode == REQUEST_ADD_CATEGORY && resultCode == RESULT_OK) {
             loadCategories()
+            
+            // Show toast based on action
+            data?.let {
+                val action = it.getStringExtra("category_action")
+                val categoryName = it.getStringExtra("category_name") ?: "Categoria"
+                
+                when (action) {
+                    "create" -> ToastManager.showSuccess(this, "Categoria \"$categoryName\" criada")
+                    "edit" -> ToastManager.showInfo(this, "Categoria \"$categoryName\" atualizada")
+                }
+            }
         }
     }
     
