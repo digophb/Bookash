@@ -119,8 +119,8 @@ class AddCategoryActivity : AppCompatActivity() {
             // Set selected icon
             iconAdapter.setSelectedIcon(icon)
         } else {
-            // Create mode - default to expense
-            typeToggle.check(R.id.btnExpense)
+            // Create mode - default to income (Receita)
+            typeToggle.check(R.id.btnIncome)
         }
     }
 
