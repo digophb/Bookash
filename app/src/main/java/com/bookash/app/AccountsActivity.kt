@@ -20,10 +20,13 @@ class AccountsActivity : AppCompatActivity() {
     
     private val accounts = mutableListOf<Account>()
     private lateinit var accountAdapter: AccountAdapter
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_accounts)
+        
+        userId = UserSession.getUserId()
 
         accountsRecycler = findViewById(R.id.accountsRecycler)
         fabAddAccount = findViewById(R.id.fabAddAccount)
@@ -54,9 +57,14 @@ class AccountsActivity : AppCompatActivity() {
     }
 
     private fun loadAccounts() {
+        if (userId == null) {
+            emptyState.visibility = View.VISIBLE
+            tagsRecycler.visibility = View.GONE
+            return
+        }
+        
         lifecycleScope.launch {
-            val userId = UserSession.userId
-            val loadedAccounts = SupabaseService.getAccounts(userId, archived = false)
+            val loadedAccounts = SupabaseService.getAccounts(userId!!, archived = false)
             accounts.clear()
             accounts.addAll(loadedAccounts)
             
@@ -111,7 +119,7 @@ class AccountsActivity : AppCompatActivity() {
     
     private fun showArchivedAccountsBottomSheet() {
         lifecycleScope.launch {
-            val userId = UserSession.userId
+            val userId = userId!!
             val archivedAccounts = SupabaseService.getAccounts(userId, archived = true)
             
             if (archivedAccounts.isEmpty()) {

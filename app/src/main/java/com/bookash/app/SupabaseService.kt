@@ -130,7 +130,7 @@ object SupabaseService {
         }
     }
     
-    suspend fun updateCategory(category: Category): Boolean = withContext(Dispatchers.IO) {
+    suspend fun updateCategory(category: Category, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}'")
         
@@ -164,16 +164,19 @@ object SupabaseService {
     }
     
     /**
-     * Verifica se já existe uma categoria com o mesmo nome e tipo.
+     * Verifica se já existe uma categoria com o mesmo nome e tipo para o usuário.
      * Ignora a categoria com o ID fornecido (útil para edição).
      */
-    suspend fun categoryExists(name: String, type: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun categoryExists(name: String, type: String, excludeId: String? = null, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] EXISTS - Verificando: name='$name', type=$type")
+        Log.d(TAG, "[CATEGORIES] EXISTS - Verificando: name='$name', type=$type, userId=$userId")
         
         try {
             // Busca categorias com o mesmo nome (case-insensitive) e tipo
-            val endpoint = "$BASE_URL/rest/v1/categories?name=ilike.$name&type=eq.$type&select=id"
+            var endpoint = "$BASE_URL/rest/v1/categories?name=ilike.$name&type=eq.$type&select=id"
+            if (userId != null) {
+                endpoint += "&user_id=eq.$userId"
+            }
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -311,7 +314,7 @@ object SupabaseService {
         }
     }
     
-    suspend fun updateAccount(account: Account): Boolean = withContext(Dispatchers.IO) {
+    suspend fun updateAccount(account: Account, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[ACCOUNTS] UPDATE - Iniciando: id=${account.id}, name='${account.name}'")
         

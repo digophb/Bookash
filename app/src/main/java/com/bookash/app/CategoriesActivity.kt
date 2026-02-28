@@ -19,10 +19,13 @@ class CategoriesActivity : AppCompatActivity() {
     
     private val categories = mutableListOf<Category>()
     private lateinit var categoryAdapter: CategoryAdapter
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_categories)
+        
+        userId = UserSession.getUserId()
 
         categoriesRecycler = findViewById(R.id.categoriesRecycler)
         fabAddCategory = findViewById(R.id.fabAddCategory)
@@ -47,9 +50,14 @@ class CategoriesActivity : AppCompatActivity() {
     }
 
     private fun loadCategories() {
+        if (userId == null) {
+            emptyState.visibility = View.VISIBLE
+            categoriesRecycler.visibility = View.GONE
+            return
+        }
+        
         lifecycleScope.launch {
-            val userId = UserSession.userId
-            val loadedCategories = SupabaseService.getCategories(userId)
+            val loadedCategories = SupabaseService.getCategories(userId!!)
             categories.clear()
             categories.addAll(loadedCategories)
             

@@ -36,12 +36,14 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var transactionAdapter: TransactionAdapter
     private val transactions = mutableListOf<Transaction>()
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         // Inicializar UserSession
         UserSession.init(this)
+        userId = UserSession.getUserId()
         
         setContentView(R.layout.activity_main)
 
@@ -241,8 +243,7 @@ class MainActivity : AppCompatActivity() {
         
         // Calculate balance from active accounts
         lifecycleScope.launch {
-            val userId = UserSession.userId
-            val activeAccounts = SupabaseService.getAccounts(userId, archived = false)
+            val activeAccounts = SupabaseService.getAccounts(userId!!, archived = false)
             val accountsBalance = activeAccounts.sumOf { it.balance }
             
             val balance = totalIncome - totalExpense + accountsBalance

@@ -41,10 +41,13 @@ class AddTransactionActivity : AppCompatActivity() {
     
     private val categories = mutableListOf<Category>()
     private val accounts = mutableListOf<Account>()
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_transaction)
+        
+        userId = UserSession.getUserId()
 
         initViews()
         setupTypeToggle()
@@ -75,7 +78,7 @@ class AddTransactionActivity : AppCompatActivity() {
     
     private fun loadData() {
         lifecycleScope.launch {
-            val userId = UserSession.userId
+            userId
             
             // Carregar categorias
             val loadedCategories = SupabaseService.getCategories(userId, "income")
@@ -109,7 +112,7 @@ class AddTransactionActivity : AppCompatActivity() {
     private fun setupTypeToggle() {
         typeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
-                val userId = UserSession.userId
+                userId
                 when (checkedId) {
                     R.id.btnIncome -> {
                         transactionType = "income"

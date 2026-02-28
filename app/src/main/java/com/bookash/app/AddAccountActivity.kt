@@ -32,10 +32,13 @@ class AddAccountActivity : AppCompatActivity() {
     private var selectedBank = "wallet"
     private var selectedType = "corrente"
     private var editingAccountId: String? = null
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_account)
+        
+        userId = UserSession.getUserId()
 
         initViews()
         setupAdapters()
@@ -145,8 +148,6 @@ class AddAccountActivity : AppCompatActivity() {
             .toDoubleOrNull() ?: 0.0
 
         btnSave.isEnabled = false
-        
-        val userId = UserSession.userId
 
         lifecycleScope.launch {
             val account = Account(
@@ -160,7 +161,7 @@ class AddAccountActivity : AppCompatActivity() {
             val success = if (editingAccountId != null) {
                 SupabaseService.updateAccount(account, userId)
             } else {
-                SupabaseService.saveAccount(account, userId)
+                SupabaseService.saveAccount(account, userId!!)
             }
 
             btnSave.isEnabled = true

@@ -30,10 +30,13 @@ class AddCategoryActivity : AppCompatActivity() {
     private var selectedIcon = "category"
     private var editingCategoryId: String? = null
     private var editingCategoryType: String = "expense"
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_category)
+        
+        userId = UserSession.getUserId()
 
         initViews()
         setupAdapters()
@@ -134,8 +137,6 @@ class AddCategoryActivity : AppCompatActivity() {
         }
 
         btnSave.isEnabled = false
-        
-        val userId = UserSession.userId
 
         lifecycleScope.launch {
             // Verificar se já existe categoria com mesmo nome e tipo
@@ -162,7 +163,7 @@ class AddCategoryActivity : AppCompatActivity() {
             val success = if (editingCategoryId != null) {
                 SupabaseService.updateCategory(category, userId)
             } else {
-                SupabaseService.saveCategory(category, userId)
+                SupabaseService.saveCategory(category, userId!!)
             }
 
             btnSave.isEnabled = true
