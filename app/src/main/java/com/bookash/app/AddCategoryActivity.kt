@@ -129,7 +129,7 @@ class AddCategoryActivity : AppCompatActivity() {
         val name = nameInput.text.toString().trim()
         
         if (name.isEmpty()) {
-            Toast.makeText(this, "Digite um nome para a categoria", Toast.LENGTH_SHORT).show()
+            ToastManager.showWarning(this, "Digite um nome para a categoria")
             return
         }
 
@@ -167,14 +167,16 @@ class AddCategoryActivity : AppCompatActivity() {
             btnSave.isEnabled = true
 
             if (success) {
+                val message = if (editingCategoryId != null) {
+                    "Categoria \"${category.name}\" atualizada"
+                } else {
+                    "Categoria \"${category.name}\" criada"
+                }
+                ToastManager.showSuccess(this@AddCategoryActivity, message)
                 setResult(RESULT_OK)
                 finish()
             } else {
-                Toast.makeText(
-                    this@AddCategoryActivity,
-                    "Erro ao salvar categoria",
-                    Toast.LENGTH_SHORT
-                ).show()
+                ToastManager.showError(this@AddCategoryActivity, "Erro ao salvar categoria")
             }
         }
     }

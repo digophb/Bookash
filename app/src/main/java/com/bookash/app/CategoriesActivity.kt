@@ -94,10 +94,10 @@ class CategoriesActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val success = SupabaseService.deleteCategory(category.id)
             if (success) {
-                Toast.makeText(this@CategoriesActivity, "Categoria excluída", Toast.LENGTH_SHORT).show()
+                ToastManager.showWarning(this@CategoriesActivity, "Categoria \"${category.name}\" excluída")
                 loadCategories()
             } else {
-                Toast.makeText(this@CategoriesActivity, "Erro ao excluir", Toast.LENGTH_SHORT).show()
+                ToastManager.showError(this@CategoriesActivity, "Erro ao excluir categoria")
             }
         }
     }

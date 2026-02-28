@@ -278,11 +278,16 @@ class AddTransactionActivity : AppCompatActivity() {
             val success = SupabaseService.saveTransaction(transaction, token)
             
             if (success) {
-                Toast.makeText(this@AddTransactionActivity, "Transação salva!", Toast.LENGTH_SHORT).show()
+                val typeLabel = when (transactionType) {
+                    "income" -> "Receita"
+                    "expense" -> "Despesa"
+                    else -> "Transferência"
+                }
+                ToastManager.showSuccess(this@AddTransactionActivity, "$typeLabel \"${description}\" salva")
                 setResult(RESULT_OK)
                 finish()
             } else {
-                Toast.makeText(this@AddTransactionActivity, "Erro ao salvar transação", Toast.LENGTH_SHORT).show()
+                ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
             }
         }
     }

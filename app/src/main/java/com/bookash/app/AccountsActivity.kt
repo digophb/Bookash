@@ -113,7 +113,7 @@ class AccountsActivity : AppCompatActivity() {
             val archivedAccounts = SupabaseService.getAccounts(archived = true)
             
             if (archivedAccounts.isEmpty()) {
-                Toast.makeText(this@AccountsActivity, "Nenhuma conta arquivada", Toast.LENGTH_SHORT).show()
+                ToastManager.showInfo(this@AccountsActivity, "Nenhuma conta arquivada")
                 return@launch
             }
             
@@ -144,10 +144,10 @@ class AccountsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val success = SupabaseService.archiveAccount(account.id)
             if (success) {
-                Toast.makeText(this@AccountsActivity, "Conta arquivada", Toast.LENGTH_SHORT).show()
+                ToastManager.showWarning(this@AccountsActivity, "Conta \"${account.name}\" arquivada")
                 loadAccounts()
             } else {
-                Toast.makeText(this@AccountsActivity, "Erro ao arquivar", Toast.LENGTH_SHORT).show()
+                ToastManager.showError(this@AccountsActivity, "Erro ao arquivar conta")
             }
         }
     }
@@ -156,10 +156,10 @@ class AccountsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val success = SupabaseService.reactivateAccount(account.id)
             if (success) {
-                Toast.makeText(this@AccountsActivity, "Conta reativada!", Toast.LENGTH_SHORT).show()
+                ToastManager.showSuccess(this@AccountsActivity, "Conta \"${account.name}\" reativada")
                 loadAccounts()
             } else {
-                Toast.makeText(this@AccountsActivity, "Erro ao reativar", Toast.LENGTH_SHORT).show()
+                ToastManager.showError(this@AccountsActivity, "Erro ao reativar conta")
             }
         }
     }
@@ -168,10 +168,10 @@ class AccountsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val success = SupabaseService.deleteAccount(account.id)
             if (success) {
-                Toast.makeText(this@AccountsActivity, "Conta excluída", Toast.LENGTH_SHORT).show()
+                ToastManager.showWarning(this@AccountsActivity, "Conta \"${account.name}\" excluída")
                 loadAccounts()
             } else {
-                Toast.makeText(this@AccountsActivity, "Erro ao excluir", Toast.LENGTH_SHORT).show()
+                ToastManager.showError(this@AccountsActivity, "Erro ao excluir conta")
             }
         }
     }

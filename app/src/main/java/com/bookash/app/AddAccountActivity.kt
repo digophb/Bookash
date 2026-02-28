@@ -136,7 +136,7 @@ class AddAccountActivity : AppCompatActivity() {
         val name = nameInput.text.toString().trim()
 
         if (name.isEmpty()) {
-            Toast.makeText(this, "Digite um nome para a conta", Toast.LENGTH_SHORT).show()
+            ToastManager.showWarning(this, "Digite um nome para a conta")
             return
         }
 
@@ -164,14 +164,16 @@ class AddAccountActivity : AppCompatActivity() {
             btnSave.isEnabled = true
 
             if (success) {
+                val message = if (editingAccountId != null) {
+                    "Conta \"${account.name}\" atualizada"
+                } else {
+                    "Conta \"${account.name}\" criada"
+                }
+                ToastManager.showSuccess(this@AddAccountActivity, message)
                 setResult(RESULT_OK)
                 finish()
             } else {
-                Toast.makeText(
-                    this@AddAccountActivity,
-                    "Erro ao salvar conta",
-                    Toast.LENGTH_SHORT
-                ).show()
+                ToastManager.showError(this@AddAccountActivity, "Erro ao salvar conta")
             }
         }
     }

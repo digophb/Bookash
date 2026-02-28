@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="6dp"
+    app:cardPreventCornerOverlap="false">
+
+    <LinearLayout
+        android:id="@+id/toastContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp"
+        android:minWidth="280dp"
+        android:maxWidth="400dp"
+        android:background="@drawable/bg_toast_success">
+
+        <!-- Icon -->
+        <ImageView
+            android:id="@+id/toastIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_toast_check"
+            android:layout_marginEnd="12dp" />
+
+        <!-- Message -->
+        <TextView
+            android:id="@+id/toastMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mensagem do toast"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:maxLines="3"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
