@@ -3,11 +3,11 @@
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
-    <!-- Nubank - Roxo -->
+    <!-- Banrisul - Azul -->
     <path
-        android:fillColor="#8A05BE"
+        android:fillColor="#005CA9"
         android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,12L16,36h4l1.5,-5h5l1.5,5h4L24,12zM24,27h-2l2,-6 2,6h-2z"/>
+        android:pathData="M14,18h8v4h-4v2h4v4h-4v2h8v4h-12V18zM26,18h8v12h-8v-12z"/>
 </vector>

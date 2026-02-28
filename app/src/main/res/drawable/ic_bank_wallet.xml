@@ -3,11 +3,11 @@
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
-    <!-- Nubank - Roxo -->
+    <!-- Wallet / Carteira genérica -->
     <path
-        android:fillColor="#8A05BE"
+        android:fillColor="#357266"
         android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,12L16,36h4l1.5,-5h5l1.5,5h4L24,12zM24,27h-2l2,-6 2,6h-2z"/>
+        android:pathData="M36,16H12c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h24c1.1,0 2,-0.9 2,-2V18C38,16.9 37.1,16 36,16zM36,28H12v-8h24V28zM34,22h-8v4h8V22z"/>
 </vector>

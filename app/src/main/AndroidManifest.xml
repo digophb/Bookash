@@ -62,6 +62,12 @@
             android:name=".AccountsActivity"
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
+        
+        <!-- Adicionar/Editar Conta -->
+        <activity
+            android:name=".AddAccountActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
             
     </application>
 
