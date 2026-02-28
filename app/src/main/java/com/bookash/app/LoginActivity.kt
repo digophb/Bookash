@@ -102,6 +102,9 @@ class LoginActivity : AppCompatActivity() {
                         }
                         prefs.apply()
                         
+                        // Inicializar UserSession
+                        UserSession.saveSession(userId ?: "", token, userEmail, userName)
+                        
                         token
                     } else {
                         null

@@ -145,6 +145,8 @@ class AddAccountActivity : AppCompatActivity() {
             .toDoubleOrNull() ?: 0.0
 
         btnSave.isEnabled = false
+        
+        val userId = UserSession.userId
 
         lifecycleScope.launch {
             val account = Account(
@@ -156,9 +158,9 @@ class AddAccountActivity : AppCompatActivity() {
             )
 
             val success = if (editingAccountId != null) {
-                SupabaseService.updateAccount(account)
+                SupabaseService.updateAccount(account, userId)
             } else {
-                SupabaseService.saveAccount(account)
+                SupabaseService.saveAccount(account, userId)
             }
 
             btnSave.isEnabled = true

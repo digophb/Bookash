@@ -75,14 +75,16 @@ class AddTransactionActivity : AppCompatActivity() {
     
     private fun loadData() {
         lifecycleScope.launch {
+            val userId = UserSession.userId
+            
             // Carregar categorias
-            val loadedCategories = SupabaseService.getCategories("income")
+            val loadedCategories = SupabaseService.getCategories(userId, "income")
             categories.clear()
             categories.addAll(loadedCategories)
             updateCategoryDropdown()
             
             // Carregar contas
-            val loadedAccounts = SupabaseService.getAccounts()
+            val loadedAccounts = SupabaseService.getAccounts(userId)
             accounts.clear()
             accounts.addAll(loadedAccounts)
             updateAccountDropdown()
@@ -107,6 +109,7 @@ class AddTransactionActivity : AppCompatActivity() {
     private fun setupTypeToggle() {
         typeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
+                val userId = UserSession.userId
                 when (checkedId) {
                     R.id.btnIncome -> {
                         transactionType = "income"
@@ -114,7 +117,7 @@ class AddTransactionActivity : AppCompatActivity() {
                         receivedSwitch.text = "Recebido"
                         updateColors(R.color.income)
                         lifecycleScope.launch {
-                            val cats = SupabaseService.getCategories("income")
+                            val cats = SupabaseService.getCategories(userId, "income")
                             categories.clear()
                             categories.addAll(cats)
                             updateCategoryDropdown()
@@ -126,7 +129,7 @@ class AddTransactionActivity : AppCompatActivity() {
                         receivedSwitch.text = "Pago"
                         updateColors(R.color.expense)
                         lifecycleScope.launch {
-                            val cats = SupabaseService.getCategories("expense")
+                            val cats = SupabaseService.getCategories(userId, "expense")
                             categories.clear()
                             categories.addAll(cats)
                             updateCategoryDropdown()

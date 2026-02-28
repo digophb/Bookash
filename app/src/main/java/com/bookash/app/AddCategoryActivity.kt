@@ -134,10 +134,12 @@ class AddCategoryActivity : AppCompatActivity() {
         }
 
         btnSave.isEnabled = false
+        
+        val userId = UserSession.userId
 
         lifecycleScope.launch {
             // Verificar se já existe categoria com mesmo nome e tipo
-            val exists = SupabaseService.categoryExists(name, editingCategoryType, editingCategoryId)
+            val exists = SupabaseService.categoryExists(name, editingCategoryType, editingCategoryId, userId)
             
             if (exists) {
                 btnSave.isEnabled = true
@@ -158,9 +160,9 @@ class AddCategoryActivity : AppCompatActivity() {
             )
 
             val success = if (editingCategoryId != null) {
-                SupabaseService.updateCategory(category)
+                SupabaseService.updateCategory(category, userId)
             } else {
-                SupabaseService.saveCategory(category)
+                SupabaseService.saveCategory(category, userId)
             }
 
             btnSave.isEnabled = true

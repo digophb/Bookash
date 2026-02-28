@@ -116,6 +116,17 @@ class RegisterActivity : AppCompatActivity() {
                         Log.d(TAG, "User ID: $userId")
                         
                         if (userId.isNotEmpty()) {
+                            // Salvar dados do usuário
+                            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit()
+                            prefs.putString("user_id", userId)
+                            prefs.putString("access_token", accessToken)
+                            prefs.putString("user_email", email)
+                            prefs.putString("user_name", name)
+                            prefs.apply()
+                            
+                            // Inicializar UserSession
+                            UserSession.saveSession(userId, accessToken, email, name)
+                            
                             // Passo 2: Inserir na tabela public.users
                             if (accessToken.isNotEmpty()) {
                                 try {
