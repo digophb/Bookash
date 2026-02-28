@@ -3,7 +3,6 @@ package com.bookash.app
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -142,11 +141,10 @@ class AddCategoryActivity : AppCompatActivity() {
             if (exists) {
                 btnSave.isEnabled = true
                 val typeLabel = if (editingCategoryType == "income") "Receita" else "Despesa"
-                Toast.makeText(
+                ToastManager.showWarning(
                     this@AddCategoryActivity,
-                    "Já existe uma categoria '$name' do tipo $typeLabel",
-                    Toast.LENGTH_LONG
-                ).show()
+                    "Já existe uma categoria '$name' do tipo $typeLabel"
+                )
                 return@launch
             }
             

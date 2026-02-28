@@ -3,6 +3,7 @@ package com.bookash.app
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -12,8 +13,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.cardview.widget.CardView
-import androidx.lifecycle.findViewTreeLifecycleOwner
 
 /**
  * ToastManager - Sistema de notificações toast customizado
@@ -26,6 +25,7 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
  */
 object ToastManager {
 
+    private const val TAG = "ToastManager"
     private const val MAX_TOASTS = 3
     private const val DEFAULT_DURATION: Long = 4000
 
@@ -41,13 +41,45 @@ object ToastManager {
         type: ToastType = ToastType.SUCCESS,
         duration: Long = DEFAULT_DURATION
     ) {
+        Log.d(TAG, "show() called - message: '$message', type: $type")
+
+        // Garantir que está na main thread
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            showToastInternal(context, message, type, duration)
+        } else {
+            handler.post {
+                showToastInternal(context, message, type, duration)
+            }
+        }
+    }
+
+    private fun showToastInternal(
+        context: Context,
+        message: String,
+        type: ToastType,
+        duration: Long
+    ) {
+        Log.d(TAG, "showToastInternal() - starting")
+
         // Encontrar o container root
-        val rootView = (context as? android.app.Activity)?.window?.decorView as? ViewGroup
-            ?: return
+        val activity = context as? android.app.Activity
+        if (activity == null) {
+            Log.e(TAG, "Context não é uma Activity - abortando")
+            return
+        }
+
+        val rootView = activity.window?.decorView as? ViewGroup
+        if (rootView == null) {
+            Log.e(TAG, "Não foi possível obter decorView - abortando")
+            return
+        }
+
+        Log.d(TAG, "rootView obtido: ${rootView::class.simpleName}")
 
         // Criar container de toasts se não existir
         var toastContainer = rootView.findViewWithTag<FrameLayout>("toast_container")
         if (toastContainer == null) {
+            Log.d(TAG, "Criando novo toast_container")
             toastContainer = FrameLayout(context).apply {
                 tag = "toast_container"
                 layoutParams = FrameLayout.LayoutParams(
@@ -55,22 +87,27 @@ object ToastManager {
                     FrameLayout.LayoutParams.MATCH_PARENT
                 ).apply {
                     gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                    bottomMargin = dpToPx(context, 80f)
+                    bottomMargin = dpToPx(context, 100f)
                     leftMargin = dpToPx(context, 16f)
                     rightMargin = dpToPx(context, 16f)
                 }
             }
             rootView.addView(toastContainer)
+            Log.d(TAG, "toast_container adicionado ao rootView")
+        } else {
+            Log.d(TAG, "toast_container já existe")
         }
 
         // Limitar quantidade de toasts visíveis
         if (activeToasts.size >= MAX_TOASTS) {
+            Log.d(TAG, "Limite de toasts atingido, removendo o mais antigo")
             val oldestToast = activeToasts.firstOrNull()
             oldestToast?.let { dismissToast(it, immediate = true) }
         }
 
         // Criar o toast view
         val toastView = createToastView(context, message, type)
+        Log.d(TAG, "Toast view criado")
 
         // Adicionar à lista de toasts ativos
         activeToasts.add(toastView)
@@ -83,13 +120,20 @@ object ToastManager {
             topMargin = dpToPx(context, 8f)
         }
         toastContainer.addView(toastView, toastLayoutParams)
+        Log.d(TAG, "Toast adicionado ao container. Total ativos: ${activeToasts.size}")
 
         // Animação de entrada
-        val enterAnimation = AnimationUtils.loadAnimation(context, R.anim.toast_enter)
-        toastView.startAnimation(enterAnimation)
+        try {
+            val enterAnimation = AnimationUtils.loadAnimation(context, R.anim.toast_enter)
+            toastView.startAnimation(enterAnimation)
+            Log.d(TAG, "Animação de entrada iniciada")
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao carregar animação de entrada", e)
+        }
 
         // Auto-dismiss
         handler.postDelayed({
+            Log.d(TAG, "Auto-dismiss triggered")
             dismissToast(toastView)
         }, duration)
     }
@@ -126,18 +170,25 @@ object ToastManager {
      * Dismiss um toast específico
      */
     private fun dismissToast(toastView: View, immediate: Boolean = false) {
+        Log.d(TAG, "dismissToast() - immediate: $immediate")
+        
         if (immediate) {
             removeToast(toastView)
         } else {
-            val exitAnimation = AnimationUtils.loadAnimation(toastView.context, R.anim.toast_exit)
-            exitAnimation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
-                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
-                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
-                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
-                    removeToast(toastView)
-                }
-            })
-            toastView.startAnimation(exitAnimation)
+            try {
+                val exitAnimation = AnimationUtils.loadAnimation(toastView.context, R.anim.toast_exit)
+                exitAnimation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                    override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                    override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                    override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                        removeToast(toastView)
+                    }
+                })
+                toastView.startAnimation(exitAnimation)
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro na animação de saída", e)
+                removeToast(toastView)
+            }
         }
     }
 
@@ -145,8 +196,16 @@ object ToastManager {
      * Remove o toast da view e da lista
      */
     private fun removeToast(toastView: View) {
+        Log.d(TAG, "removeToast() - removendo da lista")
         activeToasts.remove(toastView)
-        (toastView.parent as? ViewGroup)?.removeView(toastView)
+        
+        val parent = toastView.parent as? ViewGroup
+        if (parent != null) {
+            parent.removeView(toastView)
+            Log.d(TAG, "Toast removido do container. Total ativos: ${activeToasts.size}")
+        } else {
+            Log.w(TAG, "Toast não tinha parent")
+        }
     }
 
     /**
@@ -162,6 +221,8 @@ object ToastManager {
         val messageView = view.findViewById<TextView>(R.id.toastMessage)
 
         messageView.text = message
+
+        Log.d(TAG, "createToastView() - type: $type")
 
         when (type) {
             ToastType.SUCCESS -> {
@@ -184,6 +245,7 @@ object ToastManager {
 
         // Tornar clicável para dismiss manual
         view.setOnClickListener {
+            Log.d(TAG, "Toast clicado - dismiss manual")
             dismissToast(view)
         }
 
@@ -201,6 +263,7 @@ object ToastManager {
      * Limpa todos os toasts ativos
      */
     fun clearAll() {
+        Log.d(TAG, "clearAll() - limpando ${activeToasts.size} toasts")
         activeToasts.toList().forEach { dismissToast(it, immediate = true) }
     }
 }
