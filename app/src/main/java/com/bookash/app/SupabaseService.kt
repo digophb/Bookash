@@ -89,6 +89,51 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Verifica se já existe uma categoria com o mesmo nome e tipo.
+     * Ignora a categoria com o ID fornecido (útil para edição).
+     */
+    suspend fun categoryExists(name: String, type: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
+        try {
+            // Busca categorias com o mesmo nome (case-insensitive) e tipo
+            val endpoint = "$BASE_URL/rest/v1/categories?name=ilike.$name&type=eq.$type&select=id"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            if (conn.responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                
+                // Se não há resultados, não existe duplicata
+                if (jsonArray.length() == 0) {
+                    return@withContext false
+                }
+                
+                // Se estamos editando, ignorar a própria categoria
+                if (excludeId != null) {
+                    for (i in 0 until jsonArray.length()) {
+                        val json = jsonArray.getJSONObject(i)
+                        val foundId = json.optString("id")
+                        if (foundId != excludeId) {
+                            return@withContext true // Encontrou outra categoria com mesmo nome
+                        }
+                    }
+                    return@withContext false // Só encontrou a própria categoria
+                }
+                
+                return@withContext true // Encontrou duplicata
+            }
+            
+            false
+        } catch (e: Exception) {
+            android.util.Log.e("SupabaseService", "Erro ao verificar categoria duplicada", e)
+            false // Em caso de erro, permitir salvar para não bloquear o usuário
+        }
+    }
+    
     private fun parseCategories(jsonArray: JSONArray): List<Category> {
         val list = mutableListOf<Category>()
         for (i in 0 until jsonArray.length()) {

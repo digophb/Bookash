@@ -136,6 +136,20 @@ class AddCategoryActivity : AppCompatActivity() {
         btnSave.isEnabled = false
 
         lifecycleScope.launch {
+            // Verificar se já existe categoria com mesmo nome e tipo
+            val exists = SupabaseService.categoryExists(name, editingCategoryType, editingCategoryId)
+            
+            if (exists) {
+                btnSave.isEnabled = true
+                val typeLabel = if (editingCategoryType == "income") "Receita" else "Despesa"
+                Toast.makeText(
+                    this@AddCategoryActivity,
+                    "Já existe uma categoria '$name' do tipo $typeLabel",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@launch
+            }
+            
             val category = Category(
                 id = editingCategoryId ?: "",
                 name = name,
