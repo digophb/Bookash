@@ -4,11 +4,20 @@
     android:layout_height="wrap_content"
     android:padding="4dp">
 
-    <ImageView
+    <View
         android:id="@+id/colorCircle"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_gravity="center"
-        android:padding="8dp" />
+        android:background="@drawable/circle_color" />
+
+    <ImageView
+        android:id="@+id/checkIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center"
+        android:src="@drawable/ic_check"
+        android:tint="@color/white"
+        android:visibility="gone" />
 
 </FrameLayout>
