@@ -1,13 +1,15 @@
 package com.bookash.app
 
 import android.util.Log
-import io.github.jan.tennert.supabase.postgrest.from
-import io.github.jan.tennert.supabase.postgrest.query.filter.FilterOperation
-import io.github.jan.tennert.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.Json
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Serviço de comunicação com o Supabase usando SDK oficial.
@@ -24,39 +26,24 @@ object SupabaseService {
     
     // ============== CATEGORIES ==============
     
-    /**
-     * Busca categorias do usuário logado.
-     * IMPORTANTE: Sempre filtra por user_id para isolamento de dados.
-     */
     suspend fun getCategories(userId: String, type: String? = null): List<Category> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         val filter = type ?: "all"
         Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
-            val result = if (type != null) {
-                SupabaseClient.postgrest.from("categories")
-                    .select {
-                        filter {
-                            eq("user_id", userId)
-                            eq("type", type)
-                        }
+            val query = SupabaseClient.client.postgrest["categories"]
+                .select(columns = Columns.ALL) {
+                    filter("user_id", FilterOperator.EQ, userId)
+                    if (type != null) {
+                        filter("type", FilterOperator.EQ, type)
                     }
-                    .decodeList<CategoryDTO>()
-            } else {
-                SupabaseClient.postgrest.from("categories")
-                    .select {
-                        filter {
-                            eq("user_id", userId)
-                        }
-                    }
-                    .decodeList<CategoryDTO>()
-            }
+                }
             
-            val categories = result.map { it.toCategory() }
+            val result = query.decodeList<Category>()
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[CATEGORIES] GET - Sucesso: ${categories.size} categorias encontradas (${duration}ms)")
-            categories
+            Log.i(TAG, "[CATEGORIES] GET - Sucesso: ${result.size} categorias encontradas (${duration}ms)")
+            result
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] GET - Erro após ${duration}ms", e)
@@ -64,23 +51,13 @@ object SupabaseService {
         }
     }
     
-    /**
-     * Salva uma nova categoria para o usuário logado.
-     */
     suspend fun saveCategory(category: Category, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] CREATE - Iniciando: name='${category.name}', type=${category.type}, userId=$userId")
+        Log.d(TAG, "[CATEGORIES] CREATE - Iniciando: name='${category.name}', userId=$userId")
         
         try {
-            SupabaseClient.postgrest.from("categories").insert(
-                CategoryDTO(
-                    name = category.name,
-                    type = category.type,
-                    color = category.color,
-                    icon = category.icon,
-                    userId = userId
-                )
-            )
+            val newCategory = category.copy(userId = userId)
+            SupabaseClient.client.postgrest["categories"].insert(newCategory)
             
             val duration = System.currentTimeMillis() - startTime
             Log.i(TAG, "[CATEGORIES] CREATE - Sucesso: '${category.name}' criada (${duration}ms)")
@@ -92,39 +69,13 @@ object SupabaseService {
         }
     }
     
-    suspend fun deleteCategory(categoryId: String): Boolean = withContext(Dispatchers.IO) {
-        val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId")
-        
-        try {
-            SupabaseClient.postgrest.from("categories").delete {
-                filter { eq("id", categoryId) }
-            }
-            
-            val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[CATEGORIES] DELETE - Sucesso: id=$categoryId (${duration}ms)")
-            true
-        } catch (e: Exception) {
-            val duration = System.currentTimeMillis() - startTime
-            Log.e(TAG, "[CATEGORIES] DELETE - Erro ao excluir id=$categoryId após ${duration}ms", e)
-            false
-        }
-    }
-    
     suspend fun updateCategory(category: Category, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}'")
         
         try {
-            SupabaseClient.postgrest.from("categories").update(
-                CategoryDTO(
-                    name = category.name,
-                    type = category.type,
-                    color = category.color,
-                    icon = category.icon
-                )
-            ) {
-                filter { eq("id", category.id) }
+            SupabaseClient.client.postgrest["categories"].update(category) {
+                filter("id", FilterOperator.EQ, category.id)
             }
             
             val duration = System.currentTimeMillis() - startTime
@@ -137,29 +88,58 @@ object SupabaseService {
         }
     }
     
-    /**
-     * Verifica se já existe uma categoria com o mesmo nome e tipo para o usuário.
-     */
+    suspend fun deleteCategory(categoryId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId")
+        
+        try {
+            SupabaseClient.client.postgrest["categories"].delete {
+                filter("id", FilterOperator.EQ, categoryId)
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[CATEGORIES] DELETE - Sucesso: id=$categoryId (${duration}ms)")
+            true
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[CATEGORIES] DELETE - Erro ao excluir id=$categoryId após ${duration}ms", e)
+            false
+        }
+    }
+    
     suspend fun categoryExists(name: String, type: String, excludeId: String? = null, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[CATEGORIES] EXISTS - Verificando: name='$name', type=$type, userId=$userId")
         
         try {
-            val result = SupabaseClient.postgrest.from("categories")
-                .select {
-                    filter {
-                        ilike("name", name)
-                        eq("type", type)
-                        if (userId != null) eq("user_id", userId)
-                        if (excludeId != null) neq("id", excludeId)
+            val categories = SupabaseClient.client.postgrest["categories"]
+                .select(columns = Columns.list("id")) {
+                    filter("name", FilterOperator.ILIKE, name)
+                    filter("type", FilterOperator.EQ, type)
+                    if (userId != null) {
+                        filter("user_id", FilterOperator.EQ, userId)
                     }
-                }
-                .decodeList<CategoryDTO>()
+                }.decodeList<CategoryIdResult>()
             
-            val exists = result.isNotEmpty()
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[CATEGORIES] EXISTS - ${if (exists) "Duplicata encontrada" else "Não encontrada"} (${duration}ms)")
-            exists
+            
+            if (categories.isEmpty()) {
+                Log.d(TAG, "[CATEGORIES] EXISTS - Não encontrada (${duration}ms)")
+                return@withContext false
+            }
+            
+            if (excludeId != null) {
+                val foundOther = categories.any { it.id != excludeId }
+                if (foundOther) {
+                    Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada (${duration}ms)")
+                    return@withContext true
+                }
+                Log.d(TAG, "[CATEGORIES] EXISTS - Não há duplicata (excluindo self) (${duration}ms)")
+                return@withContext false
+            }
+            
+            Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] EXISTS - Erro após ${duration}ms", e)
@@ -169,26 +149,19 @@ object SupabaseService {
     
     // ============== ACCOUNTS ==============
     
-    /**
-     * Busca contas do usuário logado.
-     */
     suspend fun getAccounts(userId: String, archived: Boolean = false): List<Account> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         val filter = if (archived) "arquivadas" else "ativas"
         Log.d(TAG, "[ACCOUNTS] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
-            val result = SupabaseClient.postgrest.from("accounts")
-                .select {
-                    filter {
-                        eq("user_id", userId)
-                        eq("is_archived", archived)
-                    }
-                    order("created_at", order = io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
-                }
-                .decodeList<AccountDTO>()
+            val accounts = SupabaseClient.client.postgrest["accounts"]
+                .select(columns = Columns.ALL) {
+                    filter("user_id", FilterOperator.EQ, userId)
+                    filter("is_archived", FilterOperator.EQ, archived)
+                    order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING, nullsFirst = true)
+                }.decodeList<Account>()
             
-            val accounts = result.map { it.toAccount() }
             val duration = System.currentTimeMillis() - startTime
             Log.i(TAG, "[ACCOUNTS] GET - Sucesso: ${accounts.size} contas $filter encontradas (${duration}ms)")
             accounts
@@ -199,23 +172,13 @@ object SupabaseService {
         }
     }
     
-    /**
-     * Salva uma nova conta para o usuário logado.
-     */
     suspend fun saveAccount(account: Account, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[ACCOUNTS] CREATE - Iniciando: name='${account.name}', type=${account.type}, userId=$userId")
+        Log.d(TAG, "[ACCOUNTS] CREATE - Iniciando: name='${account.name}', userId=$userId")
         
         try {
-            SupabaseClient.postgrest.from("accounts").insert(
-                AccountDTO(
-                    name = account.name,
-                    balance = account.balance,
-                    type = account.type,
-                    icon = account.icon,
-                    userId = userId
-                )
-            )
+            val newAccount = account.copy(userId = userId)
+            SupabaseClient.client.postgrest["accounts"].insert(newAccount)
             
             val duration = System.currentTimeMillis() - startTime
             Log.i(TAG, "[ACCOUNTS] CREATE - Sucesso: '${account.name}' criada (${duration}ms)")
@@ -232,15 +195,8 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] UPDATE - Iniciando: id=${account.id}, name='${account.name}'")
         
         try {
-            SupabaseClient.postgrest.from("accounts").update(
-                AccountDTO(
-                    name = account.name,
-                    balance = account.balance,
-                    type = account.type,
-                    icon = account.icon
-                )
-            ) {
-                filter { eq("id", account.id) }
+            SupabaseClient.client.postgrest["accounts"].update(account) {
+                filter("id", FilterOperator.EQ, account.id)
             }
             
             val duration = System.currentTimeMillis() - startTime
@@ -258,10 +214,10 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] ARCHIVE - Iniciando: id=$accountId")
         
         try {
-            SupabaseClient.postgrest.from("accounts").update(
+            SupabaseClient.client.postgrest["accounts"].update(
                 mapOf("is_archived" to true)
             ) {
-                filter { eq("id", accountId) }
+                filter("id", FilterOperator.EQ, accountId)
             }
             
             val duration = System.currentTimeMillis() - startTime
@@ -279,10 +235,10 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] REACTIVATE - Iniciando: id=$accountId")
         
         try {
-            SupabaseClient.postgrest.from("accounts").update(
+            SupabaseClient.client.postgrest["accounts"].update(
                 mapOf("is_archived" to false)
             ) {
-                filter { eq("id", accountId) }
+                filter("id", FilterOperator.EQ, accountId)
             }
             
             val duration = System.currentTimeMillis() - startTime
@@ -300,8 +256,8 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] DELETE - Iniciando: id=$accountId")
         
         try {
-            SupabaseClient.postgrest.from("accounts").delete {
-                filter { eq("id", accountId) }
+            SupabaseClient.client.postgrest["accounts"].delete {
+                filter("id", FilterOperator.EQ, accountId)
             }
             
             val duration = System.currentTimeMillis() - startTime
@@ -321,18 +277,17 @@ object SupabaseService {
         Log.d(TAG, "[TRANSACTIONS] GET - Iniciando busca (userId: $userId, limit: $limit)")
         
         try {
-            val result = SupabaseClient.postgrest.from("transactions")
-                .select {
-                    filter { eq("user_id", userId) }
-                    order("date", order = io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
+            val transactions = SupabaseClient.client.postgrest["transactions"]
+                .select(columns = Columns.ALL) {
+                    filter("user_id", FilterOperator.EQ, userId)
+                    order("date", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
                     limit(limit)
-                }
-                .decodeList<TransactionDTO>()
+                }.decodeList<TransactionResult>()
             
-            val transactions = result.map { it.toTransaction() }
+            val result = transactions.map { it.toTransaction() }
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[TRANSACTIONS] GET - Sucesso: ${transactions.size} transações encontradas (${duration}ms)")
-            transactions
+            Log.i(TAG, "[TRANSACTIONS] GET - Sucesso: ${result.size} transações encontradas (${duration}ms)")
+            result
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] GET - Erro após ${duration}ms", e)
@@ -340,33 +295,30 @@ object SupabaseService {
         }
     }
     
-    suspend fun saveTransaction(transaction: Transaction, token: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun saveTransaction(transaction: Transaction, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[TRANSACTIONS] CREATE - Iniciando: type=${transaction.type}, category='${transaction.category}'")
+        Log.d(TAG, "[TRANSACTIONS] CREATE - Iniciando: type=${transaction.type}")
         
         try {
-            SupabaseClient.postgrest.from("transactions").insert(
-                TransactionDTO(
-                    userId = transaction.userId,
-                    type = transaction.type,
-                    amount = transaction.amount,
-                    description = transaction.description,
-                    category = transaction.category,
-                    date = transaction.date,
-                    status = transaction.status,
-                    accountId = transaction.accountId.ifEmpty { null },
-                    isRecurring = transaction.isRecurring,
-                    recurrencePeriod = transaction.recurrencePeriod.ifEmpty { null },
-                    recurrenceCount = transaction.recurrenceCount
-                )
+            val data = mapOf(
+                "user_id" to userId,
+                "type" to transaction.type,
+                "amount" to transaction.amount,
+                "description" to transaction.description,
+                "category" to transaction.category,
+                "date" to transaction.date,
+                "status" to transaction.status,
+                "account_id" to transaction.accountId
             )
             
+            SupabaseClient.client.postgrest["transactions"].insert(data)
+            
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso: ${transaction.type} '${transaction.description}' (${duration}ms)")
+            Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso (${duration}ms)")
             true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transação após ${duration}ms", e)
+            Log.e(TAG, "[TRANSACTIONS] CREATE - Erro após ${duration}ms", e)
             false
         }
     }
@@ -375,23 +327,20 @@ object SupabaseService {
     
     suspend fun getTags(userId: String): List<Tag> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[TAGS] READ - Iniciando busca para userId: $userId")
+        Log.d(TAG, "[TAGS] GET - Iniciando busca (userId: $userId)")
         
         try {
-            val result = SupabaseClient.postgrest.from("tags")
-                .select {
-                    filter { eq("user_id", userId) }
-                    order("created_at", order = io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
-                }
-                .decodeList<TagDTO>()
+            val tags = SupabaseClient.client.postgrest["tags"]
+                .select(columns = Columns.ALL) {
+                    filter("user_id", FilterOperator.EQ, userId)
+                }.decodeList<Tag>()
             
-            val tags = result.map { it.toTag() }
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[TAGS] READ - Sucesso: ${tags.size} tags encontradas (${duration}ms)")
+            Log.i(TAG, "[TAGS] GET - Sucesso: ${tags.size} tags encontradas (${duration}ms)")
             tags
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            Log.e(TAG, "[TAGS] READ - Erro após ${duration}ms", e)
+            Log.e(TAG, "[TAGS] GET - Erro após ${duration}ms", e)
             emptyList()
         }
     }
@@ -401,13 +350,8 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] CREATE - Iniciando: name='${tag.name}', userId=$userId")
         
         try {
-            SupabaseClient.postgrest.from("tags").insert(
-                TagDTO(
-                    name = tag.name,
-                    color = tag.color,
-                    userId = userId
-                )
-            )
+            val newTag = tag.copy(userId = userId)
+            SupabaseClient.client.postgrest["tags"].insert(newTag)
             
             val duration = System.currentTimeMillis() - startTime
             Log.i(TAG, "[TAGS] CREATE - Sucesso: '${tag.name}' criada (${duration}ms)")
@@ -421,24 +365,19 @@ object SupabaseService {
     
     suspend fun updateTag(tag: Tag): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[TAGS] UPDATE - Iniciando: id=${tag.id}, name='${tag.name}'")
+        Log.d(TAG, "[TAGS] UPDATE - Iniciando: id=${tag.id}")
         
         try {
-            SupabaseClient.postgrest.from("tags").update(
-                TagDTO(
-                    name = tag.name,
-                    color = tag.color
-                )
-            ) {
-                filter { eq("id", tag.id) }
+            SupabaseClient.client.postgrest["tags"].update(tag) {
+                filter("id", FilterOperator.EQ, tag.id)
             }
             
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[TAGS] UPDATE - Sucesso: '${tag.name}' atualizada (${duration}ms)")
+            Log.i(TAG, "[TAGS] UPDATE - Sucesso (${duration}ms)")
             true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            Log.e(TAG, "[TAGS] UPDATE - Erro ao atualizar '${tag.name}' após ${duration}ms", e)
+            Log.e(TAG, "[TAGS] UPDATE - Erro após ${duration}ms", e)
             false
         }
     }
@@ -448,12 +387,12 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] DELETE - Iniciando: id=$tagId")
         
         try {
-            SupabaseClient.postgrest.from("tags").delete {
-                filter { eq("id", tagId) }
+            SupabaseClient.client.postgrest["tags"].delete {
+                filter("id", FilterOperator.EQ, tagId)
             }
             
             val duration = System.currentTimeMillis() - startTime
-            Log.i(TAG, "[TAGS] DELETE - Sucesso: tag excluída (${duration}ms)")
+            Log.i(TAG, "[TAGS] DELETE - Sucesso (${duration}ms)")
             true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
@@ -462,120 +401,67 @@ object SupabaseService {
         }
     }
     
-    suspend fun tagExists(name: String, userId: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun tagExists(name: String, excludeId: String? = null, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TAGS] EXISTS - Verificando: name='$name'")
+        
         try {
-            val result = SupabaseClient.postgrest.from("tags")
-                .select {
-                    filter {
-                        eq("name", name)
-                        eq("user_id", userId)
-                        if (excludeId != null) neq("id", excludeId)
+            val tags = SupabaseClient.client.postgrest["tags"]
+                .select(columns = Columns.list("id")) {
+                    filter("name", FilterOperator.ILIKE, name)
+                    if (userId != null) {
+                        filter("user_id", FilterOperator.EQ, userId)
                     }
-                }
-                .decodeList<TagDTO>()
+                }.decodeList<TagIdResult>()
             
-            result.isNotEmpty()
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (tags.isEmpty()) {
+                return@withContext false
+            }
+            
+            if (excludeId != null) {
+                return@withContext tags.any { it.id != excludeId }
+            }
+            
+            true
         } catch (e: Exception) {
-            Log.e(TAG, "[TAGS] EXISTS - Erro ao verificar existência", e)
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TAGS] EXISTS - Erro após ${duration}ms", e)
             false
         }
     }
 }
 
-// ============== DTOs para serialização ==============
+// Data classes para serialização
+@Serializable
+data class CategoryIdResult(val id: String)
 
 @Serializable
-data class CategoryDTO(
-    val id: String? = null,
-    val name: String,
-    val type: String,
-    val color: String = "#357266",
-    val icon: String = "category",
-    @SerialName("user_id")
-    val userId: String? = null
-) {
-    fun toCategory() = Category(
-        id = id ?: "",
-        name = name,
-        type = type,
-        color = color,
-        icon = icon,
-        userId = userId ?: ""
-    )
-}
+data class TagIdResult(val id: String)
 
 @Serializable
-data class AccountDTO(
-    val id: String? = null,
-    val name: String,
-    val balance: Double = 0.0,
-    val type: String = "corrente",
-    val icon: String = "wallet",
-    @SerialName("is_archived")
-    val isArchived: Boolean = false,
-    @SerialName("user_id")
-    val userId: String? = null
-) {
-    fun toAccount() = Account(
-        id = id ?: "",
-        name = name,
-        balance = balance,
-        type = type,
-        icon = icon,
-        isArchived = isArchived,
-        userId = userId ?: ""
-    )
-}
-
-@Serializable
-data class TransactionDTO(
-    val id: String? = null,
-    @SerialName("user_id")
-    val userId: String,
-    val type: String,
-    val amount: Double,
+data class TransactionResult(
+    val id: String,
+    val user_id: String,
     val description: String,
     val category: String,
+    val amount: Double,
+    val type: String,
     val date: String,
     val status: String = "paid",
-    @SerialName("account_id")
-    val accountId: String? = null,
-    @SerialName("is_recurring")
-    val isRecurring: Boolean = false,
-    @SerialName("recurrence_period")
-    val recurrencePeriod: String? = null,
-    @SerialName("recurrence_count")
-    val recurrenceCount: Int = 1
+    val account_id: String? = null
 ) {
-    fun toTransaction() = Transaction(
-        id = id ?: "",
-        userId = userId,
-        type = type,
-        amount = amount,
+    fun toTransaction(): Transaction = Transaction(
+        id = id,
+        userId = user_id,
         description = description,
         category = category,
+        amount = amount,
+        type = type,
         date = date,
         status = status,
-        accountId = accountId ?: "",
-        isRecurring = isRecurring,
-        recurrencePeriod = recurrencePeriod ?: "",
-        recurrenceCount = recurrenceCount,
+        accountId = account_id ?: "",
         iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
-    )
-}
-
-@Serializable
-data class TagDTO(
-    val id: String? = null,
-    val name: String,
-    val color: String = "#357266",
-    @SerialName("user_id")
-    val userId: String? = null
-) {
-    fun toTag() = Tag(
-        id = id ?: "",
-        name = name,
-        color = color,
-        userId = userId ?: ""
     )
 }
