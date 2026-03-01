@@ -58,9 +58,11 @@ dependencies {
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     
-    // Supabase SDK
-    implementation("io.github.jan-tennert.supabase:supabase-kt:2.1.3")
-    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.1.3")
-    implementation("io.github.jan-tennert.supabase:auth-kt:2.1.3")
+    // Supabase SDK (BOM para versões consistentes)
+    implementation(platform("io.github.jan-tennert.supabase:bom:2.1.3"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-android:2.3.7")
+    implementation("io.ktor:ktor-utils:2.3.7")
 }
