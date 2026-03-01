@@ -34,3 +34,19 @@ data class Account(
     val isArchived: Boolean = false,
     val userId: String = ""
 )
+
+/**
+ * AppSettings - Configurações do aplicativo por usuário
+ * 
+ * Armazena preferências do usuário como tema, idioma e notificações.
+ * Cada usuário tem exatamente um registro de configurações.
+ */
+data class AppSettings(
+    val id: String = "",
+    val userId: String = "",
+    val theme: String = "system", // "light", "dark", "system"
+    val language: String = "pt-BR",
+    val notificationsEnabled: Boolean = true,
+    val createdAt: String = "",
+    val updatedAt: String = ""
+)

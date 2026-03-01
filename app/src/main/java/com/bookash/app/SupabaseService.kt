@@ -729,4 +729,101 @@ object SupabaseService {
         }
         return list
     }
+    
+    // ============== APP SETTINGS ==============
+    
+    /**
+     * Busca as configurações do usuário.
+     * Se não existir, retorna configurações padrão.
+     * IMPORTANTE: Sempre filtra por user_id para isolamento de dados.
+     */
+    suspend fun getSettings(userId: String): AppSettings = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[SETTINGS] GET - Iniciando busca (userId: $userId)")
+        
+        try {
+            val endpoint = "$BASE_URL/rest/v1/app_settings?user_id=eq.$userId&select=*&limit=1"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                
+                if (jsonArray.length() > 0) {
+                    val settings = parseAppSettings(jsonArray.getJSONObject(0))
+                    Log.i(TAG, "[SETTINGS] GET - Sucesso: settings encontradas (${duration}ms)")
+                    settings
+                } else {
+                    // No settings found, return defaults
+                    Log.i(TAG, "[SETTINGS] GET - Nenhuma configuração encontrada, usando padrão (${duration}ms)")
+                    AppSettings(userId = userId)
+                }
+            } else {
+                Log.w(TAG, "[SETTINGS] GET - Falha: HTTP $responseCode (${duration}ms)")
+                AppSettings(userId = userId)
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[SETTINGS] GET - Erro após ${duration}ms", e)
+            AppSettings(userId = userId)
+        }
+    }
+    
+    /**
+     * Salva ou atualiza as configurações do usuário.
+     * Usa upsert para criar se não existir ou atualizar se já existir.
+     * IMPORTANTE: Inclui user_id para garantir propriedade do dado.
+     */
+    suspend fun updateSettings(settings: AppSettings, userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[SETTINGS] UPDATE - Iniciando: theme=${settings.theme}, language=${settings.language}, userId=$userId")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/app_settings").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "resolution=merge-duplicates")
+            conn.doOutput = true
+            
+            val body = """{"user_id":"$userId","theme":"${settings.theme}","language":"${settings.language}","notifications_enabled":${settings.notificationsEnabled}}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[SETTINGS] UPDATE - Sucesso: configurações salvas (${duration}ms)")
+                true
+            } else {
+                val errorStream = conn.errorStream?.bufferedReader()?.readText()
+                Log.w(TAG, "[SETTINGS] UPDATE - Falha: HTTP $responseCode, $errorStream (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[SETTINGS] UPDATE - Erro ao salvar configurações após ${duration}ms", e)
+            false
+        }
+    }
+    
+    private fun parseAppSettings(json: org.json.JSONObject): AppSettings {
+        return AppSettings(
+            id = json.optString("id"),
+            userId = json.optString("user_id"),
+            theme = json.optString("theme", "system"),
+            language = json.optString("language", "pt-BR"),
+            notificationsEnabled = json.optBoolean("notifications_enabled", true),
+            createdAt = json.optString("created_at", ""),
+            updatedAt = json.optString("updated_at", "")
+        )
+    }
 }
