@@ -159,7 +159,7 @@ object SupabaseService {
                 .select(columns = Columns.ALL) {
                     filter("user_id", FilterOperator.EQ, userId)
                     filter("is_archived", FilterOperator.EQ, archived)
-                    order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING, nullsFirst = true)
+                    order("created_at", io.github.jan.tennert.supabase.postgrest.query.Order.ASCENDING, nullsFirst = true)
                 }.decodeList<Account>()
             
             val duration = System.currentTimeMillis() - startTime
@@ -280,7 +280,7 @@ object SupabaseService {
             val transactions = SupabaseClient.client.postgrest["transactions"]
                 .select(columns = Columns.ALL) {
                     filter("user_id", FilterOperator.EQ, userId)
-                    order("date", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    order("date", io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
                     limit(limit)
                 }.decodeList<TransactionResult>()
             
