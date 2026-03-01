@@ -1,14 +1,16 @@
 package com.bookash.app
 
 import android.util.Log
+import io.github.jan.tennert.supabase.postgrest.from
+import io.github.jan.tennert.supabase.postgrest.query.filter.FilterOperation
+import io.github.jan.tennert.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import java.net.HttpURLConnection
-import java.net.URL
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 /**
- * Serviço de comunicação com o Supabase.
+ * Serviço de comunicação com o Supabase usando SDK oficial.
  * 
  * IMPORTANTE: Todas as operações CRUD possuem logging para:
  * - Debugging em produção
@@ -19,9 +21,6 @@ import java.net.URL
 object SupabaseService {
     
     private const val TAG = "BookashAPI"
-    
-    private const val BASE_URL = "https://gqbxasjoxxslpaxjqfeg.supabase.co"
-    private const val API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs"
     
     // ============== CATEGORIES ==============
     
@@ -35,29 +34,29 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
-            val endpoint = if (type != null) {
-                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&type=eq.$type&select=*"
+            val result = if (type != null) {
+                SupabaseClient.postgrest.from("categories")
+                    .select {
+                        filter {
+                            eq("user_id", userId)
+                            eq("type", type)
+                        }
+                    }
+                    .decodeList<CategoryDTO>()
             } else {
-                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&select=*"
+                SupabaseClient.postgrest.from("categories")
+                    .select {
+                        filter {
+                            eq("user_id", userId)
+                        }
+                    }
+                    .decodeList<CategoryDTO>()
             }
             
-            val conn = URL(endpoint).openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            
-            val responseCode = conn.responseCode
+            val categories = result.map { it.toCategory() }
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val categories = parseCategories(JSONArray(response))
-                Log.i(TAG, "[CATEGORIES] GET - Sucesso: ${categories.size} categorias encontradas (${duration}ms)")
-                categories
-            } else {
-                Log.w(TAG, "[CATEGORIES] GET - Falha: HTTP $responseCode (${duration}ms)")
-                emptyList()
-            }
+            Log.i(TAG, "[CATEGORIES] GET - Sucesso: ${categories.size} categorias encontradas (${duration}ms)")
+            categories
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] GET - Erro após ${duration}ms", e)
@@ -67,34 +66,25 @@ object SupabaseService {
     
     /**
      * Salva uma nova categoria para o usuário logado.
-     * IMPORTANTE: Inclui user_id para garantir propriedade do dado.
      */
     suspend fun saveCategory(category: Category, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[CATEGORIES] CREATE - Iniciando: name='${category.name}', type=${category.type}, userId=$userId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/categories").openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
+            SupabaseClient.postgrest.from("categories").insert(
+                CategoryDTO(
+                    name = category.name,
+                    type = category.type,
+                    color = category.color,
+                    icon = category.icon,
+                    userId = userId
+                )
+            )
             
-            val body = """{"name":"${category.name}","type":"${category.type}","color":"${category.color}","icon":"${category.icon}","user_id":"$userId"}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[CATEGORIES] CREATE - Sucesso: '${category.name}' criada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[CATEGORIES] CREATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
-            }
+            Log.i(TAG, "[CATEGORIES] CREATE - Sucesso: '${category.name}' criada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] CREATE - Erro ao criar '${category.name}' após ${duration}ms", e)
@@ -107,22 +97,13 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/categories?id=eq.$categoryId").openConnection() as HttpURLConnection
-            conn.requestMethod = "DELETE"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[CATEGORIES] DELETE - Sucesso: id=$categoryId (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[CATEGORIES] DELETE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("categories").delete {
+                filter { eq("id", categoryId) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[CATEGORIES] DELETE - Sucesso: id=$categoryId (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] DELETE - Erro ao excluir id=$categoryId após ${duration}ms", e)
@@ -135,27 +116,20 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}'")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/categories?id=eq.${category.id}").openConnection() as HttpURLConnection
-            conn.requestMethod = "PATCH"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
-            
-            val body = """{"name":"${category.name}","type":"${category.type}","color":"${category.color}","icon":"${category.icon}"}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[CATEGORIES] UPDATE - Sucesso: '${category.name}' atualizada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[CATEGORIES] UPDATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("categories").update(
+                CategoryDTO(
+                    name = category.name,
+                    type = category.type,
+                    color = category.color,
+                    icon = category.icon
+                )
+            ) {
+                filter { eq("id", category.id) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[CATEGORIES] UPDATE - Sucesso: '${category.name}' atualizada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] UPDATE - Erro ao atualizar id=${category.id} após ${duration}ms", e)
@@ -165,86 +139,38 @@ object SupabaseService {
     
     /**
      * Verifica se já existe uma categoria com o mesmo nome e tipo para o usuário.
-     * Ignora a categoria com o ID fornecido (útil para edição).
      */
     suspend fun categoryExists(name: String, type: String, excludeId: String? = null, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[CATEGORIES] EXISTS - Verificando: name='$name', type=$type, userId=$userId")
         
         try {
-            // Busca categorias com o mesmo nome (case-insensitive) e tipo
-            var endpoint = "$BASE_URL/rest/v1/categories?name=ilike.$name&type=eq.$type&select=id"
-            if (userId != null) {
-                endpoint += "&user_id=eq.$userId"
-            }
-            
-            val conn = URL(endpoint).openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val jsonArray = JSONArray(response)
-                
-                // Se não há resultados, não existe duplicata
-                if (jsonArray.length() == 0) {
-                    Log.d(TAG, "[CATEGORIES] EXISTS - Não encontrada (${duration}ms)")
-                    return@withContext false
-                }
-                
-                // Se estamos editando, ignorar a própria categoria
-                if (excludeId != null) {
-                    for (i in 0 until jsonArray.length()) {
-                        val json = jsonArray.getJSONObject(i)
-                        val foundId = json.optString("id")
-                        if (foundId != excludeId) {
-                            Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada: id=$foundId (${duration}ms)")
-                            return@withContext true
-                        }
+            val result = SupabaseClient.postgrest.from("categories")
+                .select {
+                    filter {
+                        ilike("name", name)
+                        eq("type", type)
+                        if (userId != null) eq("user_id", userId)
+                        if (excludeId != null) neq("id", excludeId)
                     }
-                    Log.d(TAG, "[CATEGORIES] EXISTS - Não há duplicata (excluindo self) (${duration}ms)")
-                    return@withContext false
                 }
-                
-                Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada (${duration}ms)")
-                return@withContext true
-            }
+                .decodeList<CategoryDTO>()
             
-            Log.w(TAG, "[CATEGORIES] EXISTS - Falha na verificação: HTTP $responseCode (${duration}ms)")
-            false
+            val exists = result.isNotEmpty()
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[CATEGORIES] EXISTS - ${if (exists) "Duplicata encontrada" else "Não encontrada"} (${duration}ms)")
+            exists
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[CATEGORIES] EXISTS - Erro após ${duration}ms", e)
-            false // Em caso de erro, permitir salvar para não bloquear o usuário
+            false
         }
-    }
-    
-    private fun parseCategories(jsonArray: JSONArray): List<Category> {
-        val list = mutableListOf<Category>()
-        for (i in 0 until jsonArray.length()) {
-            val json = jsonArray.getJSONObject(i)
-            val category = Category(
-                id = json.optString("id"),
-                name = json.optString("name"),
-                type = json.optString("type"),
-                color = json.optString("color", "#357266"),
-                icon = json.optString("icon", "category"),
-                userId = json.optString("user_id", "")
-            )
-            list.add(category)
-        }
-        return list
     }
     
     // ============== ACCOUNTS ==============
     
     /**
      * Busca contas do usuário logado.
-     * IMPORTANTE: Sempre filtra por user_id para isolamento de dados.
      */
     suspend fun getAccounts(userId: String, archived: Boolean = false): List<Account> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
@@ -252,25 +178,20 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
-            val endpoint = "$BASE_URL/rest/v1/accounts?user_id=eq.$userId&is_archived=eq.$archived&select=*&order=created_at.desc"
+            val result = SupabaseClient.postgrest.from("accounts")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                        eq("is_archived", archived)
+                    }
+                    order("created_at", order = io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
+                }
+                .decodeList<AccountDTO>()
             
-            val conn = URL(endpoint).openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            
-            val responseCode = conn.responseCode
+            val accounts = result.map { it.toAccount() }
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val accounts = parseAccounts(JSONArray(response))
-                Log.i(TAG, "[ACCOUNTS] GET - Sucesso: ${accounts.size} contas $filter encontradas (${duration}ms)")
-                accounts
-            } else {
-                Log.w(TAG, "[ACCOUNTS] GET - Falha: HTTP $responseCode (${duration}ms)")
-                emptyList()
-            }
+            Log.i(TAG, "[ACCOUNTS] GET - Sucesso: ${accounts.size} contas $filter encontradas (${duration}ms)")
+            accounts
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] GET - Erro após ${duration}ms", e)
@@ -280,34 +201,25 @@ object SupabaseService {
     
     /**
      * Salva uma nova conta para o usuário logado.
-     * IMPORTANTE: Inclui user_id para garantir propriedade do dado.
      */
     suspend fun saveAccount(account: Account, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[ACCOUNTS] CREATE - Iniciando: name='${account.name}', type=${account.type}, userId=$userId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/accounts").openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
+            SupabaseClient.postgrest.from("accounts").insert(
+                AccountDTO(
+                    name = account.name,
+                    balance = account.balance,
+                    type = account.type,
+                    icon = account.icon,
+                    userId = userId
+                )
+            )
             
-            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}","user_id":"$userId"}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[ACCOUNTS] CREATE - Sucesso: '${account.name}' criada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[ACCOUNTS] CREATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
-            }
+            Log.i(TAG, "[ACCOUNTS] CREATE - Sucesso: '${account.name}' criada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] CREATE - Erro ao criar '${account.name}' após ${duration}ms", e)
@@ -320,27 +232,20 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] UPDATE - Iniciando: id=${account.id}, name='${account.name}'")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.${account.id}").openConnection() as HttpURLConnection
-            conn.requestMethod = "PATCH"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
-            
-            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}"}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[ACCOUNTS] UPDATE - Sucesso: '${account.name}' atualizada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[ACCOUNTS] UPDATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("accounts").update(
+                AccountDTO(
+                    name = account.name,
+                    balance = account.balance,
+                    type = account.type,
+                    icon = account.icon
+                )
+            ) {
+                filter { eq("id", account.id) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] UPDATE - Sucesso: '${account.name}' atualizada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] UPDATE - Erro ao atualizar id=${account.id} após ${duration}ms", e)
@@ -353,27 +258,15 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] ARCHIVE - Iniciando: id=$accountId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
-            conn.requestMethod = "PATCH"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
-            
-            val body = """{"is_archived":true}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[ACCOUNTS] ARCHIVE - Sucesso: id=$accountId arquivada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[ACCOUNTS] ARCHIVE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("accounts").update(
+                mapOf("is_archived" to true)
+            ) {
+                filter { eq("id", accountId) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] ARCHIVE - Sucesso: id=$accountId arquivada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] ARCHIVE - Erro ao arquivar id=$accountId após ${duration}ms", e)
@@ -386,27 +279,15 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] REACTIVATE - Iniciando: id=$accountId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
-            conn.requestMethod = "PATCH"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
-            
-            val body = """{"is_archived":false}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[ACCOUNTS] REACTIVATE - Sucesso: id=$accountId reativada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[ACCOUNTS] REACTIVATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("accounts").update(
+                mapOf("is_archived" to false)
+            ) {
+                filter { eq("id", accountId) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] REACTIVATE - Sucesso: id=$accountId reativada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] REACTIVATE - Erro ao reativar id=$accountId após ${duration}ms", e)
@@ -419,44 +300,18 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] DELETE - Iniciando: id=$accountId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
-            conn.requestMethod = "DELETE"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[ACCOUNTS] DELETE - Sucesso: id=$accountId excluída (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[ACCOUNTS] DELETE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("accounts").delete {
+                filter { eq("id", accountId) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] DELETE - Sucesso: id=$accountId excluída (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] DELETE - Erro ao excluir id=$accountId após ${duration}ms", e)
             false
         }
-    }
-    
-    private fun parseAccounts(jsonArray: JSONArray): List<Account> {
-        val list = mutableListOf<Account>()
-        for (i in 0 until jsonArray.length()) {
-            val json = jsonArray.getJSONObject(i)
-            list.add(Account(
-                id = json.optString("id"),
-                name = json.optString("name"),
-                balance = json.optDouble("balance", 0.0),
-                type = json.optString("type", "corrente"),
-                icon = json.optString("icon", "wallet"),
-                isArchived = json.optBoolean("is_archived", false),
-                userId = json.optString("user_id", "")
-            ))
-        }
-        return list
     }
     
     // ============== TRANSACTIONS ==============
@@ -466,25 +321,18 @@ object SupabaseService {
         Log.d(TAG, "[TRANSACTIONS] GET - Iniciando busca (userId: $userId, limit: $limit)")
         
         try {
-            val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&order=date.desc&limit=$limit&select=*"
+            val result = SupabaseClient.postgrest.from("transactions")
+                .select {
+                    filter { eq("user_id", userId) }
+                    order("date", order = io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
+                    limit(limit)
+                }
+                .decodeList<TransactionDTO>()
             
-            val conn = URL(endpoint).openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            
-            val responseCode = conn.responseCode
+            val transactions = result.map { it.toTransaction() }
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val transactions = parseTransactions(JSONArray(response))
-                Log.i(TAG, "[TRANSACTIONS] GET - Sucesso: ${transactions.size} transações encontradas (${duration}ms)")
-                transactions
-            } else {
-                Log.w(TAG, "[TRANSACTIONS] GET - Falha: HTTP $responseCode (${duration}ms)")
-                emptyList()
-            }
+            Log.i(TAG, "[TRANSACTIONS] GET - Sucesso: ${transactions.size} transações encontradas (${duration}ms)")
+            transactions
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] GET - Erro após ${duration}ms", e)
@@ -497,71 +345,30 @@ object SupabaseService {
         Log.d(TAG, "[TRANSACTIONS] CREATE - Iniciando: type=${transaction.type}, category='${transaction.category}'")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/transactions").openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $token")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
+            SupabaseClient.postgrest.from("transactions").insert(
+                TransactionDTO(
+                    userId = transaction.userId,
+                    type = transaction.type,
+                    amount = transaction.amount,
+                    description = transaction.description,
+                    category = transaction.category,
+                    date = transaction.date,
+                    status = transaction.status,
+                    accountId = transaction.accountId.ifEmpty { null },
+                    isRecurring = transaction.isRecurring,
+                    recurrencePeriod = transaction.recurrencePeriod.ifEmpty { null },
+                    recurrenceCount = transaction.recurrenceCount
+                )
+            )
             
-            val body = buildString {
-                append("{")
-                append("\"user_id\":\"${transaction.userId}\",")
-                append("\"type\":\"${transaction.type}\",")
-                append("\"amount\":${transaction.amount},")
-                append("\"description\":\"${transaction.description}\",")
-                append("\"category\":\"${transaction.category}\",")
-                append("\"date\":\"${transaction.date}\",")
-                append("\"status\":\"${transaction.status}\"")
-                if (transaction.accountId.isNotEmpty()) {
-                    append(",\"account_id\":\"${transaction.accountId}\"")
-                }
-                if (transaction.isRecurring) {
-                    append(",\"is_recurring\":true")
-                    append(",\"recurrence_period\":\"${transaction.recurrencePeriod}\"")
-                    append(",\"recurrence_count\":${transaction.recurrenceCount}")
-                }
-                append("}")
-            }
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso: ${transaction.type} '${transaction.description}' (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[TRANSACTIONS] CREATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
-            }
+            Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso: ${transaction.type} '${transaction.description}' (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transação após ${duration}ms", e)
             false
         }
-    }
-    
-    private fun parseTransactions(jsonArray: JSONArray): List<Transaction> {
-        val list = mutableListOf<Transaction>()
-        for (i in 0 until jsonArray.length()) {
-            val json = jsonArray.getJSONObject(i)
-            val type = json.optString("type")
-            list.add(Transaction(
-                id = json.optString("id"),
-                userId = json.optString("user_id"),
-                description = json.optString("description"),
-                category = json.optString("category"),
-                amount = json.optDouble("amount", 0.0),
-                type = type,
-                date = json.optString("date"),
-                status = json.optString("status", "paid"),
-                accountId = json.optString("account_id", ""),
-                iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
-            ))
-        }
-        return list
     }
     
     // ============== TAGS ==============
@@ -571,24 +378,17 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] READ - Iniciando busca para userId: $userId")
         
         try {
-            val url = "$BASE_URL/rest/v1/tags?user_id=eq.$userId&select=*&order=created_at.desc"
-            val conn = URL(url).openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            val result = SupabaseClient.postgrest.from("tags")
+                .select {
+                    filter { eq("user_id", userId) }
+                    order("created_at", order = io.github.jan.tennert.supabase.postgrest.query.Order.DESCENDING)
+                }
+                .decodeList<TagDTO>()
             
-            val responseCode = conn.responseCode
+            val tags = result.map { it.toTag() }
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val tags = parseTags(JSONArray(response))
-                Log.i(TAG, "[TAGS] READ - Sucesso: ${tags.size} tags encontradas (${duration}ms)")
-                tags
-            } else {
-                Log.w(TAG, "[TAGS] READ - Falha: HTTP $responseCode (${duration}ms)")
-                emptyList()
-            }
+            Log.i(TAG, "[TAGS] READ - Sucesso: ${tags.size} tags encontradas (${duration}ms)")
+            tags
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TAGS] READ - Erro após ${duration}ms", e)
@@ -601,28 +401,17 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] CREATE - Iniciando: name='${tag.name}', userId=$userId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/tags").openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
+            SupabaseClient.postgrest.from("tags").insert(
+                TagDTO(
+                    name = tag.name,
+                    color = tag.color,
+                    userId = userId
+                )
+            )
             
-            val body = """{"name":"${tag.name}","color":"${tag.color}","user_id":"$userId"}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[TAGS] CREATE - Sucesso: '${tag.name}' criada (${duration}ms)")
-                true
-            } else {
-                val errorStream = conn.errorStream?.bufferedReader()?.readText()
-                Log.w(TAG, "[TAGS] CREATE - Falha: HTTP $responseCode, $errorStream (${duration}ms)")
-                false
-            }
+            Log.i(TAG, "[TAGS] CREATE - Sucesso: '${tag.name}' criada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TAGS] CREATE - Erro ao criar '${tag.name}' após ${duration}ms", e)
@@ -635,27 +424,18 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] UPDATE - Iniciando: id=${tag.id}, name='${tag.name}'")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/tags?id=eq.${tag.id}").openConnection() as HttpURLConnection
-            conn.requestMethod = "PATCH"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            conn.doOutput = true
-            
-            val body = """{"name":"${tag.name}","color":"${tag.color}"}"""
-            conn.outputStream.write(body.toByteArray())
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[TAGS] UPDATE - Sucesso: '${tag.name}' atualizada (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[TAGS] UPDATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("tags").update(
+                TagDTO(
+                    name = tag.name,
+                    color = tag.color
+                )
+            ) {
+                filter { eq("id", tag.id) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[TAGS] UPDATE - Sucesso: '${tag.name}' atualizada (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TAGS] UPDATE - Erro ao atualizar '${tag.name}' após ${duration}ms", e)
@@ -668,22 +448,13 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] DELETE - Iniciando: id=$tagId")
         
         try {
-            val conn = URL("$BASE_URL/rest/v1/tags?id=eq.$tagId").openConnection() as HttpURLConnection
-            conn.requestMethod = "DELETE"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            conn.setRequestProperty("Prefer", "return=minimal")
-            
-            val responseCode = conn.responseCode
-            val duration = System.currentTimeMillis() - startTime
-            
-            if (responseCode in 200..299) {
-                Log.i(TAG, "[TAGS] DELETE - Sucesso: tag excluída (${duration}ms)")
-                true
-            } else {
-                Log.w(TAG, "[TAGS] DELETE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+            SupabaseClient.postgrest.from("tags").delete {
+                filter { eq("id", tagId) }
             }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[TAGS] DELETE - Sucesso: tag excluída (${duration}ms)")
+            true
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TAGS] DELETE - Erro após ${duration}ms", e)
@@ -693,40 +464,118 @@ object SupabaseService {
     
     suspend fun tagExists(name: String, userId: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
         try {
-            var url = "$BASE_URL/rest/v1/tags?name=eq.${java.net.URLEncoder.encode(name, "UTF-8")}&user_id=eq.$userId&select=id"
-            if (excludeId != null) {
-                url += "&id=neq.$excludeId"
-            }
+            val result = SupabaseClient.postgrest.from("tags")
+                .select {
+                    filter {
+                        eq("name", name)
+                        eq("user_id", userId)
+                        if (excludeId != null) neq("id", excludeId)
+                    }
+                }
+                .decodeList<TagDTO>()
             
-            val conn = URL(url).openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
-            
-            if (conn.responseCode == 200) {
-                val response = conn.inputStream.bufferedReader().readText()
-                val jsonArray = JSONArray(response)
-                jsonArray.length() > 0
-            } else {
-                false
-            }
+            result.isNotEmpty()
         } catch (e: Exception) {
             Log.e(TAG, "[TAGS] EXISTS - Erro ao verificar existência", e)
             false
         }
     }
-    
-    private fun parseTags(jsonArray: JSONArray): List<Tag> {
-        val list = mutableListOf<Tag>()
-        for (i in 0 until jsonArray.length()) {
-            val json = jsonArray.getJSONObject(i)
-            list.add(Tag(
-                id = json.optString("id"),
-                name = json.optString("name"),
-                color = json.optString("color", "#357266"),
-                userId = json.optString("user_id", "")
-            ))
-        }
-        return list
-    }
+}
+
+// ============== DTOs para serialização ==============
+
+@Serializable
+data class CategoryDTO(
+    val id: String? = null,
+    val name: String,
+    val type: String,
+    val color: String = "#357266",
+    val icon: String = "category",
+    @SerialName("user_id")
+    val userId: String? = null
+) {
+    fun toCategory() = Category(
+        id = id ?: "",
+        name = name,
+        type = type,
+        color = color,
+        icon = icon,
+        userId = userId ?: ""
+    )
+}
+
+@Serializable
+data class AccountDTO(
+    val id: String? = null,
+    val name: String,
+    val balance: Double = 0.0,
+    val type: String = "corrente",
+    val icon: String = "wallet",
+    @SerialName("is_archived")
+    val isArchived: Boolean = false,
+    @SerialName("user_id")
+    val userId: String? = null
+) {
+    fun toAccount() = Account(
+        id = id ?: "",
+        name = name,
+        balance = balance,
+        type = type,
+        icon = icon,
+        isArchived = isArchived,
+        userId = userId ?: ""
+    )
+}
+
+@Serializable
+data class TransactionDTO(
+    val id: String? = null,
+    @SerialName("user_id")
+    val userId: String,
+    val type: String,
+    val amount: Double,
+    val description: String,
+    val category: String,
+    val date: String,
+    val status: String = "paid",
+    @SerialName("account_id")
+    val accountId: String? = null,
+    @SerialName("is_recurring")
+    val isRecurring: Boolean = false,
+    @SerialName("recurrence_period")
+    val recurrencePeriod: String? = null,
+    @SerialName("recurrence_count")
+    val recurrenceCount: Int = 1
+) {
+    fun toTransaction() = Transaction(
+        id = id ?: "",
+        userId = userId,
+        type = type,
+        amount = amount,
+        description = description,
+        category = category,
+        date = date,
+        status = status,
+        accountId = accountId ?: "",
+        isRecurring = isRecurring,
+        recurrencePeriod = recurrencePeriod ?: "",
+        recurrenceCount = recurrenceCount,
+        iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+    )
+}
+
+@Serializable
+data class TagDTO(
+    val id: String? = null,
+    val name: String,
+    val color: String = "#357266",
+    @SerialName("user_id")
+    val userId: String? = null
+) {
+    fun toTag() = Tag(
+        id = id ?: "",
+        name = name,
+        color = color,
+        userId = userId ?: ""
+    )
 }

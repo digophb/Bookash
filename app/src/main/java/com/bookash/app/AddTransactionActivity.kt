@@ -259,10 +259,8 @@ class AddTransactionActivity : AppCompatActivity() {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val dateStr = formatter.format(Date(selectedDate))
         
-        // Pegar user_id e token
-        val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
-        val userId = prefs.getString("user_id", "") ?: ""
-        val token = prefs.getString("access_token", "") ?: ""
+        // Pegar user_id do UserSession (SDK gerencia a sessão)
+        val userId = UserSession.getUserId() ?: ""
         
         // Encontrar account_id selecionado
         val selectedAccount = accounts.find { it.name == account }

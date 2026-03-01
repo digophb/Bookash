@@ -1,6 +1,5 @@
 package com.bookash.app
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -9,12 +8,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import io.github.jan.tennert.supabase.gotrue.auth
+import io.github.jan.tennert.supabase.gotrue.providers.builtin.OTP
+import io.github.jan.tennert.supabase.gotrue.providers.builtin.Email
+import io.github.jan.tennert.supabase.gotrue.user.UserInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 
 class LoginActivity : AppCompatActivity() {
     
@@ -22,13 +22,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var passwordInput: EditText
     private lateinit var loginButton: Button
     private lateinit var registerLink: TextView
-    
-    companion object {
-        private const val SUPABASE_URL = "https://gqbxasjoxxslpaxjqfeg.supabase.co"
-        private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs"
-        private const val PREFS_NAME = "bookash_prefs"
-        private const val KEY_TOKEN = "access_token"
-    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,11 +32,14 @@ class LoginActivity : AppCompatActivity() {
         loginButton = findViewById(R.id.loginButton)
         registerLink = findViewById(R.id.registerLink)
         
-        // Verificar se já está logado
-        val token = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, null)
-        if (token != null) {
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
+        // Verificar se já está logado via SDK
+        lifecycleScope.launch {
+            val session = SupabaseClient.auth.currentSessionOrNull()
+            if (session != null) {
+                // Usuário já logado - ir para MainActivity
+                startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                finish()
+            }
         }
         
         loginButton.setOnClickListener {
@@ -70,52 +66,30 @@ class LoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val url = URL("$SUPABASE_URL/auth/v1/token?grant_type=password")
-                    val conn = url.openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("apikey", SUPABASE_KEY)
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.doOutput = true
-                    conn.connectTimeout = 15000
-                    conn.readTimeout = 15000
-                    
-                    val body = """{"email":"$email","password":"$password"}"""
-                    conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
-                    
-                    if (conn.responseCode == 200) {
-                        val response = conn.inputStream.bufferedReader().readText()
-                        val json = JSONObject(response)
-                        
-                        val token = json.getString("access_token")
-                        val user = json.optJSONObject("user")
-                        val userName = user?.optJSONObject("user_metadata")?.optString("name", null)
-                        val userEmail = user?.optString("email", email)
-                        
-                        // Salvar dados do usuário
-                        val userId = user?.optString("id", "")
-                        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-                        prefs.putString(KEY_TOKEN, token)
-                        prefs.putString("user_id", userId)
-                        prefs.putString("user_email", userEmail)
-                        if (!userName.isNullOrEmpty()) {
-                            prefs.putString("user_name", userName)
-                        }
-                        prefs.apply()
-                        
-                        // Inicializar UserSession
-                        UserSession.saveSession(this@LoginActivity, userId ?: "", token, userEmail ?: email, userName)
-                        
-                        token
-                    } else {
-                        null
+                    // Usar SDK para login
+                    SupabaseClient.auth.signInWithPassword(Email) {
+                        this.email = email
+                        this.password = password
                     }
+                    
+                    // Após login bem-sucedido, obter dados do usuário
+                    val session = SupabaseClient.auth.currentSessionOrNull()
+                    session != null
                 }
                 
                 withContext(Dispatchers.Main) {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
                     
-                    if (result != null) {
+                    if (result) {
+                        // Atualizar UserSession com dados do SDK
+                        val user = SupabaseClient.auth.currentUserOrNull()
+                        UserSession.setUserData(
+                            userId = user?.id ?: "",
+                            email = user?.email ?: email,
+                            name = user?.userMetadata?.get("name")?.toString()?.trim('"')
+                        )
+                        
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()
                     } else {
@@ -126,7 +100,8 @@ class LoginActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
-                    Toast.makeText(this@LoginActivity, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                    val errorMsg = e.message ?: "Erro desconhecido"
+                    Toast.makeText(this@LoginActivity, "Erro: $errorMsg", Toast.LENGTH_SHORT).show()
                 }
             }
         }
