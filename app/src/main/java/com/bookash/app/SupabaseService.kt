@@ -7,9 +7,6 @@ import io.github.jan.tennert.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import org.json.JSONArray
-import org.json.JSONObject
 
 /**
  * Serviço de comunicação com o Supabase usando SDK oficial.

@@ -282,7 +282,7 @@ class AddTransactionActivity : AppCompatActivity() {
         )
         
         lifecycleScope.launch {
-            val success = SupabaseService.saveTransaction(transaction, token)
+            val success = SupabaseService.saveTransaction(transaction, userId)
             
             if (success) {
                 val typeLabel = when (transactionType) {
