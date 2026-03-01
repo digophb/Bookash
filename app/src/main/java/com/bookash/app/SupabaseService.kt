@@ -1,9 +1,9 @@
 package com.bookash.app
 
 import android.util.Log
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.tennert.supabase.postgrest.postgrest
+import io.github.jan.tennert.supabase.postgrest.query.Columns
+import io.github.jan.tennert.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
