@@ -20,6 +20,9 @@ class MoreOptionsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_more_options)
 
+        // Inicializar SettingsManager se necessário
+        SettingsManager.init(this)
+
         tabLayout = findViewById(R.id.tabLayout)
         viewPager = findViewById(R.id.viewPager)
         backButton = findViewById(R.id.backButton)
