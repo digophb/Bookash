@@ -127,10 +127,13 @@ class RegisterActivity : AppCompatActivity() {
                             prefs.apply()
                             
                             // Inicializar UserSession
-                            UserSession.saveSession(this@RegisterActivity, userId, accessToken, email, name)
-                            
-                            // Inicializar configurações do app
-                            SettingsManager.init(this@RegisterActivity)
+                            UserSession.init(this@RegisterActivity)
+                            UserSession.setUserData(
+                                userId = userId,
+                                email = email,
+                                name = name
+                            )
+                            UserSession.setAccessToken(accessToken)
                             
                             // Passo 2: Inserir na tabela public.users
                             if (accessToken.isNotEmpty()) {
