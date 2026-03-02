@@ -11,90 +11,49 @@ import androidx.fragment.app.Fragment
 
 class AboutFragment : Fragment() {
 
-    private lateinit var versionText: TextView
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_about, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        versionText = view.findViewById(R.id.versionText)
+        view.findViewById<View>(R.id.card_share)?.setOnClickListener { shareApp() }
+        view.findViewById<View>(R.id.card_rate)?.setOnClickListener { openPlayStore() }
+        view.findViewById<View>(R.id.card_privacy)?.setOnClickListener { openPrivacyPolicy() }
+        view.findViewById<View>(R.id.card_terms)?.setOnClickListener { openTerms() }
         
-        // Versão do app
         try {
-            val packageInfo = requireContext().packageManager.getPackageInfo(requireContext().packageName, 0)
-            versionText.text = "Versão ${packageInfo.versionName}"
+            val pInfo = requireContext().packageManager.getPackageInfo(requireContext().packageName, 0)
+            view.findViewById<TextView>(R.id.versionValue)?.text = pInfo.versionName
         } catch (e: Exception) {
-            versionText.text = "Versão 1.0.0"
-        }
-
-        setupClickListeners(view)
-    }
-
-    private fun setupClickListeners(view: View) {
-        view.findViewById<View>(R.id.optionTerms).setOnClickListener {
-            openUrl("https://bookash.app/termos")
-        }
-
-        view.findViewById<View>(R.id.optionPrivacy).setOnClickListener {
-            openUrl("https://bookash.app/privacidade")
-        }
-
-        view.findViewById<View>(R.id.optionContact).setOnClickListener {
-            sendEmail()
-        }
-        
-        view.findViewById<View>(R.id.optionLogout).setOnClickListener {
-            showLogoutConfirmDialog()
+            view.findViewById<TextView>(R.id.versionValue)?.text = "1.0.0"
         }
     }
-    
-    private fun showLogoutConfirmDialog() {
-        android.app.AlertDialog.Builder(requireContext())
-            .setTitle("Sair")
-            .setMessage("Tem certeza que deseja sair da sua conta?")
-            .setPositiveButton("Sair") { _, _ ->
-                logout()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-    
-    private fun logout() {
-        // Limpar sessão
-        UserSession.clear()
-        
-        // Navegar para login
-        val intent = Intent(requireContext(), LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-        requireActivity().finish()
+
+    private fun shareApp() {
+        val shareText = "Check out Bookash - o app de gestão financeira pessoal!\n\n📊 Controle gastos e receitas\n💰 Gerencie múltiplas contas\n🏷️ Organize com categorias e tags\n\nBaixe agora: https://play.google.com/store/apps/details?id=com.bookash.app"
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Bookash - Gestão Financeira")
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+        startActivity(Intent.createChooser(intent, "Compartilhar via"))
     }
 
-    private fun openUrl(url: String) {
+    private fun openPlayStore() {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            startActivity(intent)
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.bookash.app")))
         } catch (e: Exception) {
-            // Navegador não disponível
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.bookash.app")))
         }
     }
 
-    private fun sendEmail() {
-        try {
-            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:suporte@bookash.app")
-                putExtra(Intent.EXTRA_SUBJECT, "Suporte Bookash")
-            }
-            startActivity(intent)
-        } catch (e: Exception) {
-            // Email não disponível
-        }
+    private fun openPrivacyPolicy() {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/privacy")))
+    }
+
+    private fun openTerms() {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/terms")))
     }
 }

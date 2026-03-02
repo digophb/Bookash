@@ -1,6 +1,5 @@
 package com.bookash.app
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -24,8 +23,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var registerLink: TextView
     
     companion object {
-        private const val SUPABASE_URL = "https://gqbxasjoxxslpaxjqfeg.supabase.co"
-        private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs"
         private const val PREFS_NAME = "bookash_prefs"
         private const val KEY_TOKEN = "access_token"
     }
@@ -39,9 +36,12 @@ class LoginActivity : AppCompatActivity() {
         loginButton = findViewById(R.id.loginButton)
         registerLink = findViewById(R.id.registerLink)
         
-        // Verificar se já está logado
         val token = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, null)
-        if (token != null) {
+        val savedUserId = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString("user_id", null)
+        
+        if (token != null && savedUserId != null) {
+            UserSession.init(this)
+            UserSession.setUserData(userId = savedUserId)
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }
@@ -70,29 +70,28 @@ class LoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val url = URL("$SUPABASE_URL/auth/v1/token?grant_type=password")
-                    val conn = url.openConnection() as HttpURLConnection
+                    val conn = URL("https://gqbxasjoxxslpaxjqfeg.supabase.co/auth/v1/token?grant_type=password").openConnection() as HttpURLConnection
                     conn.requestMethod = "POST"
-                    conn.setRequestProperty("apikey", SUPABASE_KEY)
+                    conn.setRequestProperty("apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs")
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.doOutput = true
-                    conn.connectTimeout = 15000
-                    conn.readTimeout = 15000
                     
                     val body = """{"email":"$email","password":"$password"}"""
-                    conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
+                    conn.outputStream.write(body.toByteArray())
                     
-                    if (conn.responseCode == 200) {
+                    val responseCode = conn.responseCode
+                    
+                    if (responseCode == 200) {
                         val response = conn.inputStream.bufferedReader().readText()
                         val json = JSONObject(response)
                         
-                        val token = json.getString("access_token")
+                        val token = json.optString("access_token", "")
                         val user = json.optJSONObject("user")
-                        val userName = user?.optJSONObject("user_metadata")?.optString("name", null)
+                        val userId = user?.optString("id", "") ?: json.optString("id", "")
                         val userEmail = user?.optString("email", email)
+                        val userMetadata = user?.optJSONObject("user_metadata")
+                        val userName = userMetadata?.optString("name")
                         
-                        // Salvar dados do usuário
-                        val userId = user?.optString("id", "")
                         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                         prefs.putString(KEY_TOKEN, token)
                         prefs.putString("user_id", userId)
@@ -102,16 +101,13 @@ class LoginActivity : AppCompatActivity() {
                         }
                         prefs.apply()
                         
-                        // Inicializar UserSession
-                        UserSession.saveSession(this@LoginActivity, userId ?: "", token, userEmail ?: email, userName)
+                        UserSession.init(this@LoginActivity)
+                        UserSession.setUserData(userId = userId, email = userEmail ?: email, name = userName)
+                        UserSession.setAccessToken(token)
                         
-                        // Inicializar e sincronizar configurações
-                        SettingsManager.init(this@LoginActivity)
-                        SettingsManager.syncFromServer(userId ?: "")
-                        
-                        token
+                        true
                     } else {
-                        null
+                        false
                     }
                 }
                 
@@ -119,11 +115,9 @@ class LoginActivity : AppCompatActivity() {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
                     
-                    if (result != null) {
+                    if (result) {
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()
-                    } else {
-                        Toast.makeText(this@LoginActivity, "Email ou senha incorretos", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
