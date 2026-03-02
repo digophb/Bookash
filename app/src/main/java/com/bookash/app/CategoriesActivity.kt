@@ -108,13 +108,19 @@ class CategoriesActivity : AppCompatActivity() {
     }
     
     private fun deleteCategory(category: Category) {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showError(this, "Usuário não logado")
+            return
+        }
+        
         lifecycleScope.launch {
-            val success = SupabaseService.deleteCategory(category.id)
+            val success = SupabaseService.deleteCategory(category.id, userId)
             if (success) {
                 ToastManager.showWarning(this@CategoriesActivity, "Categoria \"${category.name}\" excluída")
                 loadCategories()
             } else {
-                ToastManager.showError(this@CategoriesActivity, "Erro ao excluir categoria")
+                ToastManager.showError(this@CategoriesActivity, "Erro ao excluir categoria. Verifique se é uma categoria pessoal.")
             }
         }
     }
