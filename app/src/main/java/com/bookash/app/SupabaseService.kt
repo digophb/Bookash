@@ -143,17 +143,32 @@ object SupabaseService {
         }
     }
     
-    suspend fun updateCategory(category: Category, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun updateCategory(category: Category, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}', userId=$userId")
         
-        // Verificar se a categoria é padrão (não pode editar)
-        if (category.isDefault) {
-            Log.w(TAG, "[CATEGORIES] UPDATE - Bloqueado: categoria padrão não pode ser editada")
-            return@withContext false
-        }
-        
         try {
+            // Primeiro verificar se a categoria pertence ao usuário (não é padrão)
+            val checkUrl = "$BASE_URL/rest/v1/categories?id=eq.${category.id}&user_id=eq.$userId&select=id"
+            val checkConn = URL(checkUrl).openConnection() as HttpURLConnection
+            checkConn.requestMethod = "GET"
+            checkConn.setRequestProperty("apikey", API_KEY)
+            checkConn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            if (checkConn.responseCode != 200) {
+                Log.w(TAG, "[CATEGORIES] UPDATE - Erro ao verificar propriedade")
+                return@withContext false
+            }
+            
+            val checkResponse = checkConn.inputStream.bufferedReader().readText()
+            val checkArray = JSONArray(checkResponse)
+            
+            if (checkArray.length() == 0) {
+                Log.w(TAG, "[CATEGORIES] UPDATE - Categoria não pertence ao usuário ou é padrão (não pode editar)")
+                return@withContext false
+            }
+            
+            // Agora pode atualizar
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.${category.id}").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
