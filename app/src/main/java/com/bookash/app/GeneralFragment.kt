@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.switchmaterial.SwitchMaterial
+import kotlinx.coroutines.launch
 
 class GeneralFragment : Fragment() {
 
@@ -34,10 +36,32 @@ class GeneralFragment : Fragment() {
     }
 
     private fun loadSettings() {
-        // TODO: Carregar do SupabaseService.getSettings()
-        themeValue.text = "Sistema"
-        languageValue.text = "Português"
-        notificationsSwitch.isChecked = true
+        try {
+            // Carregar do SettingsManager
+            val theme = SettingsManager.getTheme()
+            val language = SettingsManager.getLanguage()
+            val notifications = SettingsManager.areNotificationsEnabled()
+
+            themeValue.text = when (theme) {
+                "light" -> "Claro"
+                "dark" -> "Escuro"
+                else -> "Sistema"
+            }
+
+            languageValue.text = when (language) {
+                "pt-BR" -> "Português"
+                "en-US" -> "English"
+                "es-ES" -> "Español"
+                else -> "Português"
+            }
+
+            notificationsSwitch.isChecked = notifications
+        } catch (e: Exception) {
+            // Valores padrão em caso de erro
+            themeValue.text = "Sistema"
+            languageValue.text = "Português"
+            notificationsSwitch.isChecked = true
+        }
     }
 
     private fun setupClickListeners() {
@@ -50,23 +74,29 @@ class GeneralFragment : Fragment() {
         }
 
         notificationsSwitch.setOnCheckedChangeListener { _, isChecked ->
-            // TODO: Salvar no SupabaseService.updateSettings()
+            saveNotificationsSetting(isChecked)
         }
     }
 
     private fun showThemeDialog() {
         val themes = arrayOf("Claro", "Escuro", "Sistema")
-        val currentIndex = when (themeValue.text.toString()) {
-            "Claro" -> 0
-            "Escuro" -> 1
+        val currentValue = SettingsManager.getTheme()
+        val currentIndex = when (currentValue) {
+            "light" -> 0
+            "dark" -> 1
             else -> 2
         }
 
         android.app.AlertDialog.Builder(requireContext())
             .setTitle("Tema")
             .setSingleChoiceItems(themes, currentIndex) { dialog, which ->
+                val themeValue = when (which) {
+                    0 -> "light"
+                    1 -> "dark"
+                    else -> "system"
+                }
+                saveThemeSetting(themeValue)
                 themeValue.text = themes[which]
-                // TODO: Aplicar tema e salvar
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
@@ -75,20 +105,76 @@ class GeneralFragment : Fragment() {
 
     private fun showLanguageDialog() {
         val languages = arrayOf("Português", "English", "Español")
-        val currentIndex = when (languageValue.text.toString()) {
-            "Português" -> 0
-            "English" -> 1
-            else -> 2
+        val currentValue = SettingsManager.getLanguage()
+        val currentIndex = when (currentValue) {
+            "pt-BR" -> 0
+            "en-US" -> 1
+            "es-ES" -> 2
+            else -> 0
         }
 
         android.app.AlertDialog.Builder(requireContext())
             .setTitle("Idioma")
             .setSingleChoiceItems(languages, currentIndex) { dialog, which ->
+                val languageCode = when (which) {
+                    0 -> "pt-BR"
+                    1 -> "en-US"
+                    else -> "es-ES"
+                }
+                saveLanguageSetting(languageCode)
                 languageValue.text = languages[which]
-                // TODO: Salvar preferência
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun saveThemeSetting(theme: String) {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showWarning(requireContext(), "Usuário não logado")
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val success = SettingsManager.setTheme(theme, userId)
+            if (success) {
+                ToastManager.showSuccess(requireContext(), "Tema atualizado")
+            } else {
+                ToastManager.showError(requireContext(), "Erro ao salvar tema")
+            }
+        }
+    }
+
+    private fun saveLanguageSetting(language: String) {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showWarning(requireContext(), "Usuário não logado")
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val success = SettingsManager.setLanguage(language, userId)
+            if (success) {
+                ToastManager.showSuccess(requireContext(), "Idioma atualizado")
+            } else {
+                ToastManager.showError(requireContext(), "Erro ao salvar idioma")
+            }
+        }
+    }
+
+    private fun saveNotificationsSetting(enabled: Boolean) {
+        val userId = UserSession.getUserId()
+        if (userId == null) {
+            ToastManager.showWarning(requireContext(), "Usuário não logado")
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val success = SettingsManager.setNotificationsEnabled(enabled, userId)
+            if (!success) {
+                ToastManager.showError(requireContext(), "Erro ao salvar configuração")
+            }
+        }
     }
 }

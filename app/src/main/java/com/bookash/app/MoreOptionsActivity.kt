@@ -1,6 +1,7 @@
 package com.bookash.app
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -18,17 +19,38 @@ class MoreOptionsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_more_options)
-
-        tabLayout = findViewById(R.id.tabLayout)
-        viewPager = findViewById(R.id.viewPager)
-        backButton = findViewById(R.id.backButton)
-
-        backButton.setOnClickListener {
+        
+        try {
+            setContentView(R.layout.activity_more_options)
+        } catch (e: Exception) {
+            Log.e("MoreOptionsActivity", "Erro ao carregar layout: ${e.message}")
+            ToastManager.showError(this, "Erro ao carregar tela")
             finish()
+            return
         }
 
-        setupViewPager()
+        // Inicializar SettingsManager se necessário
+        try {
+            SettingsManager.init(this)
+        } catch (e: Exception) {
+            Log.e("MoreOptionsActivity", "Erro ao inicializar SettingsManager: ${e.message}")
+        }
+
+        try {
+            tabLayout = findViewById(R.id.tabLayout)
+            viewPager = findViewById(R.id.viewPager)
+            backButton = findViewById(R.id.backButton)
+
+            backButton.setOnClickListener {
+                finish()
+            }
+
+            setupViewPager()
+        } catch (e: Exception) {
+            Log.e("MoreOptionsActivity", "Erro ao configurar view: ${e.message}")
+            ToastManager.showError(this, "Erro ao configurar tela")
+            finish()
+        }
     }
 
     private fun setupViewPager() {

@@ -8,13 +8,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import io.github.jan.tennert.supabase.gotrue.auth
-import io.github.jan.tennert.supabase.gotrue.providers.builtin.Email
-import io.github.jan.tennert.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class RegisterActivity : AppCompatActivity() {
     
@@ -26,15 +25,10 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var loginLink: TextView
     
     companion object {
+        private const val SUPABASE_URL = "https://gqbxasjoxxslpaxjqfeg.supabase.co"
+        private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs"
         private const val TAG = "BookashRegister"
     }
-    
-    @Serializable
-    data class UserDTO(
-        val id: String,
-        val email: String,
-        val name: String
-    )
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,54 +89,94 @@ class RegisterActivity : AppCompatActivity() {
                 val result = withContext(Dispatchers.IO) {
                     Log.d(TAG, "Iniciando cadastro para: $email")
                     
-                    try {
-                        // Passo 1: Criar conta no Auth do Supabase via SDK
-                        SupabaseClient.auth.signUpWith(Email) {
-                            this.email = email
-                            this.password = password
-                            this.data = mapOf("name" to name)
-                        }
+                    // Passo 1: Criar conta no Auth do Supabase
+                    val url = URL("$SUPABASE_URL/auth/v1/signup")
+                    val conn = url.openConnection() as HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("apikey", SUPABASE_KEY)
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.connectTimeout = 30000
+                    conn.readTimeout = 30000
+                    
+                    val body = """{"email":"$email","password":"$password","data":{"name":"$name"}}"""
+                    Log.d(TAG, "Enviando: $body")
+                    conn.outputStream.write(body.toByteArray(Charsets.UTF_8))
+                    
+                    val responseCode = conn.responseCode
+                    Log.d(TAG, "Response code: $responseCode")
+                    
+                    if (responseCode == 200 || responseCode == 201) {
+                        val response = conn.inputStream.bufferedReader().readText()
+                        Log.d(TAG, "Response: $response")
+                        val json = JSONObject(response)
                         
-                        // Obter usuário criado
-                        val user = SupabaseClient.auth.currentUserOrNull()
+                        // O ID do usuário está dentro de "user" na resposta do Supabase
+                        val userJson = json.optJSONObject("user")
+                        val userId = userJson?.optString("id", "") ?: json.optString("id", "")
+                        val accessToken = json.optString("access_token", "")
+                        Log.d(TAG, "User ID: $userId")
                         
-                        if (user != null) {
-                            val userId = user.id
-                            Log.d(TAG, "Usuário criado: $userId")
+                        if (userId.isNotEmpty()) {
+                            // Salvar dados do usuário
+                            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit()
+                            prefs.putString("user_id", userId)
+                            prefs.putString("access_token", accessToken)
+                            prefs.putString("user_email", email)
+                            prefs.putString("user_name", name)
+                            prefs.apply()
                             
-                            // Atualizar UserSession
-                            UserSession.setUserData(
-                                userId = userId,
-                                email = email,
-                                name = name
-                            )
+                            // Inicializar UserSession
+                            UserSession.saveSession(this@RegisterActivity, userId, accessToken, email, name)
                             
-                            // Passo 2: Inserir na tabela public.users via SDK
-                            try {
-                                SupabaseClient.client.from("users").insert(
-                                    UserDTO(
-                                        id = userId,
-                                        email = email,
-                                        name = name
-                                    )
-                                )
-                                Log.d(TAG, "Usuário inserido na tabela users")
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Erro ao inserir na tabela users: ${e.message}")
-                                // Não falha o registro se a inserção na tabela falhar
+                            // Inicializar configurações do app
+                            SettingsManager.init(this@RegisterActivity)
+                            
+                            // Passo 2: Inserir na tabela public.users
+                            if (accessToken.isNotEmpty()) {
+                                try {
+                                    val insertUrl = URL("$SUPABASE_URL/rest/v1/users")
+                                    val insertConn = insertUrl.openConnection() as HttpURLConnection
+                                    insertConn.requestMethod = "POST"
+                                    insertConn.setRequestProperty("apikey", SUPABASE_KEY)
+                                    insertConn.setRequestProperty("Authorization", "Bearer $accessToken")
+                                    insertConn.setRequestProperty("Content-Type", "application/json")
+                                    insertConn.setRequestProperty("Prefer", "return=minimal")
+                                    insertConn.doOutput = true
+                                    
+                                    val insertBody = """{"id":"$userId","email":"$email","name":"$name"}"""
+                                    Log.d(TAG, "Inserindo na tabela users: $insertBody")
+                                    insertConn.outputStream.write(insertBody.toByteArray(Charsets.UTF_8))
+                                    
+                                    val insertCode = insertConn.responseCode
+                                    Log.d(TAG, "Insert response code: $insertCode")
+                                    insertConn.disconnect()
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Erro ao inserir na tabela: ${e.message}")
+                                }
                             }
-                            
                             true
                         } else {
-                            Log.e(TAG, "Usuário retornou null após signUp")
+                            Log.e(TAG, "userId vazio")
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(this@RegisterActivity, "Erro ao criar conta. Tente novamente.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@RegisterActivity, "Resposta inválida do servidor", Toast.LENGTH_LONG).show()
                             }
                             false
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Erro no cadastro: ${e.message}", e)
-                        val errorMsg = parseAuthError(e.message)
+                    } else {
+                        val errorResponse = conn.errorStream?.bufferedReader()?.readText() ?: "Sem resposta"
+                        Log.e(TAG, "Erro HTTP $responseCode: $errorResponse")
+                        
+                        var errorMsg = "Erro ao criar conta"
+                        try {
+                            val errorJson = JSONObject(errorResponse)
+                            errorMsg = errorJson.optString("msg", 
+                                errorJson.optString("message", 
+                                    errorJson.optString("error_description", errorMsg)))
+                        } catch (e: Exception) {
+                            errorMsg = "Erro HTTP $responseCode"
+                        }
+                        
                         withContext(Dispatchers.Main) {
                             Toast.makeText(this@RegisterActivity, errorMsg, Toast.LENGTH_LONG).show()
                         }
@@ -155,7 +189,7 @@ class RegisterActivity : AppCompatActivity() {
                     registerButton.text = "Criar Conta"
                     
                     if (result) {
-                        Toast.makeText(this@RegisterActivity, "Conta criada com sucesso!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@RegisterActivity, "Conta criada! Verifique seu email ou faça login.", Toast.LENGTH_LONG).show()
                         finish()
                     }
                 }
@@ -167,22 +201,6 @@ class RegisterActivity : AppCompatActivity() {
                     Toast.makeText(this@RegisterActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
-        }
-    }
-    
-    private fun parseAuthError(message: String?): String {
-        if (message == null) return "Erro desconhecido"
-        
-        return when {
-            message.contains("already registered", ignoreCase = true) -> 
-                "Este email já está cadastrado"
-            message.contains("invalid email", ignoreCase = true) -> 
-                "Email inválido"
-            message.contains("password", ignoreCase = true) -> 
-                "Senha inválida"
-            message.contains("network", ignoreCase = true) -> 
-                "Erro de conexão"
-            else -> message
         }
     }
 }
