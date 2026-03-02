@@ -6,16 +6,17 @@ import android.util.Log
 /**
  * UserSession - Gerenciador de sessão do usuário
  * 
- * Wrapper para o sistema de autenticação do Supabase SDK.
- * Fornece acesso conveniente aos dados do usuário logado.
+ * Gerencia os dados do usuário logado via SharedPreferences.
  * 
- * IMPORTANTE: A sessão é gerenciada automaticamente pelo SDK.
- * Este objeto apenas expõe os dados de forma conveniente.
+ * IMPORTANTE: O token e userId são salvos após login/registro.
  */
 object UserSession {
     
     private const val TAG = "UserSession"
     private const val PREFS_NAME = "bookash_session"
+    private const val KEY_USER_ID = "user_id"
+    private const val KEY_ACCESS_TOKEN = "access_token"
+    private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_NAME = "user_name"
     
     private var prefs: android.content.SharedPreferences? = null
@@ -30,27 +31,30 @@ object UserSession {
     
     /**
      * Define os dados do usuário após login/registro.
-     * O SDK gerencia userId e token automaticamente.
      */
     fun setUserData(userId: String, email: String? = null, name: String? = null) {
         Log.d(TAG, "setUserData: userId=$userId, email=$email, name=$name")
-        // Apenas salvamos o nome, pois o SDK gerencia o resto
-        name?.let { 
-            prefs?.edit()?.putString(KEY_USER_NAME, it)?.apply()
+        prefs?.edit()?.apply {
+            putString(KEY_USER_ID, userId)
+            email?.let { putString(KEY_USER_EMAIL, it) }
+            name?.let { putString(KEY_USER_NAME, it) }
+            apply()
         }
     }
     
     /**
-     * Retorna o ID do usuário logado via SDK.
+     * Define o token de acesso.
+     */
+    fun setAccessToken(token: String) {
+        prefs?.edit()?.putString(KEY_ACCESS_TOKEN, token)?.apply()
+    }
+    
+    /**
+     * Retorna o ID do usuário logado.
      * Retorna null se não houver usuário logado.
      */
     fun getUserId(): String? {
-        return try {
-            SupabaseClient.auth.currentUserOrNull()?.id
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao obter userId: ${e.message}")
-            null
-        }
+        return prefs?.getString(KEY_USER_ID, null)
     }
     
     /**
@@ -61,51 +65,35 @@ object UserSession {
     }
     
     /**
-     * Retorna o email do usuário logado via SDK.
+     * Retorna o token de acesso.
+     */
+    fun getAccessToken(): String? {
+        return prefs?.getString(KEY_ACCESS_TOKEN, null)
+    }
+    
+    /**
+     * Retorna o email do usuário logado.
      */
     fun getUserEmail(): String? {
-        return try {
-            SupabaseClient.auth.currentUserOrNull()?.email
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao obter email: ${e.message}")
-            null
-        }
+        return prefs?.getString(KEY_USER_EMAIL, null)
     }
     
     /**
      * Retorna o nome do usuário.
-     * Prioriza userMetadata do SDK, fallback para SharedPreferences.
      */
     fun getUserName(): String? {
-        return try {
-            val user = SupabaseClient.auth.currentUserOrNull()
-            val metadataName = user?.userMetadata?.get("name")?.toString()?.trim('"')
-            
-            if (!metadataName.isNullOrBlank()) {
-                metadataName
-            } else {
-                prefs?.getString(KEY_USER_NAME, null)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao obter nome: ${e.message}")
-            prefs?.getString(KEY_USER_NAME, null)
-        }
+        return prefs?.getString(KEY_USER_NAME, null)
     }
     
     /**
-     * Verifica se há um usuário logado via SDK.
+     * Verifica se há um usuário logado.
      */
     fun isLoggedIn(): Boolean {
-        return try {
-            SupabaseClient.auth.currentSessionOrNull() != null
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao verificar login: ${e.message}")
-            false
-        }
+        return prefs?.getString(KEY_USER_ID, null) != null
     }
     
     /**
-     * Limpa a sessão local (chamado após signOut do SDK).
+     * Limpa a sessão local.
      */
     fun clearLocal() {
         prefs?.edit()?.clear()?.apply()
@@ -113,16 +101,10 @@ object UserSession {
     }
     
     /**
-     * Faz logout completo via SDK e limpa dados locais.
+     * Faz logout completo.
      */
-    suspend fun signOut() {
-        try {
-            SupabaseClient.auth.signOut()
-            clearLocal()
-            Log.d(TAG, "Logout realizado com sucesso")
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao fazer logout: ${e.message}")
-            clearLocal()
-        }
+    fun signOut() {
+        clearLocal()
+        Log.d(TAG, "Logout realizado com sucesso")
     }
 }
