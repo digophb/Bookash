@@ -26,8 +26,8 @@ object SupabaseService {
     // ============== CATEGORIES ==============
     
     /**
-     * Busca categorias do usuário logado.
-     * IMPORTANTE: Sempre filtra por user_id para isolamento de dados.
+     * Busca categorias padrão (user_id NULL) + categorias do usuário.
+     * IMPORTANTE: Retorna categorias do sistema visíveis para todos + pessoais do usuário.
      */
     suspend fun getCategories(userId: String, type: String? = null): List<Category> = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
@@ -35,10 +35,12 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
+            // Busca categorias padrão (user_id NULL) + categorias do usuário
+            // Usa or=(user_id.is.null,user_id.eq.$userId) para combinar ambas
             val endpoint = if (type != null) {
-                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&type=eq.$type&select=*"
+                "$BASE_URL/rest/v1/categories?or=(user_id.is.null,user_id.eq.$userId)&type=eq.$type&select=*&order=is_default.desc,name.asc"
             } else {
-                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&select=*"
+                "$BASE_URL/rest/v1/categories?or=(user_id.is.null,user_id.eq.$userId)&select=*&order=is_default.desc,name.asc"
             }
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -52,7 +54,9 @@ object SupabaseService {
             if (responseCode == 200) {
                 val response = conn.inputStream.bufferedReader().readText()
                 val categories = parseCategories(JSONArray(response))
-                Log.i(TAG, "[CATEGORIES] GET - Sucesso: ${categories.size} categorias encontradas (${duration}ms)")
+                val defaultCount = categories.count { it.isDefault }
+                val personalCount = categories.count { !it.isDefault }
+                Log.i(TAG, "[CATEGORIES] GET - Sucesso: $defaultCount padrão + $personalCount pessoais (${duration}ms)")
                 categories
             } else {
                 Log.w(TAG, "[CATEGORIES] GET - Falha: HTTP $responseCode (${duration}ms)")
@@ -102,11 +106,20 @@ object SupabaseService {
         }
     }
     
-    suspend fun deleteCategory(categoryId: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteCategory(categoryId: String, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId")
+        Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId, userId=$userId")
         
         try {
+            // Verificar se a categoria é padrão (não pode excluir)
+            if (userId != null) {
+                val category = getCategoryById(categoryId, userId)
+                if (category != null && category.isDefault) {
+                    Log.w(TAG, "[CATEGORIES] DELETE - Bloqueado: categoria padrão não pode ser excluída")
+                    return@withContext false
+                }
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.$categoryId").openConnection() as HttpURLConnection
             conn.requestMethod = "DELETE"
             conn.setRequestProperty("apikey", API_KEY)
@@ -132,7 +145,13 @@ object SupabaseService {
     
     suspend fun updateCategory(category: Category, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}'")
+        Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}', userId=$userId")
+        
+        // Verificar se a categoria é padrão (não pode editar)
+        if (category.isDefault) {
+            Log.w(TAG, "[CATEGORIES] UPDATE - Bloqueado: categoria padrão não pode ser editada")
+            return@withContext false
+        }
         
         try {
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.${category.id}").openConnection() as HttpURLConnection
@@ -223,17 +242,62 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Busca uma categoria específica por ID.
+     * Retorna null se não encontrar ou se for de outro usuário.
+     */
+    suspend fun getCategoryById(categoryId: String, userId: String): Category? = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[CATEGORIES] GET_BY_ID - Buscando: id=$categoryId, userId=$userId")
+        
+        try {
+            val endpoint = "$BASE_URL/rest/v1/categories?id=eq.$categoryId&select=*&limit=1"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                
+                if (jsonArray.length() > 0) {
+                    val category = parseCategories(jsonArray).first()
+                    Log.i(TAG, "[CATEGORIES] GET_BY_ID - Sucesso: '${category.name}' (${duration}ms)")
+                    category
+                } else {
+                    Log.w(TAG, "[CATEGORIES] GET_BY_ID - Não encontrada (${duration}ms)")
+                    null
+                }
+            } else {
+                Log.w(TAG, "[CATEGORIES] GET_BY_ID - Falha: HTTP $responseCode (${duration}ms)")
+                null
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[CATEGORIES] GET_BY_ID - Erro após ${duration}ms", e)
+            null
+        }
+    }
+    
     private fun parseCategories(jsonArray: JSONArray): List<Category> {
         val list = mutableListOf<Category>()
         for (i in 0 until jsonArray.length()) {
             val json = jsonArray.getJSONObject(i)
+            val userId = json.optString("user_id", "")
+            val isDefault = json.optBoolean("is_default", userId.isEmpty())
             val category = Category(
                 id = json.optString("id"),
                 name = json.optString("name"),
                 type = json.optString("type"),
                 color = json.optString("color", "#357266"),
                 icon = json.optString("icon", "category"),
-                userId = json.optString("user_id", "")
+                userId = userId,
+                isDefault = isDefault
             )
             list.add(category)
         }
