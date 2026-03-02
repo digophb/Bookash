@@ -267,6 +267,36 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Cria conta padrão "Carteira" para novos usuários.
+     * Chamado após o registro para garantir que o usuário tenha pelo menos uma conta.
+     */
+    suspend fun createDefaultAccount(userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ACCOUNTS] CREATE DEFAULT - Iniciando para userId: $userId")
+        
+        try {
+            val defaultAccount = mapOf(
+                "name" to "Carteira",
+                "type" to "carteira",
+                "balance" to 0.0,
+                "icon" to "wallet",
+                "user_id" to userId,
+                "is_archived" to false
+            )
+            
+            SupabaseClient.client.postgrest["accounts"].insert(defaultAccount)
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] CREATE DEFAULT - Sucesso: conta 'Carteira' criada (${duration}ms)")
+            true
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ACCOUNTS] CREATE DEFAULT - Erro ao criar conta padrão após ${duration}ms", e)
+            false
+        }
+    }
+    
     // ============== TRANSACTIONS ==============
     
     suspend fun getTransactions(userId: String, limit: Int = 50): List<Transaction> = withContext(Dispatchers.IO) {

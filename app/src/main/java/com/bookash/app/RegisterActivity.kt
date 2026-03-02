@@ -132,6 +132,18 @@ class RegisterActivity : AppCompatActivity() {
                                 // Não falha o registro se a inserção na tabela falhar
                             }
                             
+                            // Passo 3: Criar conta padrão "Carteira"
+                            try {
+                                val accountCreated = SupabaseService.createDefaultAccount(userId)
+                                if (accountCreated) {
+                                    Log.d(TAG, "Conta padrão 'Carteira' criada")
+                                } else {
+                                    Log.w(TAG, "Falha ao criar conta padrão")
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Erro ao criar conta padrão: ${e.message}")
+                            }
+                            
                             true
                         } else {
                             Log.e(TAG, "Usuário retornou null após signUp")
