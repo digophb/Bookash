@@ -315,6 +315,50 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Cria a conta padrão 'Carteira' para um novo usuário.
+     * Chamado automaticamente pelo trigger no banco, mas disponível como fallback.
+     */
+    suspend fun createDefaultAccount(userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ACCOUNTS] DEFAULT - Criando conta Carteira para userId: $userId")
+        
+        try {
+            // Verificar se já existe conta para este usuário
+            val existingAccounts = getAccounts(userId, archived = false)
+            if (existingAccounts.isNotEmpty()) {
+                Log.i(TAG, "[ACCOUNTS] DEFAULT - Usuário já possui contas, pulando criação")
+                return@withContext true
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/accounts").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"name":"Carteira","balance":0,"type":"dinheiro","icon":"wallet","user_id":"$userId"}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[ACCOUNTS] DEFAULT - Sucesso: conta 'Carteira' criada (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[ACCOUNTS] DEFAULT - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ACCOUNTS] DEFAULT - Erro ao criar conta padrão após ${duration}ms", e)
+            false
+        }
+    }
+    
     suspend fun updateAccount(account: Account, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[ACCOUNTS] UPDATE - Iniciando: id=${account.id}, name='${account.name}'")
