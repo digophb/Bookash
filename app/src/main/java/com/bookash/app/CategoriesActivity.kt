@@ -54,20 +54,17 @@ class CategoriesActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val userId = UserSession.getUserId()
             
-            // Carregar categorias pessoais do usuário
-            val personalCategories = if (userId != null) {
-                SupabaseService.getCategories(userId)
-            } else {
-                emptyList()
+            if (userId == null) {
+                emptyState.visibility = View.VISIBLE
+                categoriesRecycler.visibility = View.GONE
+                return@launch
             }
             
-            // Carregar categorias padrão (sem userId)
-            val defaultCategories = SupabaseService.getDefaultCategories()
+            // Carregar categorias: padrão (user_id NULL) + pessoais do usuário
+            val allCategories = SupabaseService.getCategories(userId)
             
-            // Combinar: padrão primeiro, depois pessoais
             categories.clear()
-            categories.addAll(defaultCategories)
-            categories.addAll(personalCategories)
+            categories.addAll(allCategories)
             
             if (categories.isEmpty()) {
                 emptyState.visibility = View.VISIBLE
