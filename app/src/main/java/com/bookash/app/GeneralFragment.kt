@@ -65,11 +65,11 @@ class GeneralFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        view?.findViewById<View>(R.id.optionTheme)?.setOnClickListener {
+        view?.findViewById<View>(R.id.card_theme)?.setOnClickListener {
             showThemeDialog()
         }
 
-        view?.findViewById<View>(R.id.optionLanguage)?.setOnClickListener {
+        view?.findViewById<View>(R.id.card_language)?.setOnClickListener {
             showLanguageDialog()
         }
 
