@@ -4,40 +4,41 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
-import android.widget.Toast
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
 class CategoriesActivity : AppCompatActivity() {
 
     private lateinit var categoriesRecycler: RecyclerView
-    private lateinit var fabAddCategory: com.google.android.material.floatingactionbutton.FloatingActionButton
+    private lateinit var fabAddCategory: FloatingActionButton
     private lateinit var emptyState: View
+    private lateinit var backButton: ImageView
     
     private val categories = mutableListOf<Category>()
     private lateinit var categoryAdapter: CategoryAdapter
-    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_categories)
-        
-        userId = UserSession.getUserId()
 
         categoriesRecycler = findViewById(R.id.categoriesRecycler)
         fabAddCategory = findViewById(R.id.fabAddCategory)
         emptyState = findViewById(R.id.emptyState)
+        backButton = findViewById(R.id.backButton)
         
-        findViewById<ImageView>(R.id.backButton).setOnClickListener {
+        backButton.setOnClickListener {
             finish()
         }
 
         categoryAdapter = CategoryAdapter(
             onEditClick = { category -> openEditCategory(category) },
-            onDeleteClick = { category -> showDeleteCategoryDialog(category) }
+            onDeleteClick = { category -> showDeleteConfirmDialog(category) }
         )
         categoriesRecycler.layoutManager = LinearLayoutManager(this)
         categoriesRecycler.adapter = categoryAdapter
@@ -50,16 +51,23 @@ class CategoriesActivity : AppCompatActivity() {
     }
 
     private fun loadCategories() {
-        if (userId == null) {
-            emptyState.visibility = View.VISIBLE
-            categoriesRecycler.visibility = View.GONE
-            return
-        }
-        
         lifecycleScope.launch {
-            val loadedCategories = SupabaseService.getCategories(userId!!)
+            val userId = UserSession.getUserId()
+            
+            // Carregar categorias pessoais do usuário
+            val personalCategories = if (userId != null) {
+                SupabaseService.getCategories(userId)
+            } else {
+                emptyList()
+            }
+            
+            // Carregar categorias padrão (sem userId)
+            val defaultCategories = SupabaseService.getDefaultCategories()
+            
+            // Combinar: padrão primeiro, depois pessoais
             categories.clear()
-            categories.addAll(loadedCategories)
+            categories.addAll(defaultCategories)
+            categories.addAll(personalCategories)
             
             if (categories.isEmpty()) {
                 emptyState.visibility = View.VISIBLE
@@ -88,10 +96,10 @@ class CategoriesActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_ADD_CATEGORY)
     }
     
-    private fun showDeleteCategoryDialog(category: Category) {
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+    private fun showDeleteConfirmDialog(category: Category) {
+        MaterialAlertDialogBuilder(this)
             .setTitle("Excluir categoria")
-            .setMessage("Deseja excluir \"${category.name}\"?")
+            .setMessage("Tem certeza que deseja excluir \"${category.name}\"?\n\nEsta ação não pode ser desfeita.")
             .setPositiveButton("Excluir") { _, _ ->
                 deleteCategory(category)
             }
@@ -118,7 +126,6 @@ class CategoriesActivity : AppCompatActivity() {
         if (requestCode == REQUEST_ADD_CATEGORY && resultCode == RESULT_OK) {
             loadCategories()
             
-            // Show toast based on action
             data?.let {
                 val action = it.getStringExtra("category_action")
                 val categoryName = it.getStringExtra("category_name") ?: "Categoria"
