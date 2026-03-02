@@ -171,9 +171,9 @@ class AddCategoryActivity : AppCompatActivity() {
             )
 
             val success = if (editingCategoryId != null) {
-                SupabaseService.updateCategory(category, userId)
+                SupabaseService.updateCategory(category, userId ?: "")
             } else {
-                SupabaseService.saveCategory(category, userId!!)
+                SupabaseService.saveCategory(category, userId ?: "")
             }
 
             btnSave.isEnabled = true

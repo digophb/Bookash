@@ -18,42 +18,39 @@ class AboutFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        view.findViewById<View>(R.id.card_share)?.setOnClickListener { shareApp() }
-        view.findViewById<View>(R.id.card_rate)?.setOnClickListener { openPlayStore() }
-        view.findViewById<View>(R.id.card_privacy)?.setOnClickListener { openPrivacyPolicy() }
-        view.findViewById<View>(R.id.card_terms)?.setOnClickListener { openTerms() }
+        view.findViewById<View>(R.id.optionTerms)?.setOnClickListener { openTerms() }
+        view.findViewById<View>(R.id.optionPrivacy)?.setOnClickListener { openPrivacyPolicy() }
+        view.findViewById<View>(R.id.optionContact)?.setOnClickListener { openContact() }
+        view.findViewById<View>(R.id.optionLogout)?.setOnClickListener { logout() }
         
         try {
             val pInfo = requireContext().packageManager.getPackageInfo(requireContext().packageName, 0)
-            view.findViewById<TextView>(R.id.versionValue)?.text = pInfo.versionName
+            view.findViewById<TextView>(R.id.versionText)?.text = "Versão ${pInfo.versionName}"
         } catch (e: Exception) {
-            view.findViewById<TextView>(R.id.versionValue)?.text = "1.0.0"
+            view.findViewById<TextView>(R.id.versionText)?.text = "Versão 1.0.0"
         }
     }
 
-    private fun shareApp() {
-        val shareText = "Check out Bookash - o app de gestão financeira pessoal!\n\n📊 Controle gastos e receitas\n💰 Gerencie múltiplas contas\n🏷️ Organize com categorias e tags\n\nBaixe agora: https://play.google.com/store/apps/details?id=com.bookash.app"
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Bookash - Gestão Financeira")
-            putExtra(Intent.EXTRA_TEXT, shareText)
-        }
-        startActivity(Intent.createChooser(intent, "Compartilhar via"))
-    }
-
-    private fun openPlayStore() {
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.bookash.app")))
-        } catch (e: Exception) {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.bookash.app")))
-        }
+    private fun openTerms() {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/terms")))
     }
 
     private fun openPrivacyPolicy() {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/privacy")))
     }
 
-    private fun openTerms() {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/terms")))
+    private fun openContact() {
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:suporte@bookash.app")
+            putExtra(Intent.EXTRA_SUBJECT, "Suporte Bookash")
+        }
+        startActivity(Intent.createChooser(intent, "Enviar e-mail"))
+    }
+
+    private fun logout() {
+        UserSession.clear()
+        val intent = Intent(requireContext(), LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
     }
 }

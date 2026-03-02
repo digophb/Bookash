@@ -28,40 +28,50 @@ class GeneralFragment : Fragment() {
         notificationsSwitch = view.findViewById(R.id.notificationsSwitch)
 
         loadSettings()
-        setupClickListeners(view)
+        setupClickListeners()
     }
 
     private fun loadSettings() {
-        try {
-            val theme = SettingsManager.getTheme()
-            val language = SettingsManager.getLanguage()
-            val notifications = SettingsManager.areNotificationsEnabled()
-
-            themeValue.text = when (theme) { "light" -> "Claro"; "dark" -> "Escuro"; else -> "Sistema" }
-            languageValue.text = when (language) { "pt-BR" -> "Português"; "en-US" -> "English"; "es-ES" -> "Español"; else -> "Português" }
-            notificationsSwitch.isChecked = notifications
-        } catch (e: Exception) {
-            themeValue.text = "Sistema"
-            languageValue.text = "Português"
-            notificationsSwitch.isChecked = true
+        val userId = UserSession.getUserId()
+        if (userId != null) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val settings = SupabaseService.getSettings(userId)
+                    themeValue.text = when (settings.theme) { "light" -> "Claro"; "dark" -> "Escuro"; else -> "Sistema" }
+                    languageValue.text = when (settings.language) { "pt-BR" -> "Português"; "en-US" -> "English"; "es-ES" -> "Español"; else -> "Português" }
+                    notificationsSwitch.isChecked = settings.notificationsEnabled
+                } catch (e: Exception) {
+                    setDefaultValues()
+                }
+            }
+        } else {
+            setDefaultValues()
         }
     }
 
-    private fun setupClickListeners(view: View) {
-        view.findViewById<View>(R.id.card_theme)?.setOnClickListener { showThemeDialog() }
-        view.findViewById<View>(R.id.card_language)?.setOnClickListener { showLanguageDialog() }
+    private fun setDefaultValues() {
+        themeValue.text = "Sistema"
+        languageValue.text = "Português"
+        notificationsSwitch.isChecked = true
+    }
+
+    private fun setupClickListeners() {
+        themeValue.setOnClickListener { showThemeDialog() }
+        languageValue.setOnClickListener { showLanguageDialog() }
         notificationsSwitch.setOnCheckedChangeListener { _, isChecked -> saveNotificationsSetting(isChecked) }
     }
 
     private fun showThemeDialog() {
         val themes = arrayOf("Claro", "Escuro", "Sistema")
-        val currentIndex = when (SettingsManager.getTheme()) { "light" -> 0; "dark" -> 1; else -> 2 }
+        val currentTheme = themeValue.text.toString()
+        val currentIndex = when (currentTheme) { "Claro" -> 0; "Escuro" -> 1; else -> 2 }
+        
         android.app.AlertDialog.Builder(requireContext())
             .setTitle("Tema")
             .setSingleChoiceItems(themes, currentIndex) { dialog, which ->
                 val selectedTheme = when (which) { 0 -> "light"; 1 -> "dark"; else -> "system" }
-                saveThemeSetting(selectedTheme)
                 themeValue.text = themes[which]
+                saveThemeSetting(selectedTheme)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
@@ -70,13 +80,15 @@ class GeneralFragment : Fragment() {
 
     private fun showLanguageDialog() {
         val languages = arrayOf("Português", "English", "Español")
-        val currentIndex = when (SettingsManager.getLanguage()) { "pt-BR" -> 0; "en-US" -> 1; "es-ES" -> 2; else -> 0 }
+        val currentLanguage = languageValue.text.toString()
+        val currentIndex = when (currentLanguage) { "English" -> 1; "Español" -> 2; else -> 0 }
+        
         android.app.AlertDialog.Builder(requireContext())
             .setTitle("Idioma")
             .setSingleChoiceItems(languages, currentIndex) { dialog, which ->
                 val languageCode = when (which) { 0 -> "pt-BR"; 1 -> "en-US"; else -> "es-ES" }
-                saveLanguageSetting(languageCode)
                 languageValue.text = languages[which]
+                saveLanguageSetting(languageCode)
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
@@ -85,16 +97,25 @@ class GeneralFragment : Fragment() {
 
     private fun saveThemeSetting(theme: String) {
         val userId = UserSession.getUserId() ?: return
-        viewLifecycleOwner.lifecycleScope.launch { SettingsManager.setTheme(theme, userId) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val settings = AppSettings(userId = userId, theme = theme)
+            SupabaseService.updateSettings(settings, userId)
+        }
     }
 
     private fun saveLanguageSetting(language: String) {
         val userId = UserSession.getUserId() ?: return
-        viewLifecycleOwner.lifecycleScope.launch { SettingsManager.setLanguage(language, userId) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val settings = AppSettings(userId = userId, language = language)
+            SupabaseService.updateSettings(settings, userId)
+        }
     }
 
     private fun saveNotificationsSetting(enabled: Boolean) {
         val userId = UserSession.getUserId() ?: return
-        viewLifecycleOwner.lifecycleScope.launch { SettingsManager.setNotificationsEnabled(enabled, userId) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val settings = AppSettings(userId = userId, notificationsEnabled = enabled)
+            SupabaseService.updateSettings(settings, userId)
+        }
     }
 }
