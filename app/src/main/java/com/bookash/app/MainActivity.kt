@@ -80,41 +80,12 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_planning -> true
                 R.id.nav_reports -> true
                 R.id.nav_more -> {
-                    showMoreMenu()
+                    startActivity(Intent(this, MoreOptionsActivity::class.java))
                     false
                 }
                 else -> false
             }
         }
-    }
-    
-    private fun showMoreMenu() {
-        val options = arrayOf("Gerenciar", "Sair")
-        
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Mais Opções")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showManageMenu()
-                    1 -> logout()
-                }
-            }
-            .show()
-    }
-    
-    private fun showManageMenu() {
-        val options = arrayOf("Categorias", "Contas", "Tags")
-        
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Gerenciar")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> startActivity(Intent(this, CategoriesActivity::class.java))
-                    1 -> startActivity(Intent(this, AccountsActivity::class.java))
-                    2 -> startActivity(Intent(this, TagsActivity::class.java))
-                }
-            }
-            .show()
     }
     
     private fun logout() {
