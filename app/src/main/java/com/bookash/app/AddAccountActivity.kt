@@ -11,10 +11,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 
 class AddAccountActivity : AppCompatActivity() {
 
@@ -33,6 +34,10 @@ class AddAccountActivity : AppCompatActivity() {
     private var selectedType = "corrente"
     private var editingAccountId: String? = null
     private var userId: String? = null
+    
+    // Para formatação monetária
+    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+    private var isUpdatingBalance = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +48,7 @@ class AddAccountActivity : AppCompatActivity() {
         initViews()
         setupAdapters()
         setupListeners()
+        setupMonetaryInput()
         loadEditingData()
     }
 
@@ -98,6 +104,34 @@ class AddAccountActivity : AppCompatActivity() {
         btnSave.setOnClickListener {
             saveAccount()
         }
+    }
+    
+    private fun setupMonetaryInput() {
+        balanceInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingBalance) return
+                
+                val text = s?.toString() ?: ""
+                val cleanText = text.filter { it.isDigit() }
+                
+                if (cleanText.isEmpty()) {
+                    isUpdatingBalance = true
+                    balanceInput.setText("")
+                    isUpdatingBalance = false
+                    return
+                }
+                
+                // Converter centavos para valor
+                val value = cleanText.toDouble() / 100.0
+                
+                isUpdatingBalance = true
+                balanceInput.setText(String.format("%.2f", value))
+                balanceInput.setSelection(balanceInput.text?.length ?: 0)
+                isUpdatingBalance = false
+            }
+        })
     }
 
     private fun loadEditingData() {
