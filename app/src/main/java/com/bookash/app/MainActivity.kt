@@ -118,6 +118,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun logout() {
+        SettingsManager.clearCache()
         getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
         startActivity(Intent(this, LoginActivity::class.java))
         finish()

@@ -105,6 +105,10 @@ class LoginActivity : AppCompatActivity() {
                         // Inicializar UserSession
                         UserSession.saveSession(this@LoginActivity, userId ?: "", token, userEmail ?: email, userName)
                         
+                        // Inicializar e sincronizar configurações
+                        SettingsManager.init(this@LoginActivity)
+                        SettingsManager.syncFromServer(userId ?: "")
+                        
                         token
                     } else {
                         null
