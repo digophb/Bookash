@@ -1,6 +1,7 @@
 package com.bookash.app
 
 import android.os.Bundle
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -13,6 +14,7 @@ class MoreOptionsActivity : AppCompatActivity() {
 
     private lateinit var tabLayout: TabLayout
     private lateinit var viewPager: ViewPager2
+    private lateinit var backButton: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,6 +22,11 @@ class MoreOptionsActivity : AppCompatActivity() {
 
         tabLayout = findViewById(R.id.tabLayout)
         viewPager = findViewById(R.id.viewPager)
+        backButton = findViewById(R.id.backButton)
+
+        backButton.setOnClickListener {
+            finish()
+        }
 
         setupViewPager()
     }
