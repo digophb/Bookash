@@ -49,6 +49,32 @@ class AboutFragment : Fragment() {
         view.findViewById<View>(R.id.optionContact).setOnClickListener {
             sendEmail()
         }
+        
+        view.findViewById<View>(R.id.optionLogout).setOnClickListener {
+            showLogoutConfirmDialog()
+        }
+    }
+    
+    private fun showLogoutConfirmDialog() {
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Sair")
+            .setMessage("Tem certeza que deseja sair da sua conta?")
+            .setPositiveButton("Sair") { _, _ ->
+                logout()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun logout() {
+        // Limpar sessão
+        UserSession.clear()
+        
+        // Navegar para login
+        val intent = Intent(requireContext(), LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        requireActivity().finish()
     }
 
     private fun openUrl(url: String) {
