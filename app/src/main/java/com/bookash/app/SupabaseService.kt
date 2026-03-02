@@ -35,10 +35,11 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
+            // Buscar categorias padrão (user_id IS NULL) + categorias do usuário
             val endpoint = if (type != null) {
-                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&type=eq.$type&select=*"
+                "$BASE_URL/rest/v1/categories?or=(user_id.is.null,user_id.eq.$userId)&type=eq.$type&select=*&order=created_at.desc"
             } else {
-                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&select=*"
+                "$BASE_URL/rest/v1/categories?or=(user_id.is.null,user_id.eq.$userId)&select=*&order=created_at.desc"
             }
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -102,11 +103,32 @@ object SupabaseService {
         }
     }
     
-    suspend fun deleteCategory(categoryId: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteCategory(categoryId: String, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId")
+        Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId, userId=$userId")
         
         try {
+            // Primeiro verificar se a categoria pertence ao usuário (não é padrão)
+            val checkUrl = "$BASE_URL/rest/v1/categories?id=eq.$categoryId&user_id=eq.$userId&select=id"
+            val checkConn = URL(checkUrl).openConnection() as HttpURLConnection
+            checkConn.requestMethod = "GET"
+            checkConn.setRequestProperty("apikey", API_KEY)
+            checkConn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            if (checkConn.responseCode != 200) {
+                Log.w(TAG, "[CATEGORIES] DELETE - Erro ao verificar propriedade")
+                return@withContext false
+            }
+            
+            val checkResponse = checkConn.inputStream.bufferedReader().readText()
+            val checkArray = JSONArray(checkResponse)
+            
+            if (checkArray.length() == 0) {
+                Log.w(TAG, "[CATEGORIES] DELETE - Categoria não pertence ao usuário ou é padrão (não pode excluir)")
+                return@withContext false
+            }
+            
+            // Agora pode excluir
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.$categoryId").openConnection() as HttpURLConnection
             conn.requestMethod = "DELETE"
             conn.setRequestProperty("apikey", API_KEY)
@@ -130,11 +152,32 @@ object SupabaseService {
         }
     }
     
-    suspend fun updateCategory(category: Category, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun updateCategory(category: Category, userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}'")
+        Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}', userId=$userId")
         
         try {
+            // Primeiro verificar se a categoria pertence ao usuário (não é padrão)
+            val checkUrl = "$BASE_URL/rest/v1/categories?id=eq.${category.id}&user_id=eq.$userId&select=id"
+            val checkConn = URL(checkUrl).openConnection() as HttpURLConnection
+            checkConn.requestMethod = "GET"
+            checkConn.setRequestProperty("apikey", API_KEY)
+            checkConn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            
+            if (checkConn.responseCode != 200) {
+                Log.w(TAG, "[CATEGORIES] UPDATE - Erro ao verificar propriedade")
+                return@withContext false
+            }
+            
+            val checkResponse = checkConn.inputStream.bufferedReader().readText()
+            val checkArray = JSONArray(checkResponse)
+            
+            if (checkArray.length() == 0) {
+                Log.w(TAG, "[CATEGORIES] UPDATE - Categoria não pertence ao usuário ou é padrão (não pode editar)")
+                return@withContext false
+            }
+            
+            // Agora pode atualizar
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.${category.id}").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
