@@ -90,13 +90,13 @@ class GeneralFragment : Fragment() {
         android.app.AlertDialog.Builder(requireContext())
             .setTitle("Tema")
             .setSingleChoiceItems(themes, currentIndex) { dialog, which ->
-                val themeValue = when (which) {
+                val selectedTheme = when (which) {
                     0 -> "light"
                     1 -> "dark"
                     else -> "system"
                 }
-                saveThemeSetting(themeValue)
-                themeValue.text = themes[which]
+                saveThemeSetting(selectedTheme)
+                this.themeValue.text = themes[which]
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
@@ -122,7 +122,7 @@ class GeneralFragment : Fragment() {
                     else -> "es-ES"
                 }
                 saveLanguageSetting(languageCode)
-                languageValue.text = languages[which]
+                this.languageValue.text = languages[which]
                 dialog.dismiss()
             }
             .setNegativeButton("Cancelar", null)
