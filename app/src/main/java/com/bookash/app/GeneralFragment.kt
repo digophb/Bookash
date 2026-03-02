@@ -36,25 +36,32 @@ class GeneralFragment : Fragment() {
     }
 
     private fun loadSettings() {
-        // Carregar do SettingsManager
-        val theme = SettingsManager.getTheme()
-        val language = SettingsManager.getLanguage()
-        val notifications = SettingsManager.areNotificationsEnabled()
+        try {
+            // Carregar do SettingsManager
+            val theme = SettingsManager.getTheme()
+            val language = SettingsManager.getLanguage()
+            val notifications = SettingsManager.areNotificationsEnabled()
 
-        themeValue.text = when (theme) {
-            "light" -> "Claro"
-            "dark" -> "Escuro"
-            else -> "Sistema"
+            themeValue.text = when (theme) {
+                "light" -> "Claro"
+                "dark" -> "Escuro"
+                else -> "Sistema"
+            }
+
+            languageValue.text = when (language) {
+                "pt-BR" -> "Português"
+                "en-US" -> "English"
+                "es-ES" -> "Español"
+                else -> "Português"
+            }
+
+            notificationsSwitch.isChecked = notifications
+        } catch (e: Exception) {
+            // Valores padrão em caso de erro
+            themeValue.text = "Sistema"
+            languageValue.text = "Português"
+            notificationsSwitch.isChecked = true
         }
-
-        languageValue.text = when (language) {
-            "pt-BR" -> "Português"
-            "en-US" -> "English"
-            "es-ES" -> "Español"
-            else -> "Português"
-        }
-
-        notificationsSwitch.isChecked = notifications
     }
 
     private fun setupClickListeners() {
