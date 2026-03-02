@@ -148,6 +148,14 @@ class RegisterActivity : AppCompatActivity() {
                                     val insertCode = insertConn.responseCode
                                     Log.d(TAG, "Insert response code: $insertCode")
                                     insertConn.disconnect()
+                                    
+                                    // Passo 3: Criar conta padrão 'Carteira' (fallback se trigger falhar)
+                                    try {
+                                        val defaultAccountCreated = SupabaseService.createDefaultAccount(userId)
+                                        Log.d(TAG, "Conta padrão criada (fallback): $defaultAccountCreated")
+                                    } catch (e: Exception) {
+                                        Log.w(TAG, "Trigger pode ter criado a conta: ${e.message}")
+                                    }
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Erro ao inserir na tabela: ${e.message}")
                                 }
