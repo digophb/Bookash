@@ -22,7 +22,8 @@ data class Category(
     val type: String,
     val color: String = "#357266",
     val icon: String = "category",
-    val userId: String = ""
+    val userId: String = "",
+    val isDefault: Boolean = false // TRUE = categoria padrão (não pode editar/excluir)
 )
 
 data class Account(
