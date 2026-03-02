@@ -81,6 +81,12 @@
             android:name=".AddAccountActivity"
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
+        
+        <!-- Mais Opções -->
+        <activity
+            android:name=".MoreOptionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
             
     </application>
 

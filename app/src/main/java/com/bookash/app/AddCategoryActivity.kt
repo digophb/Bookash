@@ -37,6 +37,16 @@ class AddCategoryActivity : AppCompatActivity() {
         setContentView(R.layout.activity_add_category)
         
         userId = UserSession.getUserId()
+        
+        // Proteção: se não há usuário logado, voltar para login
+        if (userId == null) {
+            ToastManager.showWarning(this, "Sessão expirada. Faça login novamente.")
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+            return
+        }
 
         initViews()
         setupAdapters()

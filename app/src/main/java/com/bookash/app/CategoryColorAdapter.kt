@@ -56,9 +56,11 @@ class CategoryColorAdapter(
     override fun getItemCount() = colors.size
 
     inner class ColorViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val colorCircle: ImageView = itemView.findViewById(R.id.colorCircle)
+        private val colorCircle: View = itemView.findViewById(R.id.colorCircle)
+        private val checkIcon: ImageView = itemView.findViewById(R.id.checkIcon)
 
         fun bind(color: String, isSelected: Boolean) {
+            // Set circle color
             val drawable = GradientDrawable()
             drawable.shape = GradientDrawable.OVAL
             drawable.setColor(Color.parseColor(color))
@@ -70,15 +72,9 @@ class CategoryColorAdapter(
             }
             
             colorCircle.background = drawable
-            colorCircle.setImageDrawable(if (isSelected) {
-                itemView.context.getDrawable(R.drawable.ic_check)
-            } else {
-                null
-            })
             
-            if (isSelected) {
-                colorCircle.setColorFilter(Color.WHITE)
-            }
+            // Show/hide check icon
+            checkIcon.visibility = if (isSelected) View.VISIBLE else View.GONE
             
             itemView.setOnClickListener {
                 setSelectedColor(color)
