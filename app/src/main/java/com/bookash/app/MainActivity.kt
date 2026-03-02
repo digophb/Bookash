@@ -89,9 +89,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun logout() {
-        getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
+        lifecycleScope.launch {
+            UserSession.signOut()
+            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+            finish()
+        }
     }
 
     private fun setupTransactionsList() {
@@ -142,13 +144,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadUserData() {
-        val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
-        val userName = prefs.getString("user_name", null)
+        val userName = UserSession.getUserName()
         
         val displayName = if (!userName.isNullOrEmpty()) {
             userName.split(" ").firstOrNull() ?: "Usuário"
         } else {
-            val email = prefs.getString("user_email", null)
+            val email = UserSession.getUserEmail()
             if (!email.isNullOrEmpty()) {
                 email.split("@").firstOrNull()?.capitalize() ?: "Usuário"
             } else {
@@ -165,10 +166,9 @@ class MainActivity : AppCompatActivity() {
     
     private fun loadTransactions() {
         lifecycleScope.launch {
-            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
-            val userId = prefs.getString("user_id", "") ?: ""
+            val userId = UserSession.getUserId()
             
-            if (userId.isEmpty()) {
+            if (userId == null) {
                 emptyState.visibility = View.VISIBLE
                 transactionsRecycler.visibility = View.GONE
                 return@launch
