@@ -5,7 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
+import com.google.android.material.card.MaterialCardView
 import androidx.fragment.app.Fragment
 
 class ManageFragment : Fragment() {
@@ -29,15 +29,15 @@ class ManageFragment : Fragment() {
         Log.d(TAG, "onViewCreated")
         
         try {
-            view.findViewById<LinearLayout>(R.id.optionCategories)?.setOnClickListener {
+            view.findViewById<MaterialCardView>(R.id.optionCategories)?.setOnClickListener {
                 startActivity(android.content.Intent(requireContext(), CategoriesActivity::class.java))
             }
 
-            view.findViewById<LinearLayout>(R.id.optionAccounts)?.setOnClickListener {
+            view.findViewById<MaterialCardView>(R.id.optionAccounts)?.setOnClickListener {
                 startActivity(android.content.Intent(requireContext(), AccountsActivity::class.java))
             }
 
-            view.findViewById<LinearLayout>(R.id.optionTags)?.setOnClickListener {
+            view.findViewById<MaterialCardView>(R.id.optionTags)?.setOnClickListener {
                 startActivity(android.content.Intent(requireContext(), TagsActivity::class.java))
             }
         } catch (e: Exception) {
