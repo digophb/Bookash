@@ -35,6 +35,13 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
+            // Obter token do usuário para RLS - necessário para ver categorias pessoais
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] GET - Erro: usuário não autenticado")
+                return@withContext emptyList()
+            }
+            
             // Busca categorias padrão (user_id NULL) + categorias do usuário
             // Usa or=(user_id.is.null,user_id.eq.$userId) para combinar ambas
             val endpoint = if (type != null) {
@@ -46,7 +53,7 @@ object SupabaseService {
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -228,6 +235,13 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] EXISTS - Verificando: name='$name', type=$type, userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] EXISTS - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             // Busca categorias com o mesmo nome (case-insensitive) e tipo
             // Considera tanto categorias do usuário quanto categorias padrão (user_id is null)
             val endpoint = "$BASE_URL/rest/v1/categories?name=ilike.${java.net.URLEncoder.encode(name, "UTF-8")}&type=eq.$type&select=id,user_id"
@@ -235,7 +249,7 @@ object SupabaseService {
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -290,12 +304,19 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] GET_BY_ID - Buscando: id=$categoryId, userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] GET_BY_ID - Erro: usuário não autenticado")
+                return@withContext null
+            }
+            
             val endpoint = "$BASE_URL/rest/v1/categories?id=eq.$categoryId&select=*&limit=1"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -355,12 +376,19 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] GET - Iniciando busca (userId: $userId, filtro: $filter)")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] GET - Erro: usuário não autenticado")
+                return@withContext emptyList()
+            }
+            
             val endpoint = "$BASE_URL/rest/v1/accounts?user_id=eq.$userId&is_archived=eq.$archived&select=*&order=created_at.desc"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -434,6 +462,13 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] DEFAULT - Criando conta Carteira para userId: $userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] DEFAULT - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             // Verificar se já existe conta para este usuário
             val existingAccounts = getAccounts(userId, archived = false)
             if (existingAccounts.isNotEmpty()) {
@@ -444,7 +479,7 @@ object SupabaseService {
             val conn = URL("$BASE_URL/rest/v1/accounts").openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -474,10 +509,17 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] UPDATE - Iniciando: id=${account.id}, name='${account.name}'")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] UPDATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.${account.id}").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -507,10 +549,17 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] ARCHIVE - Iniciando: id=$accountId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] ARCHIVE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -540,10 +589,17 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] REACTIVATE - Iniciando: id=$accountId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] REACTIVATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -573,10 +629,17 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] DELETE - Iniciando: id=$accountId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] DELETE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
             conn.requestMethod = "DELETE"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Prefer", "return=minimal")
             
             val responseCode = conn.responseCode
@@ -620,12 +683,19 @@ object SupabaseService {
         Log.d(TAG, "[TRANSACTIONS] GET - Iniciando busca (userId: $userId, limit: $limit)")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTIONS] GET - Erro: usuário não autenticado")
+                return@withContext emptyList()
+            }
+            
             val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&order=date.desc&limit=$limit&select=*"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -725,11 +795,18 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] READ - Iniciando busca para userId: $userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TAGS] READ - Erro: usuário não autenticado")
+                return@withContext emptyList()
+            }
+            
             val url = "$BASE_URL/rest/v1/tags?user_id=eq.$userId&select=*&order=created_at.desc"
             val conn = URL(url).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -755,10 +832,17 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] CREATE - Iniciando: name='${tag.name}', userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TAGS] CREATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/tags").openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -789,10 +873,17 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] UPDATE - Iniciando: id=${tag.id}, name='${tag.name}'")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TAGS] UPDATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/tags?id=eq.${tag.id}").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -822,10 +913,17 @@ object SupabaseService {
         Log.d(TAG, "[TAGS] DELETE - Iniciando: id=$tagId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TAGS] DELETE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/tags?id=eq.$tagId").openConnection() as HttpURLConnection
             conn.requestMethod = "DELETE"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Prefer", "return=minimal")
             
             val responseCode = conn.responseCode
@@ -847,6 +945,13 @@ object SupabaseService {
     
     suspend fun tagExists(name: String, userId: String, excludeId: String? = null): Boolean = withContext(Dispatchers.IO) {
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TAGS] EXISTS - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             var url = "$BASE_URL/rest/v1/tags?name=eq.${java.net.URLEncoder.encode(name, "UTF-8")}&user_id=eq.$userId&select=id"
             if (excludeId != null) {
                 url += "&id=neq.$excludeId"
@@ -855,7 +960,7 @@ object SupabaseService {
             val conn = URL(url).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             if (conn.responseCode == 200) {
                 val response = conn.inputStream.bufferedReader().readText()
@@ -896,12 +1001,19 @@ object SupabaseService {
         Log.d(TAG, "[SETTINGS] GET - Iniciando busca (userId: $userId)")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[SETTINGS] GET - Erro: usuário não autenticado")
+                return@withContext AppSettings(userId = userId)
+            }
+            
             val endpoint = "$BASE_URL/rest/v1/app_settings?user_id=eq.$userId&select=*&limit=1"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             
             val responseCode = conn.responseCode
             val duration = System.currentTimeMillis() - startTime
@@ -940,10 +1052,17 @@ object SupabaseService {
         Log.d(TAG, "[SETTINGS] UPDATE - Iniciando: theme=${settings.theme}, language=${settings.language}, userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[SETTINGS] UPDATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/app_settings").openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "resolution=merge-duplicates")
             conn.doOutput = true
