@@ -18,9 +18,9 @@ class AboutFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        view.findViewById<View>(R.id.optionTerms)?.setOnClickListener { openTerms() }
-        view.findViewById<View>(R.id.optionPrivacy)?.setOnClickListener { openPrivacyPolicy() }
-        view.findViewById<View>(R.id.optionContact)?.setOnClickListener { openContact() }
+        view.findViewById<View>(R.id.optionTerms)?.setOnClickListener { openUrl("https://bookash.app/terms") }
+        view.findViewById<View>(R.id.optionPrivacy)?.setOnClickListener { openUrl("https://bookash.app/privacy") }
+        view.findViewById<View>(R.id.optionContact)?.setOnClickListener { openEmail() }
         view.findViewById<View>(R.id.optionLogout)?.setOnClickListener { logout() }
         
         try {
@@ -31,26 +31,34 @@ class AboutFragment : Fragment() {
         }
     }
 
-    private fun openTerms() {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/terms")))
-    }
-
-    private fun openPrivacyPolicy() {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://bookash.app/privacy")))
-    }
-
-    private fun openContact() {
-        val intent = Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:suporte@bookash.app")
-            putExtra(Intent.EXTRA_SUBJECT, "Suporte Bookash")
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: Exception) {
+            // Ignorar erro
         }
-        startActivity(Intent.createChooser(intent, "Enviar e-mail"))
+    }
+
+    private fun openEmail() {
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:suporte@bookash.app")
+                putExtra(Intent.EXTRA_SUBJECT, "Suporte Bookash")
+            }
+            startActivity(Intent.createChooser(intent, "Enviar e-mail"))
+        } catch (e: Exception) {
+            // Ignorar erro
+        }
     }
 
     private fun logout() {
-        UserSession.signOut()
-        val intent = Intent(requireContext(), LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
+        try {
+            UserSession.signOut()
+            val intent = Intent(requireContext(), LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Ignorar erro
+        }
     }
 }
