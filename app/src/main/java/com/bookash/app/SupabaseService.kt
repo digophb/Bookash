@@ -78,10 +78,17 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] CREATE - Iniciando: name='${category.name}', type=${category.type}, userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] CREATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/categories").openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -111,6 +118,13 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] DELETE - Iniciando: id=$categoryId, userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] DELETE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             // Verificar se a categoria é padrão (não pode excluir)
             if (userId != null) {
                 val category = getCategoryById(categoryId, userId)
@@ -123,7 +137,7 @@ object SupabaseService {
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.$categoryId").openConnection() as HttpURLConnection
             conn.requestMethod = "DELETE"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Prefer", "return=minimal")
             
             val responseCode = conn.responseCode
@@ -148,12 +162,19 @@ object SupabaseService {
         Log.d(TAG, "[CATEGORIES] UPDATE - Iniciando: id=${category.id}, name='${category.name}', userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] UPDATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             // Primeiro verificar se a categoria pertence ao usuário (não é padrão)
             val checkUrl = "$BASE_URL/rest/v1/categories?id=eq.${category.id}&user_id=eq.$userId&select=id"
             val checkConn = URL(checkUrl).openConnection() as HttpURLConnection
             checkConn.requestMethod = "GET"
             checkConn.setRequestProperty("apikey", API_KEY)
-            checkConn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            checkConn.setRequestProperty("Authorization", "Bearer $token")
             
             if (checkConn.responseCode != 200) {
                 Log.w(TAG, "[CATEGORIES] UPDATE - Erro ao verificar propriedade")
@@ -172,7 +193,7 @@ object SupabaseService {
             val conn = URL("$BASE_URL/rest/v1/categories?id=eq.${category.id}").openConnection() as HttpURLConnection
             conn.requestMethod = "PATCH"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
@@ -199,6 +220,7 @@ object SupabaseService {
     
     /**
      * Verifica se já existe uma categoria com o mesmo nome e tipo para o usuário.
+     * Considera tanto categorias do usuário quanto categorias padrão do sistema.
      * Ignora a categoria com o ID fornecido (útil para edição).
      */
     suspend fun categoryExists(name: String, type: String, excludeId: String? = null, userId: String? = null): Boolean = withContext(Dispatchers.IO) {
@@ -207,10 +229,8 @@ object SupabaseService {
         
         try {
             // Busca categorias com o mesmo nome (case-insensitive) e tipo
-            var endpoint = "$BASE_URL/rest/v1/categories?name=ilike.$name&type=eq.$type&select=id"
-            if (userId != null) {
-                endpoint += "&user_id=eq.$userId"
-            }
+            // Considera tanto categorias do usuário quanto categorias padrão (user_id is null)
+            val endpoint = "$BASE_URL/rest/v1/categories?name=ilike.${java.net.URLEncoder.encode(name, "UTF-8")}&type=eq.$type&select=id,user_id"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -230,22 +250,26 @@ object SupabaseService {
                     return@withContext false
                 }
                 
-                // Se estamos editando, ignorar a própria categoria
-                if (excludeId != null) {
-                    for (i in 0 until jsonArray.length()) {
-                        val json = jsonArray.getJSONObject(i)
-                        val foundId = json.optString("id")
-                        if (foundId != excludeId) {
-                            Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada: id=$foundId (${duration}ms)")
-                            return@withContext true
-                        }
+                // Verificar cada resultado
+                for (i in 0 until jsonArray.length()) {
+                    val json = jsonArray.getJSONObject(i)
+                    val foundId = json.optString("id")
+                    val foundUserId = json.optString("user_id", null)
+                    
+                    // Ignorar a própria categoria (para edição)
+                    if (excludeId != null && foundId == excludeId) {
+                        continue
                     }
-                    Log.d(TAG, "[CATEGORIES] EXISTS - Não há duplicata (excluindo self) (${duration}ms)")
-                    return@withContext false
+                    
+                    // Se é categoria padrão (user_id null) ou do próprio usuário, é duplicata
+                    if (foundUserId.isNullOrEmpty() || foundUserId == userId) {
+                        Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada: id=$foundId (${duration}ms)")
+                        return@withContext true
+                    }
                 }
                 
-                Log.i(TAG, "[CATEGORIES] EXISTS - Duplicata encontrada (${duration}ms)")
-                return@withContext true
+                Log.d(TAG, "[CATEGORIES] EXISTS - Não há duplicata (${duration}ms)")
+                return@withContext false
             }
             
             Log.w(TAG, "[CATEGORIES] EXISTS - Falha na verificação: HTTP $responseCode (${duration}ms)")
@@ -366,10 +390,17 @@ object SupabaseService {
         Log.d(TAG, "[ACCOUNTS] CREATE - Iniciando: name='${account.name}', type=${account.type}, userId=$userId")
         
         try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] CREATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
             val conn = URL("$BASE_URL/rest/v1/accounts").openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("apikey", API_KEY)
-            conn.setRequestProperty("Authorization", "Bearer $API_KEY")
+            conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true

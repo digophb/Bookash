@@ -145,49 +145,60 @@ class AddCategoryActivity : AppCompatActivity() {
             ToastManager.showWarning(this, "Digite um nome para a categoria")
             return
         }
+        
+        if (userId == null) {
+            ToastManager.showError(this, "Erro: usuário não identificado")
+            return
+        }
 
         btnSave.isEnabled = false
 
         lifecycleScope.launch {
-            // Verificar se já existe categoria com mesmo nome e tipo
-            val exists = SupabaseService.categoryExists(name, editingCategoryType, editingCategoryId, userId)
-            
-            if (exists) {
-                btnSave.isEnabled = true
-                val typeLabel = if (editingCategoryType == "income") "Receita" else "Despesa"
-                ToastManager.showWarning(
-                    this@AddCategoryActivity,
-                    "Já existe uma categoria '$name' do tipo $typeLabel"
-                )
-                return@launch
-            }
-            
-            val category = Category(
-                id = editingCategoryId ?: "",
-                name = name,
-                type = editingCategoryType,
-                color = selectedColor,
-                icon = selectedIcon
-            )
-
-            val success = if (editingCategoryId != null) {
-                SupabaseService.updateCategory(category, userId ?: "")
-            } else {
-                SupabaseService.saveCategory(category, userId ?: "")
-            }
-
-            btnSave.isEnabled = true
-
-            if (success) {
-                // Pass result data to parent activity for toast display
-                val resultIntent = Intent().apply {
-                    putExtra("category_action", if (editingCategoryId != null) "edit" else "create")
-                    putExtra("category_name", category.name)
+            try {
+                // Verificar se já existe categoria com mesmo nome e tipo
+                val exists = SupabaseService.categoryExists(name, editingCategoryType, editingCategoryId, userId)
+                
+                if (exists) {
+                    btnSave.isEnabled = true
+                    val typeLabel = if (editingCategoryType == "income") "Receita" else "Despesa"
+                    ToastManager.showWarning(
+                        this@AddCategoryActivity,
+                        "Já existe uma categoria '$name' do tipo $typeLabel"
+                    )
+                    return@launch
                 }
-                setResult(RESULT_OK, resultIntent)
-                finish()
-            } else {
-                ToastManager.showError(this@AddCategoryActivity, "Erro ao salvar categoria")
+                
+                val category = Category(
+                    id = editingCategoryId ?: "",
+                    name = name,
+                    type = editingCategoryType,
+                    color = selectedColor,
+                    icon = selectedIcon
+                )
+
+                val success = if (editingCategoryId != null) {
+                    SupabaseService.updateCategory(category, userId!!)
+                } else {
+                    SupabaseService.saveCategory(category, userId!!)
+                }
+
+                btnSave.isEnabled = true
+
+                if (success) {
+                    // Pass result data to parent activity for toast display
+                    val resultIntent = Intent().apply {
+                        putExtra("category_action", if (editingCategoryId != null) "edit" else "create")
+                        putExtra("category_name", category.name)
+                    }
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
+                } else {
+                    ToastManager.showError(this@AddCategoryActivity, "Erro ao salvar categoria. Verifique sua conexão.")
+                }
+            } catch (e: Exception) {
+                btnSave.isEnabled = true
+                android.util.Log.e("AddCategoryActivity", "Erro ao salvar categoria", e)
+                ToastManager.showError(this@AddCategoryActivity, "Erro: ${e.message}")
             }
         }
     }
