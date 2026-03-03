@@ -1,11 +1,11 @@
 package com.bookash.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -201,13 +201,11 @@ class AddAccountActivity : AppCompatActivity() {
             btnSave.isEnabled = true
 
             if (success) {
-                val message = if (editingAccountId != null) {
-                    "Conta \"${account.name}\" atualizada"
-                } else {
-                    "Conta \"${account.name}\" criada"
+                val resultIntent = Intent().apply {
+                    putExtra("account_action", if (editingAccountId != null) "edit" else "create")
+                    putExtra("account_name", account.name)
                 }
-                ToastManager.showSuccess(this@AddAccountActivity, message)
-                setResult(RESULT_OK)
+                setResult(RESULT_OK, resultIntent)
                 finish()
             } else {
                 ToastManager.showError(this@AddAccountActivity, "Erro ao salvar conta")

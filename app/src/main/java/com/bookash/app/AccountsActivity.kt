@@ -192,6 +192,16 @@ class AccountsActivity : AppCompatActivity() {
         
         if (requestCode == REQUEST_ADD_ACCOUNT && resultCode == RESULT_OK) {
             loadAccounts()
+            
+            data?.let {
+                val action = it.getStringExtra("account_action")
+                val accountName = it.getStringExtra("account_name") ?: "Conta"
+                
+                when (action) {
+                    "create" -> ToastManager.showSuccess(this, "Conta \"$accountName\" criada")
+                    "edit" -> ToastManager.showInfo(this, "Conta \"$accountName\" atualizada")
+                }
+            }
         }
     }
     
