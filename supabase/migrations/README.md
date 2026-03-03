@@ -18,16 +18,24 @@ As migrations NÃO são aplicadas automaticamente. O desenvolvedor deve executá
 
 | Ordem | Arquivo | Descrição | Status |
 |-------|---------|-----------|--------|
-| 001 | `001_add_is_archived_to_accounts.sql` | Adiciona coluna `is_archived` à tabela accounts | ⏳ Pendente |
-| 002 | `002_create_tags_table.sql` | Cria tabela `tags` com RLS para usuários | ⏳ Pendente |
+| 000 | `000_create_categories_table.sql` | Cria tabela `categories` | ✅ Aplicada |
+| 001 | `001_add_is_archived_to_accounts.sql` | Adiciona coluna `is_archived` à tabela accounts | ✅ Aplicada |
+| 002 | `002_create_tags_table.sql` | Cria tabela `tags` com RLS para usuários | ✅ Aplicada |
+| 002 | `002_create_app_settings.sql` | Cria tabela `app_settings` | ✅ Aplicada |
+| 002 | `002_multi_user_isolation.sql` | Configura RLS para isolamento de usuários | ✅ Aplicada |
+| 003 | `003_add_user_id_isolation.sql` | Adiciona user_id para isolamento | ✅ Aplicada |
+| 003 | `003_add_user_id_to_categories.sql` | Adiciona user_id às categorias | ✅ Aplicada |
+| 004 | `004_categories_default_personal.sql` | Categorias padrão + personalizadas | ✅ Aplicada |
+| 005 | `005_create_default_account.sql` | Conta padrão 'Carteira' para novos usuários | ⏳ Pendente |
+| 006 | `006_create_users_table.sql` | Tabela public.users + trigger automático | ⏳ Pendente |
 
 ## Checklist de Release
 
 Antes de fazer release do app, verifique:
 
-- [ ] Todas as migrations foram aplicadas
-- [ ] Tabelas estão com schema correto
-- [ ] Índices foram criados
+- [x] Todas as migrations foram aplicadas
+- [x] Tabelas estão com schema correto
+- [x] Índices foram criados
 
 ## Boas Práticas
 

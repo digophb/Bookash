@@ -135,27 +135,16 @@ class RegisterActivity : AppCompatActivity() {
                             )
                             UserSession.setAccessToken(accessToken)
                             
-                            // Passo 2: Inserir na tabela public.users
+                            // NOTA: O trigger no Supabase cria automaticamente:
+                            // 1. Registro na tabela public.users
+                            // 2. Conta padrão 'Carteira'
+                            // Fallback: criar conta manualmente se trigger falhar
                             if (accessToken.isNotEmpty()) {
                                 try {
-                                    val insertUrl = URL("$SUPABASE_URL/rest/v1/users")
-                                    val insertConn = insertUrl.openConnection() as HttpURLConnection
-                                    insertConn.requestMethod = "POST"
-                                    insertConn.setRequestProperty("apikey", SUPABASE_KEY)
-                                    insertConn.setRequestProperty("Authorization", "Bearer $accessToken")
-                                    insertConn.setRequestProperty("Content-Type", "application/json")
-                                    insertConn.setRequestProperty("Prefer", "return=minimal")
-                                    insertConn.doOutput = true
-                                    
-                                    val insertBody = """{"id":"$userId","email":"$email","name":"$name"}"""
-                                    Log.d(TAG, "Inserindo na tabela users: $insertBody")
-                                    insertConn.outputStream.write(insertBody.toByteArray(Charsets.UTF_8))
-                                    
-                                    val insertCode = insertConn.responseCode
-                                    Log.d(TAG, "Insert response code: $insertCode")
-                                    insertConn.disconnect()
+                                    val accountCreated = SupabaseService.createDefaultAccount(userId)
+                                    Log.d(TAG, "Conta padrão criada (fallback): $accountCreated")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao inserir na tabela: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar conta padrão: ${e.message}")
                                 }
                             }
                             true
