@@ -33,6 +33,10 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 -- STEP 4: Criar políticas RLS
 -- ============================================================================
 
+-- Remover políticas existentes antes de criar
+DROP POLICY IF EXISTS "Users can view own data" ON public.users;
+DROP POLICY IF EXISTS "Users can update own data" ON public.users;
+
 -- Usuários podem ver apenas seus próprios dados
 CREATE POLICY "Users can view own data" ON public.users
     FOR SELECT USING (auth.uid() = id);
