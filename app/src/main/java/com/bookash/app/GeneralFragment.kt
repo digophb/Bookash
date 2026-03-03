@@ -25,5 +25,38 @@ class GeneralFragment : Fragment() {
         themeValue?.text = "Sistema"
         languageValue?.text = "Português"
         notificationsSwitch?.isChecked = true
+        
+        // Click listeners
+        view.findViewById<View>(R.id.cardTheme)?.setOnClickListener {
+            showThemeDialog(themeValue)
+        }
+        
+        view.findViewById<View>(R.id.cardLanguage)?.setOnClickListener {
+            showLanguageDialog(languageValue)
+        }
+    }
+    
+    private fun showThemeDialog(themeValue: TextView) {
+        val themes = arrayOf("Claro", "Escuro", "Sistema")
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Tema")
+            .setSingleChoiceItems(themes, 2) { dialog, which ->
+                themeValue.text = themes[which]
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun showLanguageDialog(languageValue: TextView) {
+        val languages = arrayOf("Português", "English", "Español")
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("Idioma")
+            .setSingleChoiceItems(languages, 0) { dialog, which ->
+                languageValue.text = languages[which]
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 }

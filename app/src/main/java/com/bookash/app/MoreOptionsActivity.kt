@@ -53,7 +53,7 @@ class MoreOptionsActivity : AppCompatActivity() {
                 0 -> ManageFragment()
                 1 -> GeneralFragment()
                 2 -> AboutFragment()
-                else -> Fragment()
+                else -> EmptyFragment()
             }
         }
     }
