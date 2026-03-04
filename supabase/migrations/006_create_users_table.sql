@@ -77,8 +77,17 @@ BEGIN
     VALUES (
         NEW.id,
         NEW.email,
-        COALESCE(NEW.raw_user_meta_data->>'name', 'Usuário')
+        COALESCE(
+            NEW.raw_user_meta_data->>'name',
+            NEW.raw_user_meta_data->>'full_name',
+            split_part(NEW.email, '@', 1),
+            'Usuário'
+        )
     );
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    -- Se falhar, loga mas não impede o cadastro
+    RAISE NOTICE 'Erro no handle_new_user: %', SQLERRM;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

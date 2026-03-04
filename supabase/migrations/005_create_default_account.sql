@@ -22,6 +22,10 @@ BEGIN
     );
     
     RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    -- Se falhar, loga mas não impede o cadastro
+    RAISE NOTICE 'Erro no create_default_account: %', SQLERRM;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
