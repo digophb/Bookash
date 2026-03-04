@@ -45,7 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:hint="Descrição"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        style="@style/Widget.Bookash.TextInputLayout">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/descriptionInput"
@@ -62,7 +62,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:hint="Valor (R$)"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Widget.Bookash.TextInputLayout"
         app:prefixText="R$ ">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -80,7 +80,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:hint="Categoria"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        style="@style/Widget.Bookash.TextInputLayout">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/categoryInput"

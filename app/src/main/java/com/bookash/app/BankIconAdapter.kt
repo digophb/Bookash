@@ -46,6 +46,7 @@ class BankIconAdapter(
 
     private var selectedBank: String = "wallet"
     private var filteredBanks: List<BankItem> = banks
+    private var showWalletOnly: Boolean = false
 
     fun setSelectedBank(bankId: String) {
         val oldPosition = filteredBanks.indexOfFirst { it.id == selectedBank }
@@ -65,6 +66,20 @@ class BankIconAdapter(
             }
         }
         notifyDataSetChanged()
+    }
+    
+    fun showWalletOnly(show: Boolean) {
+        showWalletOnly = show
+        filteredBanks = if (show) {
+            banks.filter { it.id == "wallet" }
+        } else {
+            banks
+        }
+        notifyDataSetChanged()
+    }
+    
+    fun getBankName(bankId: String): String {
+        return banks.find { it.id == bankId }?.name ?: bankId.replaceFirstChar { it.uppercase() }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BankViewHolder {

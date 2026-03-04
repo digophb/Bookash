@@ -10,6 +10,8 @@ data class Transaction(
     val date: String,
     val status: String = "paid",
     val accountId: String = "",
+    val tags: List<String> = emptyList(),
+    val reminderDate: String? = null,
     val isRecurring: Boolean = false,
     val recurrencePeriod: String = "",
     val recurrenceCount: Int = 1,
@@ -33,7 +35,31 @@ data class Account(
     val type: String = "corrente",
     val icon: String = "wallet",
     val isArchived: Boolean = false,
+    val includeInBalance: Boolean = true, // Se TRUE, saldo incluído no total do dashboard
     val userId: String = ""
+)
+
+/**
+ * Reminder - Lembretes de transações
+ *
+ * Permite agendar notificações para transações futuras ou recorrentes.
+ */
+data class Reminder(
+    val id: String = "",
+    val userId: String = "",
+    val transactionId: String? = null,
+    val title: String,
+    val description: String? = null,
+    val amount: Double? = null,
+    val reminderDate: String, // ISO 8601 format
+    val isRecurring: Boolean = false,
+    val recurrenceType: String? = null, // "daily", "weekly", "monthly", "yearly"
+    val recurrenceInterval: Int = 1,
+    val isActive: Boolean = true,
+    val lastTriggeredAt: String? = null,
+    val nextTriggerAt: String? = null,
+    val createdAt: String = "",
+    val updatedAt: String = ""
 )
 
 /**

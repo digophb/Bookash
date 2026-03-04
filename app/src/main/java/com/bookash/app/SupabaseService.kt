@@ -433,7 +433,7 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
-            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}","user_id":"$userId"}"""
+            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}","include_in_balance":${account.includeInBalance},"user_id":"$userId"}"""
             conn.outputStream.write(body.toByteArray())
             
             val responseCode = conn.responseCode
@@ -524,7 +524,7 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
-            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}"}"""
+            val body = """{"name":"${account.name}","balance":${account.balance},"type":"${account.type}","icon":"${account.icon}","include_in_balance":${account.includeInBalance}}"""
             conn.outputStream.write(body.toByteArray())
             
             val responseCode = conn.responseCode
@@ -670,6 +670,7 @@ object SupabaseService {
                 type = json.optString("type", "corrente"),
                 icon = json.optString("icon", "wallet"),
                 isArchived = json.optBoolean("is_archived", false),
+                includeInBalance = json.optBoolean("include_in_balance", true),
                 userId = json.optString("user_id", "")
             ))
         }
@@ -1097,6 +1098,127 @@ object SupabaseService {
             notificationsEnabled = json.optBoolean("notifications_enabled", true),
             createdAt = json.optString("created_at", ""),
             updatedAt = json.optString("updated_at", "")
+        )
+    }
+    
+    // ============== REMINDERS ==============
+    
+    /**
+     * Salva um novo lembrete de transação.
+     * IMPORTANTE: Permite agendar notificações para transações futuras ou recorrentes.
+     */
+    suspend fun saveReminder(reminder: Reminder, userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[REMINDERS] CREATE - Iniciando: title='${reminder.title}', date=${reminder.reminderDate}")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[REMINDERS] CREATE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/reminders").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val transactionIdPart = reminder.transactionId?.let { """"transaction_id":"$it",""" } ?: ""
+            val descriptionPart = reminder.description?.let { """"description":"$it",""" } ?: ""
+            val amountPart = reminder.amount?.let { """"amount":$it,""" } ?: ""
+            val recurrencePart = if (reminder.isRecurring) {
+                """"is_recurring":true,"recurrence_type":"${reminder.recurrenceType}","recurrence_interval":${reminder.recurrenceInterval},"""
+            } else {
+                """"is_recurring":false,"""
+            }
+            
+            val body = """{"user_id":"$userId",$transactionIdPart"title":"${reminder.title}",$descriptionPart$amountPart"reminder_date":"${reminder.reminderDate}",$recurrencePart"is_active":true}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[REMINDERS] CREATE - Sucesso: '${reminder.title}' criado (${duration}ms)")
+                true
+            } else {
+                val errorStream = conn.errorStream?.bufferedReader()?.readText()
+                Log.w(TAG, "[REMINDERS] CREATE - Falha: HTTP $responseCode, $errorStream (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[REMINDERS] CREATE - Erro ao criar lembrete '${reminder.title}' após ${duration}ms", e)
+            false
+        }
+    }
+    
+    /**
+     * Busca lembretes do usuário.
+     */
+    suspend fun getReminders(userId: String): List<Reminder> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[REMINDERS] GET - Iniciando busca (userId: $userId)")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[REMINDERS] GET - Erro: usuário não autenticado")
+                return@withContext emptyList()
+            }
+            
+            val endpoint = "$BASE_URL/rest/v1/reminders?user_id=eq.$userId&select=*&order=reminder_date.asc"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                val reminders = mutableListOf<Reminder>()
+                
+                for (i in 0 until jsonArray.length()) {
+                    reminders.add(parseReminder(jsonArray.getJSONObject(i)))
+                }
+                
+                Log.i(TAG, "[REMINDERS] GET - Sucesso: ${reminders.size} lembretes (${duration}ms)")
+                reminders
+            } else {
+                Log.w(TAG, "[REMINDERS] GET - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[REMINDERS] GET - Erro após ${duration}ms", e)
+            emptyList()
+        }
+    }
+    
+    private fun parseReminder(json: org.json.JSONObject): Reminder {
+        return Reminder(
+            id = json.optString("id"),
+            userId = json.optString("user_id"),
+            transactionId = json.optString("transaction_id").takeIf { it.isNotEmpty() },
+            title = json.optString("title"),
+            description = json.optString("description").takeIf { it.isNotEmpty() },
+            amount = json.optDouble("amount").takeIf { !it.isNaN() },
+            reminderDate = json.optString("reminder_date"),
+            isRecurring = json.optBoolean("is_recurring", false),
+            recurrenceType = json.optString("recurrence_type").takeIf { it.isNotEmpty() },
+            recurrenceInterval = json.optInt("recurrence_interval", 1),
+            isActive = json.optBoolean("is_active", true),
+            lastTriggeredAt = json.optString("last_triggered_at").takeIf { it.isNotEmpty() },
+            nextTriggerAt = json.optString("next_trigger_at").takeIf { it.isNotEmpty() },
+            createdAt = json.optString("created_at"),
+            updatedAt = json.optString("updated_at")
         )
     }
 }

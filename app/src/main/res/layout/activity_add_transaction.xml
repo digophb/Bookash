@@ -121,7 +121,7 @@
                             android:hint="0,00"
                             android:inputType="numberDecimal"
                             android:textColor="@color/text_primary"
-                            android:textColorHint="@color/text_secondary"
+                            android:textColorHint="@color/input_placeholder"
                             android:textSize="32sp"
                             android:textStyle="bold"
                             android:background="@android:color/transparent"
@@ -169,13 +169,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:hint="Descrição"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Widget.Bookash.TextInputLayout"
                 app:boxBackgroundColor="@color/surface"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
-                app:hintTextColor="@color/text_secondary">
+                app:startIconDrawable="@drawable/ic_edit"
+                app:startIconTint="@color/primary"
+                app:hintTextColor="@color/input_placeholder">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/descriptionInput"
@@ -183,7 +185,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="text"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary" />
+                    android:textColorHint="@color/input_placeholder" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -202,7 +204,7 @@
                 app:startIconTint="@color/primary"
                 app:endIconDrawable="@drawable/ic_dropdown"
                 app:endIconTint="@color/primary"
-                app:hintTextColor="@color/text_secondary">
+                app:hintTextColor="@color/input_placeholder">
 
                 <AutoCompleteTextView
                     android:id="@+id/categoryDropdown"
@@ -210,7 +212,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="none"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="@color/input_placeholder"
                     android:popupBackground="@color/surface"
                     android:dropDownSelector="@color/primary"
                     android:hint="Categoria" />
@@ -232,7 +234,7 @@
                 app:startIconTint="@color/primary"
                 app:endIconDrawable="@drawable/ic_dropdown"
                 app:endIconTint="@color/primary"
-                app:hintTextColor="@color/text_secondary">
+                app:hintTextColor="@color/input_placeholder">
 
                 <AutoCompleteTextView
                     android:id="@+id/accountDropdown"
@@ -240,7 +242,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="none"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="@color/input_placeholder"
                     android:popupBackground="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -250,7 +252,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Widget.Bookash.TextInputLayout"
                 app:boxBackgroundColor="@color/surface"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -260,7 +262,7 @@
                 app:startIconTint="@color/highlight_secondary"
                 app:endIconDrawable="@drawable/ic_dropdown"
                 app:endIconTint="@color/highlight_secondary"
-                app:hintTextColor="@color/text_secondary">
+                app:hintTextColor="@color/input_placeholder">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/dateInput"
@@ -270,7 +272,7 @@
                     android:focusable="false"
                     android:clickable="true"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary" />
+                    android:textColorHint="@color/input_placeholder" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -301,13 +303,98 @@
 
             </LinearLayout>
 
+            <!-- ====== SWITCH LEMBRAR (LEMBRETE) ====== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Lembrar"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/reminderSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    app:thumbTint="@color/primary"
+                    app:trackTint="@color/highlight_secondary" />
+
+            </LinearLayout>
+
+            <!-- Campo Data do Lembrete (visível apenas se reminderSwitch estiver ligado) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/reminderDateLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Data do Lembrete"
+                android:visibility="gone"
+                style="@style/Widget.Bookash.TextInputLayout"
+                app:boxBackgroundColor="@color/surface"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:startIconDrawable="@drawable/ic_notifications"
+                app:startIconTint="@color/accent"
+                app:endIconDrawable="@drawable/ic_calendar"
+                app:endIconTint="@color/accent"
+                app:hintTextColor="@color/input_placeholder">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/reminderDateInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tags -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Tags"
+                style="@style/Widget.Bookash.TextInputLayout"
+                app:boxBackgroundColor="@color/surface"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:startIconDrawable="@drawable/ic_tag"
+                app:startIconTint="@color/accent"
+                app:hintTextColor="@color/input_placeholder">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/tagsInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Observações -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:hint="Observações"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Widget.Bookash.TextInputLayout"
                 app:boxBackgroundColor="@color/surface"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -315,7 +402,7 @@
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:startIconDrawable="@drawable/ic_notes"
                 app:startIconTint="@color/highlight_secondary"
-                app:hintTextColor="@color/text_secondary">
+                app:hintTextColor="@color/input_placeholder">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/notesInput"
@@ -325,7 +412,7 @@
                     android:minLines="2"
                     android:maxLines="4"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary" />
+                    android:textColorHint="@color/input_placeholder" />
 
             </com.google.android.material.textfield.TextInputLayout>
 

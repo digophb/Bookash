@@ -51,7 +51,7 @@
                 android:inputType="textEmailAddress"
                 android:background="@android:color/transparent"
                 android:textColor="@color/text_primary"
-                android:textColorHint="@color/highlight_secondary"
+                android:textColorHint="@color/input_placeholder"
                 android:textSize="16sp" />
 
             <View
@@ -68,7 +68,7 @@
                 android:inputType="textPassword"
                 android:background="@android:color/transparent"
                 android:textColor="@color/text_primary"
-                android:textColorHint="@color/highlight_secondary"
+                android:textColorHint="@color/input_placeholder"
                 android:textSize="16sp"
                 android:layout_marginTop="8dp" />
 

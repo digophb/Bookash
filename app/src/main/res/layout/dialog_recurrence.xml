@@ -37,7 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Quantidade de parcelas"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Widget.Bookash.TextInputLayout"
         app:boxBackgroundColor="@color/surface"
         app:boxCornerRadiusTopStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"

@@ -47,42 +47,7 @@
             android:orientation="vertical"
             android:paddingHorizontal="20dp">
 
-            <!-- Nome da Conta -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nome da Conta"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:boxStrokeColor="@color/primary"
-                app:hintTextColor="@color/text_secondary">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/nameInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Ex: Nubank, Conta Principal..."
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:inputType="text"
-                    android:maxLines="1" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Tipo de Conta -->
+            <!-- Tipo de Conta (PRIMEIRO) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -148,7 +113,35 @@
 
             </com.google.android.material.chip.ChipGroup>
 
-            <!-- Saldo Inicial -->
+            <!-- Nome da Conta (SEGUNDO) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nome da Conta"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/nameInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Ex: Nubank, Conta Principal..."
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="text"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Saldo Inicial (TERCEIRO) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -162,16 +155,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:boxStrokeColor="@color/primary"
+                style="@style/Widget.Bookash.TextInputLayout"
                 app:prefixText="R$ "
-                app:prefixTextColor="@color/text_secondary"
-                app:hintTextColor="@color/text_secondary">
+                app:prefixTextColor="@color/text_secondary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/balanceInput"
@@ -179,11 +165,53 @@
                     android:layout_height="wrap_content"
                     android:hint="0,00"
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="@color/input_placeholder"
                     android:inputType="numberDecimal"
                     android:maxLines="1" />
 
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Switch Incluir no Saldo -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Incluir no Saldo Total"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="O saldo desta conta será somado ao total do dashboard"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/includeInBalanceSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/primary" />
+
+            </LinearLayout>
 
             <!-- Seleção de Banco -->
             <TextView
@@ -200,13 +228,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:boxStrokeColor="@color/primary"
+                style="@style/Widget.Bookash.TextInputLayout"
                 app:startIconDrawable="@drawable/ic_search"
                 app:startIconTint="@color/text_secondary"
                 app:hintEnabled="false">
@@ -217,7 +239,7 @@
                     android:layout_height="wrap_content"
                     android:hint="Buscar banco..."
                     android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="@color/input_placeholder"
                     android:inputType="text"
                     android:maxLines="1" />
 

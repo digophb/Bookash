@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +13,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -26,7 +28,9 @@ class AddAccountActivity : AppCompatActivity() {
     private lateinit var nameInput: TextInputEditText
     private lateinit var typeChipGroup: ChipGroup
     private lateinit var balanceInput: TextInputEditText
+    private lateinit var includeInBalanceSwitch: SwitchMaterial
     private lateinit var btnSave: MaterialButton
+    private lateinit var bankSectionTitle: TextView
 
     private lateinit var bankAdapter: BankIconAdapter
 
@@ -34,6 +38,7 @@ class AddAccountActivity : AppCompatActivity() {
     private var selectedType = "corrente"
     private var editingAccountId: String? = null
     private var userId: String? = null
+    private var isNameManuallyEdited = false
     
     // Para formatação monetária
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
@@ -60,12 +65,18 @@ class AddAccountActivity : AppCompatActivity() {
         nameInput = findViewById(R.id.nameInput)
         typeChipGroup = findViewById(R.id.typeChipGroup)
         balanceInput = findViewById(R.id.balanceInput)
+        includeInBalanceSwitch = findViewById(R.id.includeInBalanceSwitch)
         btnSave = findViewById(R.id.btnSave)
     }
 
     private fun setupAdapters() {
         bankAdapter = BankIconAdapter { bankId ->
             selectedBank = bankId
+            // Preencher nome automaticamente se não foi editado manualmente
+            if (!isNameManuallyEdited && nameInput.text.isNullOrBlank()) {
+                val bankName = bankAdapter.getBankName(bankId)
+                nameInput.setText(bankName)
+            }
         }
         banksRecycler.apply {
             layoutManager = GridLayoutManager(this@AddAccountActivity, 4)
@@ -79,6 +90,15 @@ class AddAccountActivity : AppCompatActivity() {
             finish()
         }
 
+        // Marcar quando o nome é editado manualmente
+        nameInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                isNameManuallyEdited = !s.isNullOrBlank()
+            }
+        })
+
         // Search filter
         searchBankInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -88,9 +108,10 @@ class AddAccountActivity : AppCompatActivity() {
             }
         })
 
-        // Type selection
+        // Type selection - mostrar/esconder ícones de banco
         typeChipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             if (checkedIds.isNotEmpty()) {
+                val previousType = selectedType
                 selectedType = when (checkedIds[0]) {
                     R.id.chipCorrente -> "corrente"
                     R.id.chipPoupanca -> "poupanca"
@@ -98,11 +119,35 @@ class AddAccountActivity : AppCompatActivity() {
                     R.id.chipDigital -> "digital"
                     else -> "outros"
                 }
+                
+                // Atualizar visibilidade dos bancos baseado no tipo
+                updateBankVisibility()
+                
+                // Se mudou para carteira, selecionar automaticamente
+                if (selectedType == "carteira" && previousType != "carteira") {
+                    selectedBank = "wallet"
+                    bankAdapter.setSelectedBank("wallet")
+                    if (!isNameManuallyEdited) {
+                        nameInput.setText("Carteira")
+                    }
+                }
             }
         }
 
         btnSave.setOnClickListener {
             saveAccount()
+        }
+    }
+    
+    private fun updateBankVisibility() {
+        // Para tipo "carteira", mostrar apenas o ícone wallet
+        // Para outros tipos, mostrar todos os bancos
+        if (selectedType == "carteira") {
+            searchBankInput.visibility = View.GONE
+            bankAdapter.showWalletOnly(true)
+        } else {
+            searchBankInput.visibility = View.VISIBLE
+            bankAdapter.showWalletOnly(false)
         }
     }
     
@@ -148,6 +193,7 @@ class AddAccountActivity : AppCompatActivity() {
             val icon = intent.getStringExtra("account_icon") ?: "wallet"
 
             nameInput.setText(name)
+            isNameManuallyEdited = true
             balanceInput.setText(String.format("%.2f", balance))
             selectedBank = icon
             selectedType = type
@@ -167,6 +213,9 @@ class AddAccountActivity : AppCompatActivity() {
             // Create mode - default selection
             typeChipGroup.check(R.id.chipCorrente)
         }
+        
+        // Atualizar visibilidade inicial
+        updateBankVisibility()
     }
 
     private fun saveAccount() {
@@ -189,7 +238,8 @@ class AddAccountActivity : AppCompatActivity() {
                 name = name,
                 balance = balance,
                 type = selectedType,
-                icon = selectedBank
+                icon = selectedBank,
+                includeInBalance = includeInBalanceSwitch.isChecked
             )
 
             val success = if (editingAccountId != null) {

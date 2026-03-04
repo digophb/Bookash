@@ -214,9 +214,10 @@ class MainActivity : AppCompatActivity() {
         }
         
         // Calculate balance from active accounts
+        // IMPORTANTE: Apenas contas com includeInBalance=true são somados ao total
         lifecycleScope.launch {
             val activeAccounts = SupabaseService.getAccounts(userId!!, archived = false)
-            val accountsBalance = activeAccounts.sumOf { it.balance }
+            val accountsBalance = activeAccounts.filter { it.includeInBalance }.sumOf { it.balance }
             
             val balance = totalIncome - totalExpense + accountsBalance
             

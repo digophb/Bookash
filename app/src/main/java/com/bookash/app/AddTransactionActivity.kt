@@ -1,16 +1,19 @@
 package com.bookash.app
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,19 +32,27 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var accountDropdown: AutoCompleteTextView
     private lateinit var dateInput: TextInputEditText
     private lateinit var repeatSwitch: MaterialSwitch
+    private lateinit var reminderSwitch: MaterialSwitch
+    private lateinit var reminderDateLayout: TextInputLayout
+    private lateinit var reminderDateInput: TextInputEditText
+    private lateinit var tagsInput: TextInputEditText
     private lateinit var notesInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
     
     private var selectedDate: Long = System.currentTimeMillis()
+    private var reminderDate: Long? = null
     private var transactionType: String = "income"
     private var isReceived: Boolean = true
     private var isRecurring: Boolean = false
+    private var hasReminder: Boolean = false
     private var recurrenceType: String = "Mensal"
     private var installments: Int = 1
     
     private val categories = mutableListOf<Category>()
     private val accounts = mutableListOf<Account>()
     private var userId: String? = null
+    private var selectedCategory: Category? = null
+    private var selectedAccount: Account? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +81,10 @@ class AddTransactionActivity : AppCompatActivity() {
         accountDropdown = findViewById(R.id.accountDropdown)
         dateInput = findViewById(R.id.dateInput)
         repeatSwitch = findViewById(R.id.repeatSwitch)
+        reminderSwitch = findViewById(R.id.reminderSwitch)
+        reminderDateLayout = findViewById(R.id.reminderDateLayout)
+        reminderDateInput = findViewById(R.id.reminderDateInput)
+        tagsInput = findViewById(R.id.tagsInput)
         notesInput = findViewById(R.id.notesInput)
         saveButton = findViewById(R.id.saveButton)
         
@@ -95,17 +110,24 @@ class AddTransactionActivity : AppCompatActivity() {
     }
     
     private fun updateCategoryDropdown() {
-        val names = categories.map { it.name }.toTypedArray()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, names)
+        // Adapter personalizado com ícones e cores
+        val adapter = CategoryDropdownAdapter(this, categories)
         categoryDropdown.setAdapter(adapter)
+        categoryDropdown.setOnItemClickListener { _, _, position, _ ->
+            selectedCategory = categories.getOrNull(position)
+        }
     }
     
     private fun updateAccountDropdown() {
-        val names = accounts.map { it.name }.toTypedArray()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, names)
+        // Adapter personalizado com ícones
+        val adapter = AccountDropdownAdapter(this, accounts)
         accountDropdown.setAdapter(adapter)
-        if (names.isNotEmpty()) {
-            accountDropdown.setText(names[0], false)
+        accountDropdown.setOnItemClickListener { _, _, position, _ ->
+            selectedAccount = accounts.getOrNull(position)
+        }
+        if (accounts.isNotEmpty()) {
+            accountDropdown.setText(accounts[0].name, false)
+            selectedAccount = accounts[0]
         }
     }
 
@@ -165,6 +187,36 @@ class AddTransactionActivity : AppCompatActivity() {
                 showRecurrenceDialog()
             }
         }
+        
+        reminderSwitch.setOnCheckedChangeListener { _, isChecked ->
+            hasReminder = isChecked
+            reminderDateLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+        
+        reminderDateInput.setOnClickListener {
+            showReminderDatePicker()
+        }
+    }
+
+    private fun showReminderDatePicker() {
+        val datePicker = MaterialDatePicker.Builder.datePicker()
+            .setTitleText("Data do Lembrete")
+            .setSelection(reminderDate ?: System.currentTimeMillis())
+            .build()
+        
+        datePicker.addOnPositiveButtonClickListener { selection ->
+            reminderDate = selection
+            updateReminderDateDisplay()
+        }
+        
+        datePicker.show(supportFragmentManager, "reminderDatePicker")
+    }
+    
+    private fun updateReminderDateDisplay() {
+        reminderDate?.let {
+            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+            reminderDateInput.setText(formatter.format(Date(it)))
+        }
     }
 
     private fun showRecurrenceDialog() {
@@ -194,7 +246,7 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun updateColors(colorRes: Int) {
-        val color = getColor(colorRes)
+        val color = ContextCompat.getColor(this, colorRes)
         saveButton.setBackgroundColor(color)
     }
 
@@ -252,18 +304,22 @@ class AddTransactionActivity : AppCompatActivity() {
             .toDoubleOrNull() ?: 0.0
         
         val description = descriptionInput.text.toString()
-        val category = categoryDropdown.text.toString()
-        val account = accountDropdown.text.toString()
+        val category = selectedCategory?.name ?: categoryDropdown.text.toString()
+        val account = selectedAccount?.id ?: ""
         val notes = notesInput.text.toString()
+        val tags = tagsInput.text.toString()
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
         
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val dateStr = formatter.format(Date(selectedDate))
         
-        // Pegar user_id do UserSession (SDK gerencia a sessão)
-        val userId = UserSession.getUserId() ?: ""
+        val reminderDateStr = reminderDate?.let {
+            formatter.format(Date(it))
+        }
         
-        // Encontrar account_id selecionado
-        val selectedAccount = accounts.find { it.name == account }
+        val userId = UserSession.getUserId() ?: ""
         
         val transaction = Transaction(
             id = "",
@@ -274,7 +330,9 @@ class AddTransactionActivity : AppCompatActivity() {
             type = transactionType,
             date = dateStr,
             status = if (isReceived) "paid" else "pending",
-            accountId = selectedAccount?.id ?: "",
+            accountId = account,
+            tags = tags,
+            reminderDate = reminderDateStr,
             isRecurring = isRecurring,
             recurrencePeriod = recurrenceType,
             recurrenceCount = installments,
@@ -285,6 +343,20 @@ class AddTransactionActivity : AppCompatActivity() {
             val success = SupabaseService.saveTransaction(transaction, userId)
             
             if (success) {
+                // Se tem lembrete, salvar na tabela reminders
+                if (hasReminder && reminderDateStr != null) {
+                    val reminder = Reminder(
+                        userId = userId,
+                        transactionId = transaction.id,
+                        title = description,
+                        amount = value,
+                        reminderDate = reminderDateStr,
+                        isRecurring = isRecurring,
+                        recurrenceType = recurrenceType
+                    )
+                    SupabaseService.saveReminder(reminder, userId)
+                }
+                
                 val typeLabel = when (transactionType) {
                     "income" -> "Receita"
                     "expense" -> "Despesa"
