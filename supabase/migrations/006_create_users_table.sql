@@ -71,7 +71,11 @@ CREATE TRIGGER update_users_updated_at
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET role = 'postgres'
+LANGUAGE plpgsql
+AS $$
 BEGIN
     INSERT INTO public.users (id, email, name)
     VALUES (
@@ -90,7 +94,7 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'Erro no handle_new_user: %', SQLERRM;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================================================
 -- STEP 7: Criar trigger para inserir usuário após signup

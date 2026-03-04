@@ -9,7 +9,11 @@
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.create_default_account()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET role = 'postgres'
+LANGUAGE plpgsql
+AS $$
 BEGIN
     -- Inserir conta 'Carteira' para o novo usuário
     INSERT INTO public.accounts (user_id, name, balance, type, icon)
@@ -27,7 +31,7 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'Erro no create_default_account: %', SQLERRM;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================================================
 -- STEP 2: Criar trigger para disparar após inserção de usuário
