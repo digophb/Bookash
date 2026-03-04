@@ -191,12 +191,14 @@ class AddAccountActivity : AppCompatActivity() {
             val type = intent.getStringExtra("account_type") ?: "corrente"
             val balance = intent.getDoubleExtra("account_balance", 0.0)
             val icon = intent.getStringExtra("account_icon") ?: "wallet"
+            val includeInBalance = intent.getBooleanExtra("account_include_in_balance", true)
 
             nameInput.setText(name)
             isNameManuallyEdited = true
             balanceInput.setText(String.format("%.2f", balance))
             selectedBank = icon
             selectedType = type
+            includeInBalanceSwitch.isChecked = includeInBalance
 
             // Set chip selection
             when (type) {

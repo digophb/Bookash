@@ -91,6 +91,7 @@ class AccountsActivity : AppCompatActivity() {
             putExtra("account_type", account.type)
             putExtra("account_balance", account.balance)
             putExtra("account_icon", account.icon)
+            putExtra("account_include_in_balance", account.includeInBalance)
         }
         startActivityForResult(intent, REQUEST_ADD_ACCOUNT)
     }
