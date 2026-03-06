@@ -89,10 +89,15 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun logout() {
-        SettingsManager.clearCache()
-        getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
+        try {
+            SettingsManager.clearCache()
+            getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
+            ToastUtils.logoutSuccess(this)
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        } catch (e: Exception) {
+            ToastUtils.logoutError(this, e.message ?: "Erro desconhecido")
+        }
     }
 
     private fun setupTransactionsList() {

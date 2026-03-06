@@ -5,7 +5,6 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -47,28 +46,29 @@ class RegisterActivity : AppCompatActivity() {
             val password = passwordInput.text.toString()
             val confirmPassword = confirmPasswordInput.text.toString()
             
+            // Validações com Toast padronizado
             if (name.isBlank()) {
-                Toast.makeText(this, "Digite seu nome", Toast.LENGTH_SHORT).show()
+                ToastUtils.registerFieldEmpty(this, "seu nome")
                 return@setOnClickListener
             }
             
             if (email.isBlank()) {
-                Toast.makeText(this, "Digite seu email", Toast.LENGTH_SHORT).show()
+                ToastUtils.registerFieldEmpty(this, "seu email")
                 return@setOnClickListener
             }
             
             if (password.isBlank()) {
-                Toast.makeText(this, "Digite sua senha", Toast.LENGTH_SHORT).show()
+                ToastUtils.registerFieldEmpty(this, "sua senha")
                 return@setOnClickListener
             }
             
             if (password != confirmPassword) {
-                Toast.makeText(this, "Senhas não conferem", Toast.LENGTH_SHORT).show()
+                ToastUtils.registerPasswordMismatch(this)
                 return@setOnClickListener
             }
             
             if (password.length < 6) {
-                Toast.makeText(this, "Senha deve ter pelo menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                ToastUtils.registerPasswordTooShort(this)
                 return@setOnClickListener
             }
             
@@ -89,7 +89,6 @@ class RegisterActivity : AppCompatActivity() {
                 val result = withContext(Dispatchers.IO) {
                     Log.d(TAG, "Iniciando cadastro para: $email")
                     
-                    // Passo 1: Criar conta no Auth do Supabase
                     val url = URL("$SUPABASE_URL/auth/v1/signup")
                     val conn = url.openConnection() as HttpURLConnection
                     conn.requestMethod = "POST"
@@ -111,14 +110,12 @@ class RegisterActivity : AppCompatActivity() {
                         Log.d(TAG, "Response: $response")
                         val json = JSONObject(response)
                         
-                        // O ID do usuário está dentro de "user" na resposta do Supabase
                         val userJson = json.optJSONObject("user")
                         val userId = userJson?.optString("id", "") ?: json.optString("id", "")
                         val accessToken = json.optString("access_token", "")
                         Log.d(TAG, "User ID: $userId")
                         
                         if (userId.isNotEmpty()) {
-                            // Salvar dados do usuário
                             val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit()
                             prefs.putString("user_id", userId)
                             prefs.putString("access_token", accessToken)
@@ -126,52 +123,42 @@ class RegisterActivity : AppCompatActivity() {
                             prefs.putString("user_name", name)
                             prefs.apply()
                             
-                            // Inicializar UserSession
                             UserSession.init(this@RegisterActivity)
-                            UserSession.setUserData(
-                                userId = userId,
-                                email = email,
-                                name = name
-                            )
+                            UserSession.setUserData(userId = userId, email = email, name = name)
                             UserSession.setAccessToken(accessToken)
                             
-                            // NOTA: O trigger no Supabase cria automaticamente:
-                            // 1. Registro na tabela public.users
-                            // 2. Contas padrao 'Carteira' e 'Banco'
-                            // 3. Categorias padrao (Alimentacao, Transporte, etc)
-                            // 4. Tags padrao (Uber, Onibus, FastFood, etc)
-                            // Fallback: criar manualmente se trigger falhar
+                            // Criar dados padrão
                             if (accessToken.isNotEmpty()) {
                                 try {
-                                    val userProfileCreated = SupabaseService.createUserProfile(userId, email, name)
-                                    Log.d(TAG, "Perfil do usuario criado (fallback): $userProfileCreated")
+                                    SupabaseService.createUserProfile(userId, email, name)
+                                    Log.d(TAG, "Perfil do usuario criado")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao criar perfil do usuario: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar perfil: ${e.message}")
                                 }
                                 try {
-                                    val accountsCreated = SupabaseService.createDefaultAccounts(userId)
-                                    Log.d(TAG, "Contas padrao criadas (fallback): $accountsCreated")
+                                    SupabaseService.createDefaultAccounts(userId)
+                                    Log.d(TAG, "Contas padrao criadas")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao criar contas padrao: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar contas: ${e.message}")
                                 }
                                 try {
-                                    val categoriesCreated = SupabaseService.createDefaultCategories(userId)
-                                    Log.d(TAG, "Categorias padrao criadas (fallback): $categoriesCreated")
+                                    SupabaseService.createDefaultCategories(userId)
+                                    Log.d(TAG, "Categorias padrao criadas")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao criar categorias padrao: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar categorias: ${e.message}")
                                 }
                                 try {
-                                    val tagsCreated = SupabaseService.createDefaultTags(userId)
-                                    Log.d(TAG, "Tags padrao criadas (fallback): $tagsCreated")
+                                    SupabaseService.createDefaultTags(userId)
+                                    Log.d(TAG, "Tags padrao criadas")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao criar tags padrao: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar tags: ${e.message}")
                                 }
                             }
                             true
                         } else {
                             Log.e(TAG, "userId vazio")
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(this@RegisterActivity, "Resposta inválida do servidor", Toast.LENGTH_LONG).show()
+                                ToastUtils.serverError(this@RegisterActivity)
                             }
                             false
                         }
@@ -185,12 +172,21 @@ class RegisterActivity : AppCompatActivity() {
                             errorMsg = errorJson.optString("msg", 
                                 errorJson.optString("message", 
                                     errorJson.optString("error_description", errorMsg)))
+                            
+                            // Verificar se email já existe
+                            if (errorMsg.contains("already registered", ignoreCase = true) ||
+                                errorMsg.contains("já existe", ignoreCase = true)) {
+                                withContext(Dispatchers.Main) {
+                                    ToastUtils.registerEmailExists(this@RegisterActivity)
+                                }
+                                return@withContext false
+                            }
                         } catch (e: Exception) {
                             errorMsg = "Erro HTTP $responseCode"
                         }
                         
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(this@RegisterActivity, errorMsg, Toast.LENGTH_LONG).show()
+                            ToastUtils.registerError(this@RegisterActivity, errorMsg)
                         }
                         false
                     }
@@ -201,7 +197,7 @@ class RegisterActivity : AppCompatActivity() {
                     registerButton.text = "Criar Conta"
                     
                     if (result) {
-                        Toast.makeText(this@RegisterActivity, "Conta criada! Verifique seu email ou faça login.", Toast.LENGTH_LONG).show()
+                        ToastUtils.registerSuccess(this@RegisterActivity)
                         finish()
                     }
                 }
@@ -210,7 +206,7 @@ class RegisterActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     registerButton.isEnabled = true
                     registerButton.text = "Criar Conta"
-                    Toast.makeText(this@RegisterActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
+                    ToastUtils.connectionError(this@RegisterActivity)
                 }
             }
         }

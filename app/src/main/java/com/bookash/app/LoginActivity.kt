@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +50,7 @@ class LoginActivity : AppCompatActivity() {
             val password = passwordInput.text.toString()
             
             if (email.isBlank() || password.isBlank()) {
-                Toast.makeText(this, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
+                ToastUtils.loginFieldsEmpty(this)
                 return@setOnClickListener
             }
             
@@ -107,7 +106,6 @@ class LoginActivity : AppCompatActivity() {
                         
                         Pair(true, "")
                     } else {
-                        // Ler mensagem de erro do Supabase
                         val errorStream = conn.errorStream?.bufferedReader()?.readText()
                         var errorMsg = "Email ou senha incorretos"
                         
@@ -132,17 +130,18 @@ class LoginActivity : AppCompatActivity() {
                     loginButton.text = "Entrar"
                     
                     if (result.first) {
+                        ToastUtils.loginSuccess(this@LoginActivity)
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()
                     } else {
-                        Toast.makeText(this@LoginActivity, result.second, Toast.LENGTH_LONG).show()
+                        ToastUtils.loginError(this@LoginActivity, result.second)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
-                    Toast.makeText(this@LoginActivity, "Erro: ${e.message}", Toast.LENGTH_SHORT).show()
+                    ToastUtils.connectionError(this@LoginActivity)
                 }
             }
         }
