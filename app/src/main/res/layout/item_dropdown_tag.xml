@@ -11,8 +11,7 @@
         android:id="@+id/tagColor"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/circle_background" />
+        android:layout_marginEnd="12dp" />
 
     <!-- Nome da tag -->
     <TextView
