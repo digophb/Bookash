@@ -16,17 +16,22 @@ import android.widget.TextView
 class CategoryDropdownAdapter(
     context: Context,
     private val categories: List<Category>
-) : ArrayAdapter<Category>(context, android.R.layout.simple_dropdown_item_1line, categories) {
+) : ArrayAdapter<Category>(context, R.layout.item_dropdown_category, categories) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        return createView(position, convertView, parent)
+        // View do item selecionado - mostra APENAS o nome
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(android.R.layout.simple_spinner_item, parent, false)
+        
+        val textView = view.findViewById<TextView>(android.R.id.text1)
+        textView.text = categories[position].name
+        textView.setTextColor(context.getColor(R.color.text_primary))
+        
+        return view
     }
 
     override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-        return createView(position, convertView, parent)
-    }
-
-    private fun createView(position: Int, convertView: View?, parent: ViewGroup): View {
+        // View do dropdown - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
             .inflate(R.layout.item_dropdown_category, parent, false)
 
@@ -35,14 +40,11 @@ class CategoryDropdownAdapter(
         val iconView = view.findViewById<ImageView>(R.id.categoryIcon)
         val nameView = view.findViewById<TextView>(R.id.categoryName)
 
-        // Nome da categoria
         nameView.text = category.name
 
-        // Ícone
         val iconRes = getIconResource(category.icon)
         iconView.setImageResource(iconRes)
 
-        // Cor de fundo
         try {
             val drawable = GradientDrawable()
             drawable.shape = GradientDrawable.OVAL

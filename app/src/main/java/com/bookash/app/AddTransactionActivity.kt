@@ -90,6 +90,9 @@ class AddTransactionActivity : AppCompatActivity() {
         notesInput = findViewById(R.id.notesInput)
         saveButton = findViewById(R.id.saveButton)
         
+        // Configurar formatação monetária
+        valueInput.addTextChangedListener(CurrencyTextWatcher(valueInput))
+        
         updateDateDisplay()
     }
     
@@ -328,12 +331,7 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun saveTransaction() {
-        val value = valueInput.text.toString()
-            .replace("R$", "")
-            .replace(" ", "")
-            .replace(".", "")
-            .replace(",", ".")
-            .toDoubleOrNull() ?: 0.0
+        val value = CurrencyTextWatcher.parseValue(valueInput.text.toString())
         
         val description = descriptionInput.text.toString()
         val category = selectedCategory?.name ?: categoryDropdown.text.toString()

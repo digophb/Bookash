@@ -15,17 +15,22 @@ import android.widget.TextView
 class TagDropdownAdapter(
     context: Context,
     private val tags: List<Tag>
-) : ArrayAdapter<Tag>(context, android.R.layout.simple_dropdown_item_1line, tags) {
+) : ArrayAdapter<Tag>(context, R.layout.item_dropdown_tag, tags) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        return createView(position, convertView, parent)
+        // View do item selecionado - mostra APENAS o nome
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(android.R.layout.simple_spinner_item, parent, false)
+        
+        val textView = view.findViewById<TextView>(android.R.id.text1)
+        textView.text = tags[position].name
+        textView.setTextColor(context.getColor(R.color.text_primary))
+        
+        return view
     }
 
     override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-        return createView(position, convertView, parent)
-    }
-
-    private fun createView(position: Int, convertView: View?, parent: ViewGroup): View {
+        // View do dropdown - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
             .inflate(R.layout.item_dropdown_tag, parent, false)
 
@@ -34,7 +39,6 @@ class TagDropdownAdapter(
         val tagIcon = view.findViewById<ImageView>(R.id.tagIcon)
         val tagName = view.findViewById<TextView>(R.id.tagName)
 
-        // Nome da tag
         tagName.text = tag.name
 
         // Cor da tag no ícone

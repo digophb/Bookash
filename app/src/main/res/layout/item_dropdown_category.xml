@@ -4,7 +4,8 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:background="@color/surface">
 
     <ImageView
         android:id="@+id/categoryIcon"

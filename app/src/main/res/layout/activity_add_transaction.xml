@@ -1,140 +1,265 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/background">
 
-    <androidx.core.widget.NestedScrollView
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="20dp"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/backButton"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_back"
+            android:tint="@color/text_primary"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Nova Receita"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginStart="16dp" />
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="20dp">
 
-            <!-- Título -->
-            <TextView
-                android:id="@+id/titleText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nova Receita"
-                android:textColor="@color/text_primary"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="20dp" />
-
-            <!-- Toggle Tipo -->
+            <!-- Toggle Tipo de Transação -->
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/typeToggle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                app:selectionRequired="true"
+                android:layout_marginBottom="24dp"
                 app:singleSelection="true"
-                android:layout_marginBottom="24dp">
+                app:selectionRequired="true">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnIncome"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Receita"
-                    android:textColor="@color/primary"
-                    android:textSize="12sp"
-                    app:icon="@drawable/ic_arrow_up"
-                    app:iconTint="@color/primary" />
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExpense"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Despesa"
-                    android:textColor="@color/error"
-                    android:textSize="12sp"
-                    app:icon="@drawable/ic_arrow_down"
-                    app:iconTint="@color/error" />
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnTransfer"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Transferir"
-                    android:textColor="@color/highlight_secondary"
-                    android:textSize="12sp"
-                    app:icon="@drawable/ic_transfer"
-                    app:iconTint="@color/highlight_secondary" />
+                    android:text="Transferência"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
-            <!-- ====== CAMPO VALOR (DESTAQUE) ====== -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- Valor -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Valor"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="4dp">
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout"
+                app:prefixText="R$ "
+                app:prefixTextColor="@color/text_secondary">
 
-                <LinearLayout
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/valueInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp"
-                    android:gravity="center">
+                    android:hint="0,00"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Valor"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginTop="8dp">
+            <!-- Descrição -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Descrição"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$"
-                            android:textColor="@color/text_primary"
-                            android:textSize="32sp"
-                            android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/valueInput"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:hint="0,00"
-                            android:inputType="numberDecimal"
-                            android:textColor="@color/text_primary"
-                            android:textColorHint="@color/input_placeholder"
-                            android:textSize="32sp"
-                            android:textStyle="bold"
-                            android:background="@android:color/transparent"
-                            android:minWidth="120dp"
-                            android:gravity="center" />
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/descriptionInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Ex: Salário, Aluguel..."
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="text"
+                    android:maxLines="1" />
 
-                    </LinearLayout>
+            </com.google.android.material.textfield.TextInputLayout>
 
-                </LinearLayout>
+            <!-- Categoria -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Categoria"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
 
-            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
+                app:hintEnabled="false">
 
-            <!-- ====== SWITCH RECEBIDO/PAGO ====== -->
+                <AutoCompleteTextView
+                    android:id="@+id/categoryDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Selecione uma categoria"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="none"
+                    android:popupBackground="@color/surface" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Conta -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Conta"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
+                app:hintEnabled="false">
+
+                <AutoCompleteTextView
+                    android:id="@+id/accountDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Selecione uma conta"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="none"
+                    android:popupBackground="@color/surface" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Data -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Data"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout"
+                app:endIconDrawable="@drawable/ic_calendar"
+                app:endIconMode="custom"
+                app:endIconTint="@color/text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/dateInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Selecione a data"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="none"
+                    android:focusable="false"
+                    android:clickable="true" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tags -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tags"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
+                app:hintEnabled="false">
+
+                <AutoCompleteTextView
+                    android:id="@+id/tagsDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Selecione tags (opcional)"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="none"
+                    android:popupBackground="@color/surface" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Switch Recebido/Pago (padrão da tela nova conta) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -143,140 +268,41 @@
                 android:paddingVertical="8dp"
                 android:layout_marginBottom="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Recebido"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/receivedLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Recebido"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Marque se já recebeu/pagou"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/receivedSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    app:thumbTint="@color/primary"
-                    app:trackTint="@color/highlight_secondary" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
 
             </LinearLayout>
 
-            <!-- ====== CAMPOS PRINCIPAIS ====== -->
-            
-            <!-- Descrição -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:hint="Descrição"
-                style="@style/Widget.Bookash.TextInputLayout"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_edit"
-                app:startIconTint="@color/primary"
-                app:hintTextColor="@color/input_placeholder">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/descriptionInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Categoria -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_category"
-                app:startIconTint="@color/primary"
-                app:endIconDrawable="@drawable/ic_dropdown"
-                app:endIconTint="@color/primary"
-                app:hintTextColor="@color/input_placeholder">
-
-                <AutoCompleteTextView
-                    android:id="@+id/categoryDropdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder"
-                    android:popupBackground="@color/surface"
-                    android:dropDownSelector="@color/primary"
-                    android:hint="Categoria" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Conta (sem label) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_account"
-                app:startIconTint="@color/primary"
-                app:endIconDrawable="@drawable/ic_dropdown"
-                app:endIconTint="@color/primary"
-                app:hintTextColor="@color/input_placeholder">
-
-                <AutoCompleteTextView
-                    android:id="@+id/accountDropdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder"
-                    android:popupBackground="@color/surface" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Data (sem label) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Bookash.TextInputLayout"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_calendar"
-                app:startIconTint="@color/highlight_secondary"
-                app:endIconDrawable="@drawable/ic_dropdown"
-                app:endIconTint="@color/highlight_secondary"
-                app:hintTextColor="@color/input_placeholder">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/dateInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:focusable="false"
-                    android:clickable="true"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- ====== SWITCH REPETIR ====== -->
+            <!-- Switch Repetir (padrão da tela nova conta) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -285,151 +311,149 @@
                 android:paddingVertical="8dp"
                 android:layout_marginBottom="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Repetir"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Repetir"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Criar transação recorrente"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/repeatSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="false"
-                    app:thumbTint="@color/primary"
-                    app:trackTint="@color/highlight_secondary" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
 
             </LinearLayout>
 
-            <!-- ====== SWITCH LEMBRAR (LEMBRETE) ====== -->
+            <!-- Switch Lembrete (padrão da tela nova conta) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:paddingVertical="8dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="24dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Lembrar"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lembrete"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Receber notificação antes da data"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/reminderSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="false"
-                    app:thumbTint="@color/primary"
-                    app:trackTint="@color/highlight_secondary" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
 
             </LinearLayout>
 
-            <!-- Campo Data do Lembrete (visível apenas se reminderSwitch estiver ligado) -->
+            <!-- Data do Lembrete (oculto por padrão) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/reminderDateLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:hint="Data do Lembrete"
-                android:visibility="gone"
+                android:layout_marginBottom="24dp"
                 style="@style/Widget.Bookash.TextInputLayout"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_notifications"
-                app:startIconTint="@color/accent"
+                android:visibility="gone"
                 app:endIconDrawable="@drawable/ic_calendar"
-                app:endIconTint="@color/accent"
-                app:hintTextColor="@color/input_placeholder">
+                app:endIconMode="custom"
+                app:endIconTint="@color/text_secondary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/reminderDateInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:hint="Data do lembrete"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
                     android:inputType="none"
                     android:focusable="false"
-                    android:clickable="true"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder" />
+                    android:clickable="true" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Tags -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
+            <!-- Notas -->
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:hint="Tags"
-                style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_tag"
-                app:startIconTint="@color/accent"
-                app:hintTextColor="@color/input_placeholder">
+                android:text="Notas (opcional)"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
 
-                <AutoCompleteTextView
-                    android:id="@+id/tagsDropdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Observações -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:hint="Observações"
-                style="@style/Widget.Bookash.TextInputLayout"
-                app:boxBackgroundColor="@color/surface"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:startIconDrawable="@drawable/ic_notes"
-                app:startIconTint="@color/highlight_secondary"
-                app:hintTextColor="@color/input_placeholder">
+                style="@style/Widget.Bookash.TextInputLayout">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/notesInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:hint="Adicione observações..."
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
                     android:inputType="textMultiLine"
                     android:minLines="2"
-                    android:maxLines="4"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder" />
+                    android:maxLines="4" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Botão Salvar -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/saveButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="Salvar"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/white"
-                app:backgroundTint="@color/primary"
-                app:cornerRadius="28dp" />
-
         </LinearLayout>
 
-    </androidx.core.widget.NestedScrollView>
+    </ScrollView>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <!-- Botão Salvar -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/saveButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_margin="20dp"
+        android:text="Salvar Transação"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="12dp" />
+
+</LinearLayout>

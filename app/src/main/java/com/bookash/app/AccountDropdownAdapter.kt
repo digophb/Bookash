@@ -7,28 +7,29 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
-import java.text.NumberFormat
-import java.util.Locale
 
 /**
- * Adapter para dropdown de contas com ícone e saldo
+ * Adapter para dropdown de contas com ícone
  */
 class AccountDropdownAdapter(
     context: Context,
     private val accounts: List<Account>
-) : ArrayAdapter<Account>(context, android.R.layout.simple_dropdown_item_1line, accounts) {
-
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+) : ArrayAdapter<Account>(context, R.layout.item_dropdown_account, accounts) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        return createView(position, convertView, parent)
+        // View do item selecionado - mostra APENAS o nome
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(android.R.layout.simple_spinner_item, parent, false)
+        
+        val textView = view.findViewById<TextView>(android.R.id.text1)
+        textView.text = accounts[position].name
+        textView.setTextColor(context.getColor(R.color.text_primary))
+        
+        return view
     }
 
     override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-        return createView(position, convertView, parent)
-    }
-
-    private fun createView(position: Int, convertView: View?, parent: ViewGroup): View {
+        // View do dropdown - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
             .inflate(R.layout.item_dropdown_account, parent, false)
 
@@ -36,23 +37,9 @@ class AccountDropdownAdapter(
 
         val iconView = view.findViewById<ImageView>(R.id.accountIcon)
         val nameView = view.findViewById<TextView>(R.id.accountName)
-        val balanceView = view.findViewById<TextView>(R.id.accountBalance)
 
-        // Nome da conta
         nameView.text = account.name
 
-        // Saldo formatado
-        balanceView.text = currencyFormat.format(account.balance)
-        
-        // Cor do saldo (verde se positivo, vermelho se negativo)
-        val balanceColor = if (account.balance >= 0) {
-            context.getColor(R.color.income)
-        } else {
-            context.getColor(R.color.expense)
-        }
-        balanceView.setTextColor(balanceColor)
-
-        // Ícone do banco
         val iconRes = getBankIconResource(account.icon)
         iconView.setImageResource(iconRes)
 
