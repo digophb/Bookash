@@ -139,13 +139,16 @@ class RegisterActivity : AppCompatActivity() {
                             // 1. Registro na tabela public.users
                             // 2. Contas padrao 'Carteira' e 'Banco'
                             // 3. Categorias padrao (Alimentacao, Transporte, etc)
+                            // 4. Tags padrao (Uber, Onibus, FastFood, etc)
                             // Fallback: criar manualmente se trigger falhar
                             if (accessToken.isNotEmpty()) {
                                 try {
                                     val accountsCreated = SupabaseService.createDefaultAccounts(userId)
                                     val categoriesCreated = SupabaseService.createDefaultCategories(userId)
+                                    val tagsCreated = SupabaseService.createDefaultTags(userId)
                                     Log.d(TAG, "Contas padrao criadas (fallback): $accountsCreated")
                                     Log.d(TAG, "Categorias padrao criadas (fallback): $categoriesCreated")
+                                    Log.d(TAG, "Tags padrao criadas (fallback): $tagsCreated")
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Erro ao criar dados padrao: ${e.message}")
                                 }

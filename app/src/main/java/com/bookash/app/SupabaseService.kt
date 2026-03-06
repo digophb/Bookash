@@ -1004,6 +1004,74 @@ object SupabaseService {
         }
     }
     
+    suspend fun createDefaultTags(userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TAGS] DEFAULT - Criando tags padrao para userId: $userId")
+        
+        try {
+            // Obter token do usuario para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TAGS] DEFAULT - Erro: usuario nao autenticado")
+                return@withContext false
+            }
+            
+            // Verificar se ja existe tag para este usuario
+            val existingTags = getTags(userId)
+            if (existingTags.isNotEmpty()) {
+                Log.i(TAG, "[TAGS] DEFAULT - Usuario ja possui ${existingTags.size} tags, pulando criacao")
+                return@withContext true
+            }
+            
+            // Criar tags padrao
+            val defaultTags = listOf(
+                """{"name":"Uber","color":"#000000","user_id":"$userId"}""",
+                """{"name":"Onibus","color":"#4ECDC4","user_id":"$userId"}""",
+                """{"name":"FastFood","color":"#FF9800","user_id":"$userId"}""",
+                """{"name":"Restaurante","color":"#E53935","user_id":"$userId"}""",
+                """{"name":"Cursinho","color":"#9C27B0","user_id":"$userId"}""",
+                """{"name":"Farmacia","color":"#4CAF50","user_id":"$userId"}""",
+                """{"name":"Day Trade","color":"#FFD700","user_id":"$userId"}""",
+                """{"name":"Passeio","color":"#03A9F4","user_id":"$userId"}""",
+                """{"name":"Presente","color":"#E91E63","user_id":"$userId"}""",
+                """{"name":"Roupas","color":"#D81B60","user_id":"$userId"}"""
+            )
+            
+            var allSuccess = true
+            for (tagBody in defaultTags) {
+                val conn = URL("$BASE_URL/rest/v1/tags").openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("apikey", API_KEY)
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Prefer", "return=minimal")
+                conn.doOutput = true
+                
+                conn.outputStream.write(tagBody.toByteArray())
+                
+                val responseCode = conn.responseCode
+                if (responseCode !in 200..299) {
+                    Log.w(TAG, "[TAGS] DEFAULT - Falha ao criar tag: HTTP $responseCode")
+                    allSuccess = false
+                }
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (allSuccess) {
+                Log.i(TAG, "[TAGS] DEFAULT - Sucesso: 10 tags padrao criadas (${duration}ms)")
+            } else {
+                Log.w(TAG, "[TAGS] DEFAULT - Parcial: algumas tags falharam (${duration}ms)")
+            }
+            
+            allSuccess
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TAGS] DEFAULT - Erro ao criar tags padrao após ${duration}ms", e)
+            false
+        }
+    }
+    
     suspend fun updateTag(tag: Tag): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[TAGS] UPDATE - Iniciando: id=${tag.id}, name='${tag.name}'")
