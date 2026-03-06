@@ -368,7 +368,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:hint="Tags"
-                style="@style/Widget.Bookash.TextInputLayout"
+                style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
                 app:boxBackgroundColor="@color/surface"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
@@ -378,11 +378,11 @@
                 app:startIconTint="@color/accent"
                 app:hintTextColor="@color/input_placeholder">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/tagsInput"
+                <AutoCompleteTextView
+                    android:id="@+id/tagsDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
+                    android:inputType="none"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/input_placeholder" />
 

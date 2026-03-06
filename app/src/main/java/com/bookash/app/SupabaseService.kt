@@ -456,6 +456,7 @@ object SupabaseService {
     /**
      * Cria a conta padrão 'Carteira' para um novo usuário.
      * Chamado automaticamente pelo trigger no banco, mas disponível como fallback.
+     * @deprecated Use createDefaultAccounts() para criar Carteira + Banco
      */
     suspend fun createDefaultAccount(userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
@@ -500,6 +501,140 @@ object SupabaseService {
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[ACCOUNTS] DEFAULT - Erro ao criar conta padrão após ${duration}ms", e)
+            false
+        }
+    }
+    
+    /**
+     * Cria as contas padrão 'Carteira' e 'Banco' para um novo usuário.
+     * Chamado automaticamente pelo trigger no banco, mas disponível como fallback.
+     */
+    suspend fun createDefaultAccounts(userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Criando Carteira + Banco para userId: $userId")
+        
+        try {
+            // Obter token do usuário para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
+            // Verificar se já existe conta para este usuário
+            val existingAccounts = getAccounts(userId, archived = false)
+            if (existingAccounts.isNotEmpty()) {
+                Log.i(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Usuário já possui ${existingAccounts.size} contas, pulando criação")
+                return@withContext true
+            }
+            
+            // Criar as duas contas padrão: Carteira e Banco
+            val defaultAccounts = listOf(
+                """{"name":"Carteira","balance":0,"type":"dinheiro","icon":"wallet","user_id":"$userId"}""",
+                """{"name":"Banco","balance":0,"type":"corrente","icon":"bank","user_id":"$userId"}"""
+            )
+            
+            var allSuccess = true
+            for (accountBody in defaultAccounts) {
+                val conn = URL("$BASE_URL/rest/v1/accounts").openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("apikey", API_KEY)
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Prefer", "return=minimal")
+                conn.doOutput = true
+                
+                conn.outputStream.write(accountBody.toByteArray())
+                
+                val responseCode = conn.responseCode
+                if (responseCode !in 200..299) {
+                    Log.w(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Falha ao criar conta: HTTP $responseCode")
+                    allSuccess = false
+                }
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (allSuccess) {
+                Log.i(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Sucesso: Carteira e Banco criadas (${duration}ms)")
+            } else {
+                Log.w(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Parcial: algumas contas falharam (${duration}ms)")
+            }
+            
+            allSuccess
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ACCOUNTS] DEFAULT_ACCOUNTS - Erro ao criar contas padrão após ${duration}ms", e)
+            false
+        }
+    }
+    
+    /**
+     * Cria as categorias padrao para um novo usuario.
+     * Chamado automaticamente pelo trigger no banco, mas disponivel como fallback.
+     */
+    suspend fun createDefaultCategories(userId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[CATEGORIES] DEFAULT - Criando categorias padrao para userId: $userId")
+        
+        try {
+            // Obter token do usuario para RLS
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[CATEGORIES] DEFAULT - Erro: usuario nao autenticado")
+                return@withContext false
+            }
+            
+            // Verificar se ja existe categoria para este usuario
+            val existingCategories = getCategories(userId)
+            if (existingCategories.isNotEmpty()) {
+                Log.i(TAG, "[CATEGORIES] DEFAULT - Usuario ja possui ${existingCategories.size} categorias, pulando criacao")
+                return@withContext true
+            }
+            
+            // Criar categorias padrao
+            val defaultCategories = listOf(
+                """{"name":"Alimentacao","type":"expense","color":"#FF6B6B","icon":"restaurant","user_id":"$userId"}""",
+                """{"name":"Transporte","type":"expense","color":"#4ECDC4","icon":"directions_car","user_id":"$userId"}""",
+                """{"name":"Salario","type":"income","color":"#45B7D1","icon":"attach_money","user_id":"$userId"}""",
+                """{"name":"Lazer","type":"expense","color":"#96CEB4","icon":"sports_esports","user_id":"$userId"}""",
+                """{"name":"Saude","type":"expense","color":"#FFEAA7","icon":"local_hospital","user_id":"$userId"}""",
+                """{"name":"Educacao","type":"expense","color":"#DDA0DD","icon":"school","user_id":"$userId"}""",
+                """{"name":"Moradia","type":"expense","color":"#98D8C8","icon":"home","user_id":"$userId"}""",
+                """{"name":"Outros","type":"expense","color":"#B0BEC5","icon":"more_horiz","user_id":"$userId"}"""
+            )
+            
+            var allSuccess = true
+            for (categoryBody in defaultCategories) {
+                val conn = URL("$BASE_URL/rest/v1/categories").openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("apikey", API_KEY)
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Prefer", "return=minimal")
+                conn.doOutput = true
+                
+                conn.outputStream.write(categoryBody.toByteArray())
+                
+                val responseCode = conn.responseCode
+                if (responseCode !in 200..299) {
+                    Log.w(TAG, "[CATEGORIES] DEFAULT - Falha ao criar categoria: HTTP $responseCode")
+                    allSuccess = false
+                }
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (allSuccess) {
+                Log.i(TAG, "[CATEGORIES] DEFAULT - Sucesso: 8 categorias padrao criadas (${duration}ms)")
+            } else {
+                Log.w(TAG, "[CATEGORIES] DEFAULT - Parcial: algumas categorias falharam (${duration}ms)")
+            }
+            
+            allSuccess
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[CATEGORIES] DEFAULT - Erro ao criar categorias padrao após ${duration}ms", e)
             false
         }
     }

@@ -12,7 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 data class BankItem(
     val id: String,
     val name: String,
-    val resId: Int
+    val resId: Int, // Fallback drawable
+    val svgPath: String? = null // SVG path em assets
 )
 
 class BankIconAdapter(
@@ -20,24 +21,24 @@ class BankIconAdapter(
 ) : RecyclerView.Adapter<BankIconAdapter.BankViewHolder>() {
 
     private val banks = listOf(
-        BankItem("nubank", "Nubank", R.drawable.ic_bank_nubank),
-        BankItem("itau", "Itaú", R.drawable.ic_bank_itau),
-        BankItem("bradesco", "Bradesco", R.drawable.ic_bank_bradesco),
-        BankItem("bb", "Banco do Brasil", R.drawable.ic_bank_bb),
-        BankItem("caixa", "Caixa", R.drawable.ic_bank_caixa),
-        BankItem("santander", "Santander", R.drawable.ic_bank_santander),
-        BankItem("inter", "Inter", R.drawable.ic_bank_inter),
-        BankItem("c6", "C6 Bank", R.drawable.ic_bank_c6),
+        BankItem("nubank", "Nubank", R.drawable.ic_bank_nubank, "banks/nubank.svg"),
+        BankItem("itau", "Itaú", R.drawable.ic_bank_itau, "banks/itau.svg"),
+        BankItem("bradesco", "Bradesco", R.drawable.ic_bank_bradesco, "banks/bradesco.svg"),
+        BankItem("bb", "Banco do Brasil", R.drawable.ic_bank_bb, "banks/bb.svg"),
+        BankItem("caixa", "Caixa", R.drawable.ic_bank_caixa, "banks/caixa.svg"),
+        BankItem("santander", "Santander", R.drawable.ic_bank_santander, "banks/santander.svg"),
+        BankItem("inter", "Inter", R.drawable.ic_bank_inter, "banks/inter.svg"),
+        BankItem("c6", "C6 Bank", R.drawable.ic_bank_c6, "banks/c6.svg"),
         BankItem("original", "Original", R.drawable.ic_bank_original),
         BankItem("bmg", "BMG", R.drawable.ic_bank_bmg),
         BankItem("safra", "Safra", R.drawable.ic_bank_safra),
         BankItem("btg", "BTG Pactual", R.drawable.ic_bank_btg),
         BankItem("next", "Next", R.drawable.ic_bank_next),
         BankItem("digio", "Digio", R.drawable.ic_bank_digio),
-        BankItem("neon", "Neon", R.drawable.ic_bank_neon),
+        BankItem("neon", "Neon", R.drawable.ic_bank_neon, "banks/neon.svg"),
         BankItem("pagseguro", "PagSeguro", R.drawable.ic_bank_pagseguro),
-        BankItem("mercadopago", "Mercado Pago", R.drawable.ic_bank_mercadopago),
-        BankItem("picpay", "PicPay", R.drawable.ic_bank_picpay),
+        BankItem("mercadopago", "Mercado Pago", R.drawable.ic_bank_mercadopago, "banks/mercadopago.svg"),
+        BankItem("picpay", "PicPay", R.drawable.ic_bank_picpay, "banks/picpay.svg"),
         BankItem("banrisul", "Banrisul", R.drawable.ic_bank_banrisul),
         BankItem("votorantim", "Votorantim", R.drawable.ic_bank_votorantim),
         BankItem("nordeste", "B. Nordeste", R.drawable.ic_bank_nordeste),
@@ -99,7 +100,13 @@ class BankIconAdapter(
         private val bankName: TextView = itemView.findViewById(R.id.bankName)
 
         fun bind(bank: BankItem) {
-            bankIcon.setImageResource(bank.resId)
+            // Carregar SVG se disponivel, senao usar fallback
+            if (bank.svgPath != null) {
+                SvgLoader.loadSvg(itemView.context, bankIcon, bank.svgPath, bank.resId)
+            } else {
+                bankIcon.setImageResource(bank.resId)
+            }
+            
             bankName.text = bank.name
             
             val isSelected = bank.id == selectedBank

@@ -137,14 +137,17 @@ class RegisterActivity : AppCompatActivity() {
                             
                             // NOTA: O trigger no Supabase cria automaticamente:
                             // 1. Registro na tabela public.users
-                            // 2. Conta padrão 'Carteira'
-                            // Fallback: criar conta manualmente se trigger falhar
+                            // 2. Contas padrao 'Carteira' e 'Banco'
+                            // 3. Categorias padrao (Alimentacao, Transporte, etc)
+                            // Fallback: criar manualmente se trigger falhar
                             if (accessToken.isNotEmpty()) {
                                 try {
-                                    val accountCreated = SupabaseService.createDefaultAccount(userId)
-                                    Log.d(TAG, "Conta padrão criada (fallback): $accountCreated")
+                                    val accountsCreated = SupabaseService.createDefaultAccounts(userId)
+                                    val categoriesCreated = SupabaseService.createDefaultCategories(userId)
+                                    Log.d(TAG, "Contas padrao criadas (fallback): $accountsCreated")
+                                    Log.d(TAG, "Categorias padrao criadas (fallback): $categoriesCreated")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao criar conta padrão: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar dados padrao: ${e.message}")
                                 }
                             }
                             true

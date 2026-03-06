@@ -35,7 +35,7 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var reminderSwitch: MaterialSwitch
     private lateinit var reminderDateLayout: TextInputLayout
     private lateinit var reminderDateInput: TextInputEditText
-    private lateinit var tagsInput: TextInputEditText
+    private lateinit var tagsDropdown: AutoCompleteTextView
     private lateinit var notesInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
     
@@ -50,9 +50,11 @@ class AddTransactionActivity : AppCompatActivity() {
     
     private val categories = mutableListOf<Category>()
     private val accounts = mutableListOf<Account>()
+    private val tags = mutableListOf<Tag>()
     private var userId: String? = null
     private var selectedCategory: Category? = null
     private var selectedAccount: Account? = null
+    private val selectedTags = mutableListOf<Tag>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +86,7 @@ class AddTransactionActivity : AppCompatActivity() {
         reminderSwitch = findViewById(R.id.reminderSwitch)
         reminderDateLayout = findViewById(R.id.reminderDateLayout)
         reminderDateInput = findViewById(R.id.reminderDateInput)
-        tagsInput = findViewById(R.id.tagsInput)
+        tagsDropdown = findViewById(R.id.tagsDropdown)
         notesInput = findViewById(R.id.notesInput)
         saveButton = findViewById(R.id.saveButton)
         
@@ -106,6 +108,12 @@ class AddTransactionActivity : AppCompatActivity() {
             accounts.clear()
             accounts.addAll(loadedAccounts)
             updateAccountDropdown()
+            
+            // Carregar tags
+            val loadedTags = SupabaseService.getTags(userId!!)
+            tags.clear()
+            tags.addAll(loadedTags)
+            updateTagDropdown()
         }
     }
     
@@ -129,6 +137,30 @@ class AddTransactionActivity : AppCompatActivity() {
             accountDropdown.setText(accounts[0].name, false)
             selectedAccount = accounts[0]
         }
+    }
+    
+    private fun updateTagDropdown() {
+        // Adapter personalizado com cores
+        val adapter = TagDropdownAdapter(this, tags)
+        tagsDropdown.setAdapter(adapter)
+        tagsDropdown.setOnItemClickListener { _, _, position, _ ->
+            val selectedTag = tags.getOrNull(position) ?: return@setOnItemClickListener
+            
+            // Adicionar tag à lista de selecionadas
+            if (!selectedTags.contains(selectedTag)) {
+                selectedTags.add(selectedTag)
+                updateTagsDisplay()
+            }
+            
+            // Limpar dropdown para permitir selecionar outra tag
+            tagsDropdown.text = null
+        }
+    }
+    
+    private fun updateTagsDisplay() {
+        // Mostrar tags selecionadas como texto separado por vírgula
+        val tagsText = selectedTags.joinToString(", ") { it.name }
+        tagsDropdown.setText(tagsText)
     }
 
     private fun setupTypeToggle() {
@@ -307,10 +339,7 @@ class AddTransactionActivity : AppCompatActivity() {
         val category = selectedCategory?.name ?: categoryDropdown.text.toString()
         val account = selectedAccount?.id ?: ""
         val notes = notesInput.text.toString()
-        val tags = tagsInput.text.toString()
-            .split(",")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        val tags = selectedTags.map { it.name }
         
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val dateStr = formatter.format(Date(selectedDate))
