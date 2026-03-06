@@ -10,8 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 data class IconItem(
     val name: String,
-    val resId: Int,
-    val svgPath: String? = null // SVG path em assets (opcional)
+    val resId: Int
 )
 
 class CategoryIconAdapter(
@@ -135,12 +134,7 @@ class CategoryIconAdapter(
         private val iconImage: ImageView = itemView.findViewById(R.id.iconImage)
 
         fun bind(icon: IconItem) {
-            // Carregar SVG se disponivel, senao usar fallback drawable
-            if (icon.svgPath != null) {
-                SvgLoader.loadSvg(itemView.context, iconImage, icon.svgPath, icon.resId)
-            } else {
-                iconImage.setImageResource(icon.resId)
-            }
+            iconImage.setImageResource(icon.resId)
             
             val isSelected = icon.name == selectedIcon
             
