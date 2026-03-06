@@ -6,12 +6,13 @@
     android:gravity="center_vertical"
     android:padding="12dp">
 
-    <!-- Circulo colorido da tag -->
-    <View
-        android:id="@+id/tagColor"
+    <!-- Tag Icon with Color -->
+    <ImageView
+        android:id="@+id/tagIcon"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:layout_marginEnd="12dp" />
+        android:layout_marginEnd="12dp"
+        android:src="@drawable/ic_tag" />
 
     <!-- Nome da tag -->
     <TextView

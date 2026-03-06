@@ -1,6 +1,5 @@
 package com.bookash.app
 
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,7 +33,7 @@ class TagAdapter(
     override fun getItemCount(): Int = tags.size
 
     inner class TagViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val tagColor: View = itemView.findViewById(R.id.tagColor)
+        private val tagIcon: ImageView = itemView.findViewById(R.id.tagIcon)
         private val tagName: TextView = itemView.findViewById(R.id.tagName)
         private val btnEdit: ImageView = itemView.findViewById(R.id.btnEdit)
         private val btnDelete: ImageView = itemView.findViewById(R.id.btnDelete)
@@ -42,10 +41,12 @@ class TagAdapter(
         fun bind(tag: Tag) {
             tagName.text = tag.name
             
-            // Set color circle
-            val drawable = tagColor.background as? GradientDrawable
-            drawable?.setColor(android.graphics.Color.parseColor(tag.color))
-            tagColor.background = drawable
+            // Set tag icon color
+            try {
+                tagIcon.setColorFilter(android.graphics.Color.parseColor(tag.color))
+            } catch (e: Exception) {
+                tagIcon.setColorFilter(android.graphics.Color.parseColor("#A3BBAD"))
+            }
 
             btnEdit.setOnClickListener { onEditClick(tag) }
             btnDelete.setOnClickListener { onDeleteClick(tag) }

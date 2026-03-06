@@ -2,7 +2,6 @@ package com.bookash.app
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -32,24 +31,17 @@ class TagDropdownAdapter(
 
         val tag = tags[position]
 
-        val tagColor = view.findViewById<View>(R.id.tagColor)
+        val tagIcon = view.findViewById<ImageView>(R.id.tagIcon)
         val tagName = view.findViewById<TextView>(R.id.tagName)
 
         // Nome da tag
         tagName.text = tag.name
 
-        // Cor da tag (circulo colorido)
+        // Cor da tag no ícone
         try {
-            val drawable = GradientDrawable()
-            drawable.shape = GradientDrawable.OVAL
-            drawable.setColor(Color.parseColor(tag.color))
-            tagColor.background = drawable
+            tagIcon.setColorFilter(Color.parseColor(tag.color))
         } catch (e: Exception) {
-            // Fallback para cor padrão se falhar
-            val drawable = GradientDrawable()
-            drawable.shape = GradientDrawable.OVAL
-            drawable.setColor(Color.parseColor("#A3BBAD"))
-            tagColor.background = drawable
+            tagIcon.setColorFilter(Color.parseColor("#A3BBAD"))
         }
 
         return view
