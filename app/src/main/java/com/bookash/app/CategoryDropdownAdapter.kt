@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Filter
 import android.widget.ImageView
 import android.widget.TextView
 
@@ -16,7 +17,13 @@ import android.widget.TextView
 class CategoryDropdownAdapter(
     context: Context,
     private val categories: List<Category>
-) : ArrayAdapter<Category>(context, R.layout.item_dropdown_category_selected, categories) {
+) : ArrayAdapter<String>(context, R.layout.item_dropdown_category_selected) {
+
+    private val categoryNames = categories.map { it.name }
+
+    override fun getCount(): Int = categoryNames.size
+
+    override fun getItem(position: Int): String = categoryNames[position]
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         // View do item selecionado - mostra ícone + nome
@@ -74,6 +81,25 @@ class CategoryDropdownAdapter(
         return view
     }
 
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val results = FilterResults()
+                results.values = categoryNames
+                results.count = categoryNames.size
+                return results
+            }
+
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                notifyDataSetChanged()
+            }
+
+            override fun convertResultToString(resultValue: Any?): CharSequence {
+                return resultValue?.toString() ?: ""
+            }
+        }
+    }
+
     private fun getIconResource(iconName: String): Int {
         return when (iconName) {
             "salary" -> R.drawable.ic_icon_salary
@@ -93,5 +119,12 @@ class CategoryDropdownAdapter(
             "subscriptions" -> R.drawable.ic_icon_subscriptions
             else -> R.drawable.ic_category
         }
+    }
+    
+    /**
+     * Retorna a categoria pelo nome selecionado
+     */
+    fun getCategoryByName(name: String): Category? {
+        return categories.find { it.name == name }
     }
 }

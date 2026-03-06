@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Filter
 import android.widget.ImageView
 import android.widget.TextView
 
@@ -15,7 +16,13 @@ import android.widget.TextView
 class TagDropdownAdapter(
     context: Context,
     private val tags: List<Tag>
-) : ArrayAdapter<Tag>(context, R.layout.item_dropdown_tag_selected, tags) {
+) : ArrayAdapter<String>(context, R.layout.item_dropdown_tag_selected) {
+
+    private val tagNames = tags.map { it.name }
+
+    override fun getCount(): Int = tagNames.size
+
+    override fun getItem(position: Int): String = tagNames[position]
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         // View do item selecionado - mostra ícone + nome
@@ -59,5 +66,31 @@ class TagDropdownAdapter(
         }
 
         return view
+    }
+
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val results = FilterResults()
+                results.values = tagNames
+                results.count = tagNames.size
+                return results
+            }
+
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                notifyDataSetChanged()
+            }
+
+            override fun convertResultToString(resultValue: Any?): CharSequence {
+                return resultValue?.toString() ?: ""
+            }
+        }
+    }
+    
+    /**
+     * Retorna a tag pelo nome selecionado
+     */
+    fun getTagByName(name: String): Tag? {
+        return tags.find { it.name == name }
     }
 }

@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Filter
 import android.widget.ImageView
 import android.widget.TextView
 
@@ -14,7 +15,13 @@ import android.widget.TextView
 class AccountDropdownAdapter(
     context: Context,
     private val accounts: List<Account>
-) : ArrayAdapter<Account>(context, R.layout.item_dropdown_account_selected, accounts) {
+) : ArrayAdapter<String>(context, R.layout.item_dropdown_account_selected) {
+
+    private val accountNames = accounts.map { it.name }
+
+    override fun getCount(): Int = accountNames.size
+
+    override fun getItem(position: Int): String = accountNames[position]
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         // View do item selecionado - mostra ícone + nome
@@ -52,6 +59,25 @@ class AccountDropdownAdapter(
         return view
     }
 
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val results = FilterResults()
+                results.values = accountNames
+                results.count = accountNames.size
+                return results
+            }
+
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                notifyDataSetChanged()
+            }
+
+            override fun convertResultToString(resultValue: Any?): CharSequence {
+                return resultValue?.toString() ?: ""
+            }
+        }
+    }
+
     private fun getBankIconResource(bankId: String): Int {
         return when (bankId) {
             "nubank" -> R.drawable.ic_bank_nubank
@@ -78,5 +104,12 @@ class AccountDropdownAdapter(
             "wallet" -> R.drawable.ic_bank_wallet
             else -> R.drawable.ic_bank_wallet
         }
+    }
+    
+    /**
+     * Retorna a conta pelo nome selecionado
+     */
+    fun getAccountByName(name: String): Account? {
+        return accounts.find { it.name == name }
     }
 }
