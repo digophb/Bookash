@@ -1,7 +1,8 @@
 package com.bookash.app
 
 import android.content.Context
-import android.graphics.drawable.Drawable
+import android.graphics.Picture
+import android.graphics.drawable.PictureDrawable
 import android.util.Log
 import android.widget.ImageView
 import com.caverock.androidsvg.SVG
@@ -36,11 +37,10 @@ object SvgLoader {
             val width = imageView.layoutParams.width.takeIf { it > 0 } ?: 96
             val height = imageView.layoutParams.height.takeIf { it > 0 } ?: 96
             
-            svg.documentWidth = width.toFloat()
-            svg.documentHeight = height.toFloat()
+            // Renderizar SVG para Picture e criar Drawable
+            val picture: Picture = svg.renderToPicture(width, height)
+            val drawable = PictureDrawable(picture)
             
-            // Criar drawable e definir no ImageView
-            val drawable = svg.createPictureDrawable()
             imageView.setLayerType(ImageView.LAYER_TYPE_SOFTWARE, null)
             imageView.setImageDrawable(drawable)
             
@@ -66,15 +66,13 @@ object SvgLoader {
         assetPath: String,
         width: Int = 96,
         height: Int = 96
-    ): Drawable? {
+    ): PictureDrawable? {
         return try {
             val inputStream = context.assets.open(assetPath)
             val svg = SVG.getFromInputStream(inputStream)
             
-            svg.documentWidth = width.toFloat()
-            svg.documentHeight = height.toFloat()
-            
-            svg.createPictureDrawable()
+            val picture: Picture = svg.renderToPicture(width, height)
+            PictureDrawable(picture)
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao carregar SVG: $assetPath", e)
             null
@@ -101,7 +99,7 @@ object SvgLoader {
             "bmg" to "banks/bmg.svg",
             "safra" to "banks/safra.svg",
             "btg" to "banks/btg.svg",
-            "next" to "banks/itau.svg", // Fallback para Itau
+            "next" to "banks/itau.svg",
             "digio" to "banks/digio.svg",
             "pagseguro" to "banks/pagseguro.svg",
             "banrisul" to "banks/banrisul.svg",
