@@ -110,14 +110,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                style="@style/Widget.Bookash.TextInputLayout"
-                app:boxBackgroundColor="@color/background_light"
-                app:boxStrokeColor="@color/input_border"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:hintTextColor="@color/input_placeholder">
+                style="@style/Widget.Bookash.TextInputLayout">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/nameInput"
