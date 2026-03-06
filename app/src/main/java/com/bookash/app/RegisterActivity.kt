@@ -144,13 +144,21 @@ class RegisterActivity : AppCompatActivity() {
                             if (accessToken.isNotEmpty()) {
                                 try {
                                     val accountsCreated = SupabaseService.createDefaultAccounts(userId)
-                                    val categoriesCreated = SupabaseService.createDefaultCategories(userId)
-                                    val tagsCreated = SupabaseService.createDefaultTags(userId)
                                     Log.d(TAG, "Contas padrao criadas (fallback): $accountsCreated")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Erro ao criar contas padrao: ${e.message}")
+                                }
+                                try {
+                                    val categoriesCreated = SupabaseService.createDefaultCategories(userId)
                                     Log.d(TAG, "Categorias padrao criadas (fallback): $categoriesCreated")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Erro ao criar categorias padrao: ${e.message}")
+                                }
+                                try {
+                                    val tagsCreated = SupabaseService.createDefaultTags(userId)
                                     Log.d(TAG, "Tags padrao criadas (fallback): $tagsCreated")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Erro ao criar dados padrao: ${e.message}")
+                                    Log.e(TAG, "Erro ao criar tags padrao: ${e.message}")
                                 }
                             }
                             true

@@ -105,9 +105,25 @@ class LoginActivity : AppCompatActivity() {
                         UserSession.setUserData(userId = userId, email = userEmail ?: email, name = userName)
                         UserSession.setAccessToken(token)
                         
-                        true
+                        Pair(true, "")
                     } else {
-                        false
+                        // Ler mensagem de erro do Supabase
+                        val errorStream = conn.errorStream?.bufferedReader()?.readText()
+                        var errorMsg = "Email ou senha incorretos"
+                        
+                        try {
+                            if (errorStream != null) {
+                                val errorJson = JSONObject(errorStream)
+                                errorMsg = errorJson.optString("error_description",
+                                    errorJson.optString("msg",
+                                        errorJson.optString("message",
+                                            errorJson.optString("error", errorMsg))))
+                            }
+                        } catch (e: Exception) {
+                            // Manter mensagem padrão
+                        }
+                        
+                        Pair(false, errorMsg)
                     }
                 }
                 
@@ -115,9 +131,11 @@ class LoginActivity : AppCompatActivity() {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
                     
-                    if (result) {
+                    if (result.first) {
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()
+                    } else {
+                        Toast.makeText(this@LoginActivity, result.second, Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
