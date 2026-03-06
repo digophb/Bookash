@@ -48,27 +48,27 @@ class RegisterActivity : AppCompatActivity() {
             
             // Validações com Toast padronizado
             if (name.isBlank()) {
-                ToastUtils.registerFieldEmpty(this, "seu nome")
+                ToastManager.showWarning(this, "Digite seu nome")
                 return@setOnClickListener
             }
             
             if (email.isBlank()) {
-                ToastUtils.registerFieldEmpty(this, "seu email")
+                ToastManager.showWarning(this, "Digite seu email")
                 return@setOnClickListener
             }
             
             if (password.isBlank()) {
-                ToastUtils.registerFieldEmpty(this, "sua senha")
+                ToastManager.showWarning(this, "Digite sua senha")
                 return@setOnClickListener
             }
             
             if (password != confirmPassword) {
-                ToastUtils.registerPasswordMismatch(this)
+                ToastManager.showWarning(this, "As senhas não conferem")
                 return@setOnClickListener
             }
             
             if (password.length < 6) {
-                ToastUtils.registerPasswordTooShort(this)
+                ToastManager.showWarning(this, "A senha deve ter pelo menos 6 caracteres")
                 return@setOnClickListener
             }
             
@@ -158,7 +158,7 @@ class RegisterActivity : AppCompatActivity() {
                         } else {
                             Log.e(TAG, "userId vazio")
                             withContext(Dispatchers.Main) {
-                                ToastUtils.serverError(this@RegisterActivity)
+                                ToastManager.showError(this@RegisterActivity, "Erro no servidor. Tente novamente.")
                             }
                             false
                         }
@@ -177,7 +177,7 @@ class RegisterActivity : AppCompatActivity() {
                             if (errorMsg.contains("already registered", ignoreCase = true) ||
                                 errorMsg.contains("já existe", ignoreCase = true)) {
                                 withContext(Dispatchers.Main) {
-                                    ToastUtils.registerEmailExists(this@RegisterActivity)
+                                    ToastManager.showWarning(this@RegisterActivity, "Este email já está cadastrado")
                                 }
                                 return@withContext false
                             }
@@ -186,7 +186,7 @@ class RegisterActivity : AppCompatActivity() {
                         }
                         
                         withContext(Dispatchers.Main) {
-                            ToastUtils.registerError(this@RegisterActivity, errorMsg)
+                            ToastManager.showError(this@RegisterActivity, errorMsg)
                         }
                         false
                     }
@@ -197,7 +197,7 @@ class RegisterActivity : AppCompatActivity() {
                     registerButton.text = "Criar Conta"
                     
                     if (result) {
-                        ToastUtils.registerSuccess(this@RegisterActivity)
+                        ToastManager.showSuccess(this@RegisterActivity, "Conta criada com sucesso!")
                         finish()
                     }
                 }
@@ -206,7 +206,7 @@ class RegisterActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     registerButton.isEnabled = true
                     registerButton.text = "Criar Conta"
-                    ToastUtils.connectionError(this@RegisterActivity)
+                    ToastManager.showError(this@RegisterActivity, "Erro de conexão. Verifique sua internet.")
                 }
             }
         }

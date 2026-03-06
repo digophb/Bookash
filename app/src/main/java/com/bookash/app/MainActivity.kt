@@ -92,11 +92,11 @@ class MainActivity : AppCompatActivity() {
         try {
             SettingsManager.clearCache()
             getSharedPreferences("bookash_prefs", MODE_PRIVATE).edit().clear().apply()
-            ToastUtils.logoutSuccess(this)
+            ToastManager.showInfo(this, "Logout realizado com sucesso")
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         } catch (e: Exception) {
-            ToastUtils.logoutError(this, e.message ?: "Erro desconhecido")
+            ToastManager.showError(this, "Erro ao sair: ${e.message}")
         }
     }
 

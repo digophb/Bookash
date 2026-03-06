@@ -50,7 +50,7 @@ class LoginActivity : AppCompatActivity() {
             val password = passwordInput.text.toString()
             
             if (email.isBlank() || password.isBlank()) {
-                ToastUtils.loginFieldsEmpty(this)
+                ToastManager.showWarning(this, "Preencha todos os campos")
                 return@setOnClickListener
             }
             
@@ -130,18 +130,18 @@ class LoginActivity : AppCompatActivity() {
                     loginButton.text = "Entrar"
                     
                     if (result.first) {
-                        ToastUtils.loginSuccess(this@LoginActivity)
+                        ToastManager.showSuccess(this@LoginActivity, "Login realizado com sucesso!")
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()
                     } else {
-                        ToastUtils.loginError(this@LoginActivity, result.second)
+                        ToastManager.showError(this@LoginActivity, result.second)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
-                    ToastUtils.connectionError(this@LoginActivity)
+                    ToastManager.showError(this@LoginActivity, "Erro de conexão. Verifique sua internet.")
                 }
             }
         }
