@@ -14,17 +14,23 @@ import android.widget.TextView
 class AccountDropdownAdapter(
     context: Context,
     private val accounts: List<Account>
-) : ArrayAdapter<Account>(context, R.layout.item_dropdown_account, accounts) {
+) : ArrayAdapter<Account>(context, R.layout.item_dropdown_account_selected, accounts) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        // View do item selecionado - mostra APENAS o nome
+        // View do item selecionado - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
-            .inflate(android.R.layout.simple_spinner_item, parent, false)
-        
-        val textView = view.findViewById<TextView>(android.R.id.text1)
-        textView.text = accounts[position].name
-        textView.setTextColor(context.getColor(R.color.text_primary))
-        
+            .inflate(R.layout.item_dropdown_account_selected, parent, false)
+
+        val account = accounts[position]
+
+        val iconView = view.findViewById<ImageView>(R.id.accountIcon)
+        val nameView = view.findViewById<TextView>(R.id.accountName)
+
+        nameView.text = account.name
+
+        val iconRes = getBankIconResource(account.icon)
+        iconView.setImageResource(iconRes)
+
         return view
     }
 

@@ -16,17 +16,33 @@ import android.widget.TextView
 class CategoryDropdownAdapter(
     context: Context,
     private val categories: List<Category>
-) : ArrayAdapter<Category>(context, R.layout.item_dropdown_category, categories) {
+) : ArrayAdapter<Category>(context, R.layout.item_dropdown_category_selected, categories) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        // View do item selecionado - mostra APENAS o nome
+        // View do item selecionado - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
-            .inflate(android.R.layout.simple_spinner_item, parent, false)
-        
-        val textView = view.findViewById<TextView>(android.R.id.text1)
-        textView.text = categories[position].name
-        textView.setTextColor(context.getColor(R.color.text_primary))
-        
+            .inflate(R.layout.item_dropdown_category_selected, parent, false)
+
+        val category = categories[position]
+
+        val iconView = view.findViewById<ImageView>(R.id.categoryIcon)
+        val nameView = view.findViewById<TextView>(R.id.categoryName)
+
+        nameView.text = category.name
+
+        val iconRes = getIconResource(category.icon)
+        iconView.setImageResource(iconRes)
+
+        try {
+            val drawable = GradientDrawable()
+            drawable.shape = GradientDrawable.OVAL
+            drawable.setColor(Color.parseColor(category.color))
+            iconView.background = drawable
+            iconView.setColorFilter(Color.WHITE)
+        } catch (e: Exception) {
+            iconView.setBackgroundColor(Color.parseColor("#357266"))
+        }
+
         return view
     }
 
