@@ -1004,6 +1004,46 @@ object SupabaseService {
         }
     }
     
+    suspend fun createUserProfile(userId: String, email: String, name: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[USERS] CREATE - Criando perfil para userId: $userId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[USERS] CREATE - Erro: usuario nao autenticado")
+                return@withContext false
+            }
+            
+            val body = """{"id":"$userId","email":"$email","name":"$name"}"""
+            
+            val conn = URL("$BASE_URL/rest/v1/users").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[USERS] CREATE - Sucesso: perfil criado (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[USERS] CREATE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[USERS] CREATE - Erro após ${duration}ms", e)
+            false
+        }
+    }
+    
     suspend fun createDefaultTags(userId: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[TAGS] DEFAULT - Criando tags padrao para userId: $userId")

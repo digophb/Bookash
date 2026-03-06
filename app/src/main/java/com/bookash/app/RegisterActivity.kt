@@ -143,6 +143,12 @@ class RegisterActivity : AppCompatActivity() {
                             // Fallback: criar manualmente se trigger falhar
                             if (accessToken.isNotEmpty()) {
                                 try {
+                                    val userProfileCreated = SupabaseService.createUserProfile(userId, email, name)
+                                    Log.d(TAG, "Perfil do usuario criado (fallback): $userProfileCreated")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Erro ao criar perfil do usuario: ${e.message}")
+                                }
+                                try {
                                     val accountsCreated = SupabaseService.createDefaultAccounts(userId)
                                     Log.d(TAG, "Contas padrao criadas (fallback): $accountsCreated")
                                 } catch (e: Exception) {
