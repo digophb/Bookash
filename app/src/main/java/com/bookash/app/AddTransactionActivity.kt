@@ -344,7 +344,7 @@ class AddTransactionActivity : AppCompatActivity() {
                     recurrencePeriod = frequency ?: ""
                 )
 
-                val token = UserSession.getAccessToken()
+                val token = UserSession.getAccessToken() ?: ""
                 
                 val success = withContext(Dispatchers.IO) {
                     SupabaseService.saveTransaction(transaction, token)
