@@ -42,7 +42,6 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var accountDropdown: AutoCompleteTextView
     private lateinit var dateInput: TextInputEditText
     private lateinit var tagsDropdown: AutoCompleteTextView
-    private lateinit var tagsSelectedLayout: LinearLayout
     private lateinit var receivedSwitch: MaterialSwitch
     private lateinit var repeatSwitch: MaterialSwitch
     private lateinit var repeatFrequencyLayout: LinearLayout
@@ -62,7 +61,7 @@ class AddTransactionActivity : AppCompatActivity() {
     // Dados selecionados
     private var selectedCategory: Category? = null
     private var selectedAccount: Account? = null
-    private var selectedTags: MutableList<Tag> = mutableListOf()
+    private var selectedTag: Tag? = null
     private var selectedDate: Date = Date()
     private var selectedReminderDate: Date? = null
 
@@ -96,7 +95,6 @@ class AddTransactionActivity : AppCompatActivity() {
         accountDropdown = findViewById(R.id.accountDropdown)
         dateInput = findViewById(R.id.dateInput)
         tagsDropdown = findViewById(R.id.tagsDropdown)
-        tagsSelectedLayout = findViewById(R.id.tagsSelectedLayout)
         receivedSwitch = findViewById(R.id.receivedSwitch)
         repeatSwitch = findViewById(R.id.repeatSwitch)
         repeatFrequencyLayout = findViewById(R.id.repeatFrequencyLayout)
@@ -178,14 +176,8 @@ class AddTransactionActivity : AppCompatActivity() {
         // Tags
         tagsDropdown.setOnItemClickListener { parent, view, position, id ->
             val selectedName = tagAdapter?.getItem(position) ?: ""
-            val tag = tagAdapter?.getTagByName(selectedName)
-            if (tag != null && selectedTags.none { it.id == tag.id }) {
-                selectedTags.add(tag)
-                updateSelectedTags()
-                ToastManager.showSuccess(this, "Tag '${tag.name}' adicionada")
-            }
-            // Limpar seleção
-            tagsDropdown.setText("", false)
+            selectedTag = tagAdapter?.getTagByName(selectedName)
+            Log.d(TAG, "Tag selecionada: $selectedName")
         }
 
         // Salvar
@@ -223,26 +215,6 @@ class AddTransactionActivity : AppCompatActivity() {
             tagAdapter = TagDropdownAdapter(this@AddTransactionActivity, tags)
             tagsDropdown.setAdapter(tagAdapter)
         }
-    }
-
-    private fun updateSelectedTags() {
-        tagsSelectedLayout.removeAllViews()
-        
-        for (tag in selectedTags) {
-            val tagView = layoutInflater.inflate(R.layout.item_selected_tag, tagsSelectedLayout, false)
-            val tagName = tagView.findViewById<TextView>(R.id.tagName)
-            val removeBtn = tagView.findViewById<View>(R.id.removeTag)
-            
-            tagName.text = tag.name
-            removeBtn.setOnClickListener {
-                selectedTags.remove(tag)
-                updateSelectedTags()
-            }
-            
-            tagsSelectedLayout.addView(tagView)
-        }
-        
-        tagsSelectedLayout.visibility = if (selectedTags.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private val receivedLabel: TextView?
@@ -318,7 +290,7 @@ class AddTransactionActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val tags = selectedTags.map { it.id }
+                val tags = selectedTag?.let { listOf(it.id) } ?: emptyList()
                 val frequency = if (repeatSwitch.isChecked) frequencyDropdown.text.toString() else null
                 val frequencyCount = if (repeatSwitch.isChecked) {
                     frequencyCountInput.text.toString().toIntOrNull() ?: 1

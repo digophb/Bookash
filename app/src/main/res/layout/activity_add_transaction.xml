@@ -109,49 +109,34 @@
                         android:textSize="12sp"
                         android:textAllCaps="true"
                         android:letterSpacing="0.1"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_marginBottom="8dp"
+                        android:layout_gravity="center_horizontal" />
 
-                    <LinearLayout
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical|start">
+                        app:hintEnabled="false"
+                        app:boxBackgroundMode="none">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$"
-                            android:textColor="@color/primary"
-                            android:textSize="32sp"
-                            android:textStyle="bold" />
-
-                        <com.google.android.material.textfield.TextInputLayout
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/valueInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            app:hintEnabled="false"
-                            app:boxBackgroundMode="none">
+                            android:hint="0,00"
+                            android:textColor="@color/text_primary"
+                            android:textColorHint="@color/text_muted"
+                            android:textSize="40sp"
+                            android:textStyle="bold"
+                            android:inputType="numberDecimal"
+                            android:maxLines="1"
+                            android:background="@android:color/transparent"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:textAlignment="center" />
 
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/valueInput"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:hint="0,00"
-                                android:textColor="@color/text_primary"
-                                android:textColorHint="@color/text_muted"
-                                android:textSize="36sp"
-                                android:textStyle="bold"
-                                android:inputType="numberDecimal"
-                                android:maxLines="1"
-                                android:background="@android:color/transparent"
-                                android:paddingStart="0dp"
-                                android:paddingEnd="0dp"
-                                android:paddingTop="0dp"
-                                android:paddingBottom="0dp" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                    </LinearLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
                 </LinearLayout>
 
@@ -288,7 +273,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="24dp"
                 style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
                 app:hintEnabled="false">
 
@@ -296,23 +281,13 @@
                     android:id="@+id/tagsDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Selecione tags (opcional)"
+                    android:hint="Selecione uma tag (opcional)"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/input_placeholder"
                     android:inputType="none"
                     android:popupBackground="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Tags Selecionadas -->
-            <LinearLayout
-                android:id="@+id/tagsSelectedLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="24dp"
-                android:visibility="gone"
-                style="@style/Widget.Material3.ChipGroup" />
 
             <!-- Switch Recebido/Pago (padrão da tela nova conta) -->
             <LinearLayout
