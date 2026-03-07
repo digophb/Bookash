@@ -46,6 +46,7 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var receivedSwitch: MaterialSwitch
     private lateinit var repeatSwitch: MaterialSwitch
     private lateinit var repeatFrequencyLayout: LinearLayout
+    private lateinit var frequencyCountInput: TextInputEditText
     private lateinit var frequencyDropdown: AutoCompleteTextView
     private lateinit var reminderSwitch: MaterialSwitch
     private lateinit var reminderDateLayout: TextInputLayout
@@ -99,6 +100,7 @@ class AddTransactionActivity : AppCompatActivity() {
         receivedSwitch = findViewById(R.id.receivedSwitch)
         repeatSwitch = findViewById(R.id.repeatSwitch)
         repeatFrequencyLayout = findViewById(R.id.repeatFrequencyLayout)
+        frequencyCountInput = findViewById(R.id.frequencyCountInput)
         frequencyDropdown = findViewById(R.id.frequencyDropdown)
         reminderSwitch = findViewById(R.id.reminderSwitch)
         reminderDateLayout = findViewById(R.id.reminderDateLayout)
@@ -318,6 +320,9 @@ class AddTransactionActivity : AppCompatActivity() {
             try {
                 val tags = selectedTags.map { it.id }
                 val frequency = if (repeatSwitch.isChecked) frequencyDropdown.text.toString() else null
+                val frequencyCount = if (repeatSwitch.isChecked) {
+                    frequencyCountInput.text.toString().toIntOrNull() ?: 1
+                } else 1
                 val isReceived = receivedSwitch.isChecked
 
                 // Formatar data para ISO 8601
@@ -341,7 +346,8 @@ class AddTransactionActivity : AppCompatActivity() {
                     tags = tags,
                     reminderDate = reminderDateStr,
                     isRecurring = frequency != null,
-                    recurrencePeriod = frequency ?: ""
+                    recurrencePeriod = frequency ?: "",
+                    recurrenceCount = frequencyCount
                 )
 
                 val token = UserSession.getAccessToken() ?: ""
