@@ -243,7 +243,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="8dp"
                 style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
                 app:hintEnabled="false">
 
@@ -258,6 +258,16 @@
                     android:popupBackground="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tags Selecionadas -->
+            <LinearLayout
+                android:id="@+id/tagsSelectedLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone"
+                style="@style/Widget.Material3.ChipGroup" />
 
             <!-- Switch Recebido/Pago (padrão da tela nova conta) -->
             <LinearLayout
@@ -341,6 +351,44 @@
                     android:checked="false"
                     app:thumbTint="@color/switch_thumb_color"
                     app:trackTint="@color/switch_track_color" />
+
+            </LinearLayout>
+
+            <!-- Frequência da Repetição (visível quando repetir ativado) -->
+            <LinearLayout
+                android:id="@+id/repeatFrequencyLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Frequência"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.Bookash.TextInputLayout.ExposedDropdownMenu"
+                    app:hintEnabled="false">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/frequencyDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Selecione a frequência"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/input_placeholder"
+                        android:inputType="none"
+                        android:popupBackground="@color/surface" />
+
+                </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
 

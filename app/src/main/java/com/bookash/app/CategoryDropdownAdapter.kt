@@ -26,7 +26,6 @@ class CategoryDropdownAdapter(
     override fun getItem(position: Int): String = categoryNames[position]
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        // View do item selecionado - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
             .inflate(R.layout.item_dropdown_category_selected, parent, false)
 
@@ -54,7 +53,6 @@ class CategoryDropdownAdapter(
     }
 
     override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-        // View do dropdown - mostra ícone + nome
         val view = convertView ?: LayoutInflater.from(context)
             .inflate(R.layout.item_dropdown_category, parent, false)
 
@@ -85,6 +83,7 @@ class CategoryDropdownAdapter(
         return object : Filter() {
             override fun performFiltering(constraint: CharSequence?): FilterResults {
                 val results = FilterResults()
+                // Sempre retorna TODAS as categorias (não filtra)
                 results.values = categoryNames
                 results.count = categoryNames.size
                 return results
@@ -121,9 +120,6 @@ class CategoryDropdownAdapter(
         }
     }
     
-    /**
-     * Retorna a categoria pelo nome selecionado
-     */
     fun getCategoryByName(name: String): Category? {
         return categories.find { it.name == name }
     }

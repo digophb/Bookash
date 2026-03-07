@@ -1,72 +1,79 @@
 package com.bookash.app
 
+import android.app.DatePickerDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
-import android.widget.Toast
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class AddTransactionActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "AddTransaction"
+    }
+
+    // Views
     private lateinit var typeToggle: MaterialButtonToggleGroup
     private lateinit var btnIncome: MaterialButton
     private lateinit var btnExpense: MaterialButton
     private lateinit var btnTransfer: MaterialButton
-    private lateinit var titleText: android.widget.TextView
-    private lateinit var receivedSwitch: MaterialSwitch
+    private lateinit var titleText: TextView
     private lateinit var valueInput: TextInputEditText
     private lateinit var descriptionInput: TextInputEditText
     private lateinit var categoryDropdown: AutoCompleteTextView
     private lateinit var accountDropdown: AutoCompleteTextView
     private lateinit var dateInput: TextInputEditText
+    private lateinit var tagsDropdown: AutoCompleteTextView
+    private lateinit var tagsSelectedLayout: LinearLayout
+    private lateinit var receivedSwitch: MaterialSwitch
     private lateinit var repeatSwitch: MaterialSwitch
+    private lateinit var repeatFrequencyLayout: LinearLayout
+    private lateinit var frequencyDropdown: AutoCompleteTextView
     private lateinit var reminderSwitch: MaterialSwitch
     private lateinit var reminderDateLayout: TextInputLayout
     private lateinit var reminderDateInput: TextInputEditText
-    private lateinit var tagsDropdown: AutoCompleteTextView
     private lateinit var notesInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
-    
-    private var selectedDate: Long = System.currentTimeMillis()
-    private var reminderDate: Long? = null
-    private var transactionType: String = "income"
-    private var isReceived: Boolean = true
-    private var isRecurring: Boolean = false
-    private var hasReminder: Boolean = false
-    private var recurrenceType: String = "Mensal"
-    private var installments: Int = 1
-    
-    private val categories = mutableListOf<Category>()
-    private val accounts = mutableListOf<Account>()
-    private val tags = mutableListOf<Tag>()
-    private var userId: String? = null
+
+    // Adapters
+    private var categoryAdapter: CategoryDropdownAdapter? = null
+    private var accountAdapter: AccountDropdownAdapter? = null
+    private var tagAdapter: TagDropdownAdapter? = null
+
+    // Dados selecionados
     private var selectedCategory: Category? = null
     private var selectedAccount: Account? = null
-    private val selectedTags = mutableListOf<Tag>()
+    private var selectedTags: MutableList<Tag> = mutableListOf()
+    private var selectedDate: Date = Date()
+    private var selectedReminderDate: Date? = null
+
+    // Tipo de transação
+    private var transactionType: String = "income"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_transaction)
-        
-        userId = UserSession.getUserId()
 
         initViews()
-        setupTypeToggle()
-        setupSwitches()
-        setupDatePicker()
-        setupSaveButton()
+        setupListeners()
         loadData()
     }
 
@@ -76,324 +83,267 @@ class AddTransactionActivity : AppCompatActivity() {
         btnExpense = findViewById(R.id.btnExpense)
         btnTransfer = findViewById(R.id.btnTransfer)
         titleText = findViewById(R.id.titleText)
-        receivedSwitch = findViewById(R.id.receivedSwitch)
         valueInput = findViewById(R.id.valueInput)
         descriptionInput = findViewById(R.id.descriptionInput)
         categoryDropdown = findViewById(R.id.categoryDropdown)
         accountDropdown = findViewById(R.id.accountDropdown)
         dateInput = findViewById(R.id.dateInput)
+        tagsDropdown = findViewById(R.id.tagsDropdown)
+        tagsSelectedLayout = findViewById(R.id.tagsSelectedLayout)
+        receivedSwitch = findViewById(R.id.receivedSwitch)
         repeatSwitch = findViewById(R.id.repeatSwitch)
+        repeatFrequencyLayout = findViewById(R.id.repeatFrequencyLayout)
+        frequencyDropdown = findViewById(R.id.frequencyDropdown)
         reminderSwitch = findViewById(R.id.reminderSwitch)
         reminderDateLayout = findViewById(R.id.reminderDateLayout)
         reminderDateInput = findViewById(R.id.reminderDateInput)
-        tagsDropdown = findViewById(R.id.tagsDropdown)
         notesInput = findViewById(R.id.notesInput)
         saveButton = findViewById(R.id.saveButton)
-        
+
         // Configurar formatação monetária
         valueInput.addTextChangedListener(CurrencyTextWatcher(valueInput))
-        
+
+        // Configurar dropdown de frequência
+        val frequencies = arrayOf("Diário", "Semanal", "Mensal", "Anual")
+        val freqAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, frequencies)
+        frequencyDropdown.setAdapter(freqAdapter)
+        frequencyDropdown.setText("Mensal", false)
+
         updateDateDisplay()
     }
-    
-    private fun loadData() {
-        if (userId == null) return
-        
-        lifecycleScope.launch {
-            // Carregar categorias
-            val loadedCategories = SupabaseService.getCategories(userId!!, "income")
-            categories.clear()
-            categories.addAll(loadedCategories)
-            updateCategoryDropdown()
-            
-            // Carregar contas
-            val loadedAccounts = SupabaseService.getAccounts(userId!!)
-            accounts.clear()
-            accounts.addAll(loadedAccounts)
-            updateAccountDropdown()
-            
-            // Carregar tags
-            val loadedTags = SupabaseService.getTags(userId!!)
-            tags.clear()
-            tags.addAll(loadedTags)
-            updateTagDropdown()
-        }
-    }
-    
-    private fun updateCategoryDropdown() {
-        // Adapter personalizado com ícones e cores
-        val adapter = CategoryDropdownAdapter(this, categories)
-        categoryDropdown.setAdapter(adapter)
-        categoryDropdown.setOnItemClickListener { _, _, position, _ ->
-            selectedCategory = categories.getOrNull(position)
-        }
-    }
-    
-    private fun updateAccountDropdown() {
-        // Adapter personalizado com ícones
-        val adapter = AccountDropdownAdapter(this, accounts)
-        accountDropdown.setAdapter(adapter)
-        accountDropdown.setOnItemClickListener { _, _, position, _ ->
-            selectedAccount = accounts.getOrNull(position)
-        }
-        if (accounts.isNotEmpty()) {
-            accountDropdown.setText(accounts[0].name, false)
-            selectedAccount = accounts[0]
-        }
-    }
-    
-    private fun updateTagDropdown() {
-        // Adapter personalizado com cores
-        val adapter = TagDropdownAdapter(this, tags)
-        tagsDropdown.setAdapter(adapter)
-        tagsDropdown.setOnItemClickListener { _, _, position, _ ->
-            val selectedTag = tags.getOrNull(position) ?: return@setOnItemClickListener
-            
-            // Adicionar tag à lista de selecionadas
-            if (!selectedTags.contains(selectedTag)) {
-                selectedTags.add(selectedTag)
-                updateTagsDisplay()
-            }
-            
-            // Limpar dropdown para permitir selecionar outra tag
-            tagsDropdown.text = null
-        }
-    }
-    
-    private fun updateTagsDisplay() {
-        // Mostrar tags selecionadas como texto separado por vírgula
-        val tagsText = selectedTags.joinToString(", ") { it.name }
-        tagsDropdown.setText(tagsText)
-    }
 
-    private fun setupTypeToggle() {
-        typeToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+    private fun setupListeners() {
+        // Toggle de tipo
+        typeToggle.addOnButtonCheckedListener { group, checkedId, isChecked ->
             if (isChecked) {
                 when (checkedId) {
                     R.id.btnIncome -> {
                         transactionType = "income"
                         titleText.text = "Nova Receita"
-                        receivedSwitch.text = "Recebido"
-                        updateColors(R.color.income)
-                        if (userId != null) {
-                            lifecycleScope.launch {
-                                val cats = SupabaseService.getCategories(userId!!, "income")
-                                categories.clear()
-                                categories.addAll(cats)
-                                updateCategoryDropdown()
-                            }
-                        }
+                        receivedLabel?.text = "Recebido"
                     }
                     R.id.btnExpense -> {
                         transactionType = "expense"
                         titleText.text = "Nova Despesa"
-                        receivedSwitch.text = "Pago"
-                        updateColors(R.color.expense)
-                        if (userId != null) {
-                            lifecycleScope.launch {
-                                val cats = SupabaseService.getCategories(userId!!, "expense")
-                                categories.clear()
-                                categories.addAll(cats)
-                                updateCategoryDropdown()
-                            }
-                        }
+                        receivedLabel?.text = "Pago"
                     }
                     R.id.btnTransfer -> {
                         transactionType = "transfer"
                         titleText.text = "Nova Transferência"
-                        receivedSwitch.text = "Realizado"
-                        updateColors(R.color.transfer)
                     }
                 }
             }
         }
-        
-        typeToggle.check(R.id.btnIncome)
-    }
 
-    private fun setupSwitches() {
-        receivedSwitch.setOnCheckedChangeListener { _, isChecked ->
-            isReceived = isChecked
-        }
-        
+        // Data
+        dateInput.setOnClickListener { showDatePicker() }
+        dateInput.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDatePicker() }
+
+        // Lembrete
+        reminderDateInput.setOnClickListener { showReminderDatePicker() }
+        reminderDateInput.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showReminderDatePicker() }
+
+        // Switch Repetir - mostra/esconde frequência
         repeatSwitch.setOnCheckedChangeListener { _, isChecked ->
-            isRecurring = isChecked
-            if (isChecked) {
-                showRecurrenceDialog()
-            }
+            repeatFrequencyLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
-        
+
+        // Switch Lembrete - mostra/esconde data do lembrete
         reminderSwitch.setOnCheckedChangeListener { _, isChecked ->
-            hasReminder = isChecked
             reminderDateLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
-        
-        reminderDateInput.setOnClickListener {
-            showReminderDatePicker()
+
+        // Categoria
+        categoryDropdown.setOnItemClickListener { parent, view, position, id ->
+            val selectedName = categoryAdapter?.getItem(position) ?: ""
+            selectedCategory = categoryAdapter?.getCategoryByName(selectedName)
+            Log.d(TAG, "Categoria selecionada: $selectedName")
         }
+
+        // Conta
+        accountDropdown.setOnItemClickListener { parent, view, position, id ->
+            val selectedName = accountAdapter?.getItem(position) ?: ""
+            selectedAccount = accountAdapter?.getAccountByName(selectedName)
+            Log.d(TAG, "Conta selecionada: $selectedName")
+        }
+
+        // Tags
+        tagsDropdown.setOnItemClickListener { parent, view, position, id ->
+            val selectedName = tagAdapter?.getItem(position) ?: ""
+            val tag = tagAdapter?.getTagByName(selectedName)
+            if (tag != null && selectedTags.none { it.id == tag.id }) {
+                selectedTags.add(tag)
+                updateSelectedTags()
+                ToastManager.showSuccess(this, "Tag '${tag.name}' adicionada")
+            }
+            // Limpar seleção
+            tagsDropdown.setText("", false)
+        }
+
+        // Salvar
+        saveButton.setOnClickListener { saveTransaction() }
+    }
+
+    private fun loadData() {
+        loadCategories()
+        loadAccounts()
+        loadTags()
+    }
+
+    private fun loadCategories() {
+        lifecycleScope.launch {
+            val categories = SupabaseService.getCategories()
+            Log.d(TAG, "Categorias carregadas: ${categories.size}")
+            categoryAdapter = CategoryDropdownAdapter(this@AddTransactionActivity, categories)
+            categoryDropdown.setAdapter(categoryAdapter)
+        }
+    }
+
+    private fun loadAccounts() {
+        lifecycleScope.launch {
+            val accounts = SupabaseService.getAccounts()
+            Log.d(TAG, "Contas carregadas: ${accounts.size}")
+            accountAdapter = AccountDropdownAdapter(this@AddTransactionActivity, accounts)
+            accountDropdown.setAdapter(accountAdapter)
+        }
+    }
+
+    private fun loadTags() {
+        lifecycleScope.launch {
+            val tags = SupabaseService.getTags()
+            Log.d(TAG, "Tags carregadas: ${tags.size}")
+            tagAdapter = TagDropdownAdapter(this@AddTransactionActivity, tags)
+            tagsDropdown.setAdapter(tagAdapter)
+        }
+    }
+
+    private fun updateSelectedTags() {
+        tagsSelectedLayout.removeAllViews()
+        
+        for (tag in selectedTags) {
+            val tagView = layoutInflater.inflate(R.layout.item_selected_tag, tagsSelectedLayout, false)
+            val tagName = tagView.findViewById<TextView>(R.id.tagName)
+            val removeBtn = tagView.findViewById<View>(R.id.removeTag)
+            
+            tagName.text = tag.name
+            removeBtn.setOnClickListener {
+                selectedTags.remove(tag)
+                updateSelectedTags()
+            }
+            
+            tagsSelectedLayout.addView(tagView)
+        }
+        
+        tagsSelectedLayout.visibility = if (selectedTags.isEmpty()) View.GONE else View.VISIBLE
+    }
+
+    private val receivedLabel: TextView?
+        get() = findViewById(R.id.receivedLabel)
+
+    private fun showDatePicker() {
+        val calendar = Calendar.getInstance()
+        calendar.time = selectedDate
+
+        DatePickerDialog(
+            this,
+            { _, year, month, day ->
+                calendar.set(year, month, day)
+                selectedDate = calendar.time
+                updateDateDisplay()
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
     }
 
     private fun showReminderDatePicker() {
-        val datePicker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText("Data do Lembrete")
-            .setSelection(reminderDate ?: System.currentTimeMillis())
-            .build()
-        
-        datePicker.addOnPositiveButtonClickListener { selection ->
-            reminderDate = selection
-            updateReminderDateDisplay()
-        }
-        
-        datePicker.show(supportFragmentManager, "reminderDatePicker")
-    }
-    
-    private fun updateReminderDateDisplay() {
-        reminderDate?.let {
-            val formatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
-            reminderDateInput.setText(formatter.format(Date(it)))
-        }
-    }
+        val calendar = Calendar.getInstance()
+        calendar.time = selectedReminderDate ?: Date()
 
-    private fun showRecurrenceDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_recurrence, null)
-        
-        val periodDropdown = dialogView.findViewById<AutoCompleteTextView>(R.id.periodDropdown)
-        val installmentsInput = dialogView.findViewById<TextInputEditText>(R.id.installmentsInput)
-        
-        val periods = arrayOf("Diário", "Semanal", "Mensal", "Anual")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, periods)
-        periodDropdown.setAdapter(adapter)
-        periodDropdown.setText(recurrenceType, false)
-        
-        installmentsInput.setText(installments.toString())
-        
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Configurar Recorrência")
-            .setView(dialogView)
-            .setPositiveButton("Confirmar") { _, _ ->
-                recurrenceType = periodDropdown.text.toString()
-                installments = installmentsInput.text.toString().toIntOrNull() ?: 1
-            }
-            .setNegativeButton("Cancelar") { _, _ ->
-                repeatSwitch.isChecked = false
-            }
-            .show()
-    }
-
-    private fun updateColors(colorRes: Int) {
-        val color = ContextCompat.getColor(this, colorRes)
-        saveButton.setBackgroundColor(color)
-    }
-
-    private fun setupDatePicker() {
-        dateInput.setOnClickListener {
-            val datePicker = MaterialDatePicker.Builder.datePicker()
-                .setTitleText("Selecione a data")
-                .setSelection(selectedDate)
-                .build()
-            
-            datePicker.addOnPositiveButtonClickListener { selection ->
-                selectedDate = selection
-                updateDateDisplay()
-            }
-            
-            datePicker.show(supportFragmentManager, "datePicker")
-        }
+        DatePickerDialog(
+            this,
+            { _, year, month, day ->
+                calendar.set(year, month, day)
+                selectedReminderDate = calendar.time
+                updateReminderDateDisplay()
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
     }
 
     private fun updateDateDisplay() {
-        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
-        dateInput.setText(formatter.format(Date(selectedDate)))
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+        dateInput.setText(sdf.format(selectedDate))
     }
 
-    private fun setupSaveButton() {
-        saveButton.setOnClickListener {
-            if (validateFields()) {
-                saveTransaction()
-            }
+    private fun updateReminderDateDisplay() {
+        selectedReminderDate?.let {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+            reminderDateInput.setText(sdf.format(it))
         }
-    }
-
-    private fun validateFields(): Boolean {
-        var isValid = true
-        
-        if (valueInput.text.isNullOrBlank()) {
-            valueInput.error = "Digite o valor"
-            isValid = false
-        }
-        
-        if (descriptionInput.text.isNullOrBlank()) {
-            descriptionInput.error = "Digite uma descrição"
-            isValid = false
-        }
-        
-        return isValid
     }
 
     private fun saveTransaction() {
         val value = CurrencyTextWatcher.parseValue(valueInput.text.toString())
         
-        val description = descriptionInput.text.toString()
-        val category = selectedCategory?.name ?: categoryDropdown.text.toString()
-        val account = selectedAccount?.id ?: ""
-        val notes = notesInput.text.toString()
-        val tags = selectedTags.map { it.name }
-        
-        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val dateStr = formatter.format(Date(selectedDate))
-        
-        val reminderDateStr = reminderDate?.let {
-            formatter.format(Date(it))
+        if (value <= 0) {
+            ToastManager.showWarning(this, "Digite um valor maior que zero")
+            return
         }
-        
-        val userId = UserSession.getUserId() ?: ""
-        
-        val transaction = Transaction(
-            id = "",
-            userId = userId,
-            description = description,
-            category = category,
-            amount = value,
-            type = transactionType,
-            date = dateStr,
-            status = if (isReceived) "paid" else "pending",
-            accountId = account,
-            tags = tags,
-            reminderDate = reminderDateStr,
-            isRecurring = isRecurring,
-            recurrencePeriod = recurrenceType,
-            recurrenceCount = installments,
-            iconRes = if (transactionType == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
-        )
-        
+
+        val description = descriptionInput.text.toString().trim()
+        if (description.isEmpty()) {
+            ToastManager.showWarning(this, "Digite uma descrição")
+            return
+        }
+
+        if (selectedAccount == null) {
+            ToastManager.showWarning(this, "Selecione uma conta")
+            return
+        }
+
+        saveButton.isEnabled = false
+        saveButton.text = "Salvando..."
+
         lifecycleScope.launch {
-            val success = SupabaseService.saveTransaction(transaction, userId)
-            
-            if (success) {
-                // Se tem lembrete, salvar na tabela reminders
-                if (hasReminder && reminderDateStr != null) {
-                    val reminder = Reminder(
-                        userId = userId,
-                        transactionId = transaction.id,
-                        title = description,
-                        amount = value,
-                        reminderDate = reminderDateStr,
-                        isRecurring = isRecurring,
-                        recurrenceType = recurrenceType
+            try {
+                val tags = selectedTags.map { it.id }
+                val frequency = if (repeatSwitch.isChecked) frequencyDropdown.text.toString() else null
+                val reminder = if (reminderSwitch.isChecked) selectedReminderDate else null
+                val isReceived = receivedSwitch.isChecked
+
+                val success = withContext(Dispatchers.IO) {
+                    SupabaseService.saveTransaction(
+                        value = value,
+                        description = description,
+                        type = transactionType,
+                        categoryId = selectedCategory?.id,
+                        accountId = selectedAccount!!.id,
+                        date = selectedDate,
+                        tags = tags,
+                        notes = notesInput.text.toString(),
+                        isReceived = isReceived,
+                        frequency = frequency,
+                        reminderDate = reminder
                     )
-                    SupabaseService.saveReminder(reminder, userId)
                 }
-                
-                val typeLabel = when (transactionType) {
-                    "income" -> "Receita"
-                    "expense" -> "Despesa"
-                    else -> "Transferência"
+
+                if (success) {
+                    ToastManager.showSuccess(this@AddTransactionActivity, "Transação salva com sucesso!")
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
                 }
-                ToastManager.showSuccess(this@AddTransactionActivity, "$typeLabel \"${description}\" salva")
-                setResult(RESULT_OK)
-                finish()
-            } else {
-                ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao salvar transação", e)
+                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+            } finally {
+                saveButton.isEnabled = true
+                saveButton.text = "Salvar Transação"
             }
         }
     }

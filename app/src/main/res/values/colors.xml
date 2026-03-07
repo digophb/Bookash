@@ -75,4 +75,6 @@
     <!-- gradient_accent: #65532F → #8B7A4A -->
     <!-- gradient_surface: #1A4F57 → #2A5F6A -->
     
+    <!-- Tag selected background -->
+    <color name="surface_variant">#E8F4F2</color>
 </resources>
