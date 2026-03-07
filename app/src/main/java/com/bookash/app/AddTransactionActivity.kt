@@ -425,9 +425,6 @@ class AddTransactionActivity : AppCompatActivity() {
         }
     }
 
-    private val receivedLabel: TextView?
-        get() = findViewById(R.id.receivedLabel)
-
     private fun getIconResource(iconName: String?): Int {
         return when (iconName) {
             "salary" -> R.drawable.ic_icon_salary
