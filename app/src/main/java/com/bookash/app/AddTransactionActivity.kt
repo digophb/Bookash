@@ -67,10 +67,16 @@ class AddTransactionActivity : AppCompatActivity() {
 
     // Tipo de transação
     private var transactionType: String = "income"
+    
+    // User ID
+    private var userId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_transaction)
+        
+        // Obter userId do UserSession
+        userId = UserSession.getUserId()
 
         initViews()
         setupListeners()
@@ -192,7 +198,7 @@ class AddTransactionActivity : AppCompatActivity() {
 
     private fun loadCategories() {
         lifecycleScope.launch {
-            val categories = SupabaseService.getCategories()
+            val categories = userId?.let { SupabaseService.getCategories(it) } ?: emptyList()
             Log.d(TAG, "Categorias carregadas: ${categories.size}")
             categoryAdapter = CategoryDropdownAdapter(this@AddTransactionActivity, categories)
             categoryDropdown.setAdapter(categoryAdapter)
@@ -201,7 +207,7 @@ class AddTransactionActivity : AppCompatActivity() {
 
     private fun loadAccounts() {
         lifecycleScope.launch {
-            val accounts = SupabaseService.getAccounts()
+            val accounts = userId?.let { SupabaseService.getAccounts(it) } ?: emptyList()
             Log.d(TAG, "Contas carregadas: ${accounts.size}")
             accountAdapter = AccountDropdownAdapter(this@AddTransactionActivity, accounts)
             accountDropdown.setAdapter(accountAdapter)
@@ -210,7 +216,7 @@ class AddTransactionActivity : AppCompatActivity() {
 
     private fun loadTags() {
         lifecycleScope.launch {
-            val tags = SupabaseService.getTags()
+            val tags = userId?.let { SupabaseService.getTags(it) } ?: emptyList()
             Log.d(TAG, "Tags carregadas: ${tags.size}")
             tagAdapter = TagDropdownAdapter(this@AddTransactionActivity, tags)
             tagsDropdown.setAdapter(tagAdapter)
@@ -312,23 +318,36 @@ class AddTransactionActivity : AppCompatActivity() {
             try {
                 val tags = selectedTags.map { it.id }
                 val frequency = if (repeatSwitch.isChecked) frequencyDropdown.text.toString() else null
-                val reminder = if (reminderSwitch.isChecked) selectedReminderDate else null
                 val isReceived = receivedSwitch.isChecked
 
+                // Formatar data para ISO 8601
+                val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val dateStr = isoDateFormat.format(selectedDate)
+                
+                // Formatar data do lembrete se existir
+                val reminderDateStr = if (reminderSwitch.isChecked && selectedReminderDate != null) {
+                    isoDateFormat.format(selectedReminderDate)
+                } else null
+
+                val transaction = Transaction(
+                    userId = userId ?: "",
+                    description = description,
+                    category = selectedCategory?.name ?: "",
+                    amount = value,
+                    type = transactionType,
+                    date = dateStr,
+                    status = if (isReceived) "paid" else "pending",
+                    accountId = selectedAccount!!.id,
+                    tags = tags,
+                    reminderDate = reminderDateStr,
+                    isRecurring = frequency != null,
+                    recurrencePeriod = frequency ?: ""
+                )
+
+                val token = UserSession.getAccessToken()
+                
                 val success = withContext(Dispatchers.IO) {
-                    SupabaseService.saveTransaction(
-                        value = value,
-                        description = description,
-                        type = transactionType,
-                        categoryId = selectedCategory?.id,
-                        accountId = selectedAccount!!.id,
-                        date = selectedDate,
-                        tags = tags,
-                        notes = notesInput.text.toString(),
-                        isReceived = isReceived,
-                        frequency = frequency,
-                        reminderDate = reminder
-                    )
+                    SupabaseService.saveTransaction(transaction, token)
                 }
 
                 if (success) {
