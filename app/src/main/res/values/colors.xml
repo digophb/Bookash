@@ -76,5 +76,5 @@
     <!-- gradient_surface: #1A4F57 → #2A5F6A -->
     
     <!-- Tag selected background -->
-    <color name="surface_variant">#E8F4F2</color>
+    <color name="tag_selected_background">#E8F4F2</color>
 </resources>
