@@ -28,13 +28,8 @@ data class Transaction(
 data class Attachment(
     val id: String = "",
     val transactionId: String = "",
-    val userId: String = "",
-    val fileName: String? = null,
-    val fileUrl: String,
-    val fileType: String = "image", // image, document, pdf
-    val fileSize: Int? = null,
-    val mimeType: String? = null,
-    val description: String? = null,
+    val url: String,           // URL do arquivo no Storage
+    val type: String = "image", // image, document, pdf
     val createdAt: String = ""
 )
 

@@ -1906,13 +1906,8 @@ object SupabaseService {
         return Attachment(
             id = json.optString("id"),
             transactionId = json.optString("transaction_id"),
-            userId = json.optString("user_id"),
-            fileName = json.optString("file_name").takeIf { it.isNotEmpty() },
-            fileUrl = json.optString("file_url"),
-            fileType = json.optString("file_type", "image"),
-            fileSize = json.optInt("file_size").takeIf { it > 0 },
-            mimeType = json.optString("mime_type").takeIf { it.isNotEmpty() },
-            description = json.optString("description").takeIf { it.isNotEmpty() },
+            url = json.optString("url"),
+            type = json.optString("type", "image"),
             createdAt = json.optString("created_at")
         )
     }
