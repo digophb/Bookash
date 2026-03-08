@@ -1,9 +1,19 @@
 package com.bookash.app
 
+import android.Manifest
 import android.app.DatePickerDialog
+import android.content.ContentValues
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
@@ -11,7 +21,11 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListPopupWindow
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -21,6 +35,8 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -30,6 +46,8 @@ class AddTransactionActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "AddTransaction"
+        private const val REQUEST_CAMERA_PERMISSION = 1001
+        private const val REQUEST_STORAGE_PERMISSION = 1002
     }
 
     // Views
@@ -46,6 +64,11 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var accountField: LinearLayout
     private lateinit var accountIcon: ImageView
     private lateinit var accountText: TextView
+    private lateinit var attachField: LinearLayout
+    private lateinit var attachIcon: ImageView
+    private lateinit var attachText: TextView
+    private lateinit var attachPreview: ImageView
+    private lateinit var attachDropdownIcon: ImageView
     private lateinit var dateInput: TextInputEditText
     private lateinit var tagField: LinearLayout
     private lateinit var tagIcon: ImageView
@@ -73,12 +96,31 @@ class AddTransactionActivity : AppCompatActivity() {
     private var selectedTag: Tag? = null
     private var selectedDate: Date = Date()
     private var selectedReminderDate: Date? = null
+    private var selectedImageUri: Uri? = null
 
     // Tipo de transação
     private var transactionType: String = "income"
     
     // User ID
     private var userId: String? = null
+    
+    // Camera URI temporária
+    private var cameraImageUri: Uri? = null
+    
+    // Activity result launchers
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            selectedImageUri = it
+            updateAttachField(it)
+        }
+    }
+    
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && cameraImageUri != null) {
+            selectedImageUri = cameraImageUri
+            updateAttachField(cameraImageUri!!)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,6 +148,11 @@ class AddTransactionActivity : AppCompatActivity() {
         accountField = findViewById(R.id.accountField)
         accountIcon = findViewById(R.id.accountIcon)
         accountText = findViewById(R.id.accountText)
+        attachField = findViewById(R.id.attachField)
+        attachIcon = findViewById(R.id.attachIcon)
+        attachText = findViewById(R.id.attachText)
+        attachPreview = findViewById(R.id.attachPreview)
+        attachDropdownIcon = findViewById(R.id.attachDropdownIcon)
         dateInput = findViewById(R.id.dateInput)
         tagField = findViewById(R.id.tagField)
         tagIcon = findViewById(R.id.tagIcon)
@@ -174,6 +221,15 @@ class AddTransactionActivity : AppCompatActivity() {
 
         // Categoria - campo clicável
         categoryField.setOnClickListener { showCategoryPicker() }
+
+        // Conta - campo clicável
+        accountField.setOnClickListener { showAccountPicker() }
+
+        // Anexo - campo clicável
+        attachField.setOnClickListener { showAttachOptions() }
+
+        // Tag - campo clicável
+        tagField.setOnClickListener { showTagPicker() }
 
         // Conta - campo clicável
         accountField.setOnClickListener { showAccountPicker() }
@@ -283,6 +339,89 @@ class AddTransactionActivity : AppCompatActivity() {
             popup.dismiss()
         }
         popup.show()
+    }
+
+    private fun showAttachOptions() {
+        val options = listOf("Galeria", "Tirar foto")
+        val popup = ListPopupWindow(this)
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, options))
+        popup.anchorView = attachField
+        popup.setOnItemClickListener { _, _, position, _ ->
+            when (position) {
+                0 -> openGallery()
+                1 -> openCamera()
+            }
+            popup.dismiss()
+        }
+        popup.show()
+    }
+
+    private fun openGallery() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) 
+                != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.READ_MEDIA_IMAGES), REQUEST_STORAGE_PERMISSION)
+                return
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) 
+                != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_STORAGE_PERMISSION)
+                return
+            }
+        }
+        galleryLauncher.launch("image/*")
+    }
+
+    private fun openCamera() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
+            != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+            return
+        }
+        
+        val photoFile = File.createTempFile(
+            "photo_${System.currentTimeMillis()}",
+            ".jpg",
+            cacheDir
+        )
+        
+        cameraImageUri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.fileprovider",
+            photoFile
+        )
+        
+        cameraLauncher.launch(cameraImageUri)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQUEST_CAMERA_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openCamera()
+                } else {
+                    ToastManager.showWarning(this, "Permissão de câmera necessária")
+                }
+            }
+            REQUEST_STORAGE_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openGallery()
+                } else {
+                    ToastManager.showWarning(this, "Permissão de armazenamento necessária")
+                }
+            }
+        }
+    }
+
+    private fun updateAttachField(uri: Uri) {
+        attachIcon.visibility = View.VISIBLE
+        attachText.text = "Foto anexada"
+        attachText.setTextColor(getColor(R.color.text_primary))
+        attachPreview.visibility = View.VISIBLE
+        attachPreview.setImageURI(uri)
+        attachDropdownIcon.visibility = View.GONE
     }
 
     private fun loadData() {
