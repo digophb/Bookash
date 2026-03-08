@@ -34,20 +34,24 @@ class TransactionAdapter(
 
         fun bind(transaction: Transaction, onItemClick: (Transaction) -> Unit) {
             descriptionText.text = transaction.description
-            categoryText.text = transaction.category
+            categoryText.text = transaction.categoryName.ifEmpty { "Sem categoria" }
             
             val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             val formattedAmount = formatter.format(transaction.amount)
             
-            if (transaction.type == "income") {
-                amountText.text = "+$formattedAmount"
-                amountText.setTextColor(itemView.context.getColor(R.color.primary))
-            } else if (transaction.type == "transfer") {
-                amountText.text = formattedAmount
-                amountText.setTextColor(itemView.context.getColor(R.color.text_primary))
-            } else {
-                amountText.text = "-$formattedAmount"
-                amountText.setTextColor(itemView.context.getColor(R.color.error))
+            when (transaction.type) {
+                "income" -> {
+                    amountText.text = "+$formattedAmount"
+                    amountText.setTextColor(itemView.context.getColor(R.color.primary))
+                }
+                "transfer" -> {
+                    amountText.text = formattedAmount
+                    amountText.setTextColor(itemView.context.getColor(R.color.text_primary))
+                }
+                else -> {
+                    amountText.text = "-$formattedAmount"
+                    amountText.setTextColor(itemView.context.getColor(R.color.error))
+                }
             }
             
             iconImage.setImageResource(transaction.iconRes)

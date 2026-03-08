@@ -730,19 +730,15 @@ class AddTransactionActivity : AppCompatActivity() {
                 if (transactionType == "transfer") {
                     // Salvar transferência
                     val observation = transferObservationInput.text.toString().trim()
-                    val tags = transferTag?.let { listOf(it.id) } ?: emptyList()
                     
                     val transaction = Transaction(
                         userId = userId ?: "",
-                        description = observation.ifEmpty { "Transferência" },
-                        category = "Transferência",
+                        description = observation.ifEmpty { "Transferencia" },
+                        categoryId = "",
+                        categoryName = "Transferencia",
                         amount = value,
                         type = "transfer",
-                        date = dateStr,
-                        status = "paid",
-                        accountId = fromAccount!!.id,
-                        toAccountId = toAccount!!.id,
-                        tags = tags
+                        date = dateStr
                     )
 
                     val token = UserSession.getAccessToken() ?: ""
@@ -752,40 +748,33 @@ class AddTransactionActivity : AppCompatActivity() {
                     }
 
                     if (success) {
-                        ToastManager.showSuccess(this@AddTransactionActivity, "Transferência realizada com sucesso!")
+                        ToastManager.showSuccess(this@AddTransactionActivity, "Transferencia realizada!")
                         setResult(RESULT_OK)
                         finish()
                     } else {
-                        ToastManager.showError(this@AddTransactionActivity, "Erro ao realizar transferência")
+                        ToastManager.showError(this@AddTransactionActivity, "Erro ao realizar transferencia")
                     }
                 } else {
                     // Salvar receita/despesa
                     val description = descriptionInput.text.toString().trim()
-                    val tags = selectedTag?.let { listOf(it.id) } ?: emptyList()
                     val frequency = if (repeatSwitch.isChecked) frequencyText.text.toString() else null
-                    val frequencyCount = if (repeatSwitch.isChecked) {
-                        frequencyCountInput.text.toString().toIntOrNull() ?: 1
-                    } else 1
-                    val isReceived = receivedSwitch.isChecked
-
-                    val reminderDateStr = if (reminderSwitch.isChecked && selectedReminderDate != null) {
-                        isoDateFormat.format(selectedReminderDate)
-                    } else null
-
+                    
                     val transaction = Transaction(
                         userId = userId ?: "",
                         description = description,
-                        category = selectedCategory?.name ?: "",
+                        categoryId = selectedCategory?.id ?: "",
+                        categoryName = selectedCategory?.name ?: "",
                         amount = value,
                         type = transactionType,
                         date = dateStr,
-                        status = if (isReceived) "paid" else "pending",
-                        accountId = selectedAccount!!.id,
-                        tags = tags,
-                        reminderDate = reminderDateStr,
                         isRecurring = frequency != null,
-                        recurrencePeriod = frequency ?: "",
-                        recurrenceCount = frequencyCount
+                        recurringType = when (frequency) {
+                            "Diario" -> "daily"
+                            "Semanal" -> "weekly"
+                            "Mensal" -> "monthly"
+                            "Anual" -> "yearly"
+                            else -> null
+                        }
                     )
 
                     val token = UserSession.getAccessToken() ?: ""
@@ -795,11 +784,11 @@ class AddTransactionActivity : AppCompatActivity() {
                     }
 
                     if (success) {
-                        ToastManager.showSuccess(this@AddTransactionActivity, "Transação salva com sucesso!")
+                        ToastManager.showSuccess(this@AddTransactionActivity, "Transacao salva!")
                         setResult(RESULT_OK)
                         finish()
                     } else {
-                        ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
+                        ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transacao")
                     }
                 }
             } catch (e: Exception) {

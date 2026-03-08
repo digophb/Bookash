@@ -854,7 +854,7 @@ object SupabaseService {
     
     suspend fun saveTransaction(transaction: Transaction, token: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "[TRANSACTIONS] CREATE - Iniciando: type=${transaction.type}, category='${transaction.category}'")
+        Log.d(TAG, "[TRANSACTIONS] CREATE - Iniciando: type=${transaction.type}, desc='${transaction.description}'")
         
         try {
             val conn = URL("$BASE_URL/rest/v1/transactions").openConnection() as HttpURLConnection
@@ -871,16 +871,24 @@ object SupabaseService {
                 append("\"type\":\"${transaction.type}\",")
                 append("\"amount\":${transaction.amount},")
                 append("\"description\":\"${transaction.description}\",")
-                append("\"category\":\"${transaction.category}\",")
-                append("\"date\":\"${transaction.date}\",")
-                append("\"status\":\"${transaction.status}\"")
-                if (transaction.accountId.isNotEmpty()) {
-                    append(",\"account_id\":\"${transaction.accountId}\"")
+                append("\"date\":\"${transaction.date}\"")
+                if (transaction.categoryId.isNotEmpty()) {
+                    append(",\"category_id\":\"${transaction.categoryId}\"")
+                }
+                if (!transaction.notes.isNullOrEmpty()) {
+                    append(",\"notes\":\"${transaction.notes}\"")
+                }
+                if (transaction.creditCardId != null) {
+                    append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
                 }
                 if (transaction.isRecurring) {
                     append(",\"is_recurring\":true")
-                    append(",\"recurrence_period\":\"${transaction.recurrencePeriod}\"")
-                    append(",\"recurrence_count\":${transaction.recurrenceCount}")
+                    if (transaction.recurringType != null) {
+                        append(",\"recurring_type\":\"${transaction.recurringType}\"")
+                    }
+                    if (transaction.recurringUntil != null) {
+                        append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
+                    }
                 }
                 append("}")
             }
@@ -898,7 +906,7 @@ object SupabaseService {
             }
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transação após ${duration}ms", e)
+            Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transacao apos ${duration}ms", e)
             false
         }
     }
@@ -971,16 +979,24 @@ object SupabaseService {
                 append("\"type\":\"${transaction.type}\",")
                 append("\"amount\":${transaction.amount},")
                 append("\"description\":\"${transaction.description}\",")
-                append("\"category\":\"${transaction.category}\",")
-                append("\"date\":\"${transaction.date}\",")
-                append("\"status\":\"${transaction.status}\"")
-                if (transaction.accountId.isNotEmpty()) {
-                    append(",\"account_id\":\"${transaction.accountId}\"")
+                append("\"date\":\"${transaction.date}\"")
+                if (transaction.categoryId.isNotEmpty()) {
+                    append(",\"category_id\":\"${transaction.categoryId}\"")
+                }
+                if (!transaction.notes.isNullOrEmpty()) {
+                    append(",\"notes\":\"${transaction.notes}\"")
+                }
+                if (transaction.creditCardId != null) {
+                    append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
                 }
                 if (transaction.isRecurring) {
                     append(",\"is_recurring\":true")
-                    append(",\"recurrence_period\":\"${transaction.recurrencePeriod}\"")
-                    append(",\"recurrence_count\":${transaction.recurrenceCount}")
+                    if (transaction.recurringType != null) {
+                        append(",\"recurring_type\":\"${transaction.recurringType}\"")
+                    }
+                    if (transaction.recurringUntil != null) {
+                        append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
+                    }
                 } else {
                     append(",\"is_recurring\":false")
                 }
@@ -1048,17 +1064,22 @@ object SupabaseService {
             id = json.optString("id"),
             userId = json.optString("user_id"),
             description = json.optString("description"),
-            category = json.optString("category"),
+            categoryId = json.optString("category_id", ""),
+            categoryName = "", // Será preenchido após buscar categoria
             amount = json.optDouble("amount", 0.0),
             type = type,
             date = json.optString("date"),
-            status = json.optString("status", "paid"),
-            accountId = json.optString("account_id", ""),
-            toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
+            creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
+            notes = json.optString("notes").takeIf { it.isNotEmpty() },
             isRecurring = json.optBoolean("is_recurring", false),
-            recurrencePeriod = json.optString("recurrence_period", ""),
-            recurrenceCount = json.optInt("recurrence_count", 1),
-            iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+            recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
+            recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+            isDeleted = json.optBoolean("is_deleted", false),
+            iconRes = when (type) {
+                "income" -> R.drawable.ic_arrow_up
+                "expense" -> R.drawable.ic_arrow_down
+                else -> R.drawable.ic_transfer
+            }
         )
     }
     
@@ -1608,6 +1629,291 @@ object SupabaseService {
             nextTriggerAt = json.optString("next_trigger_at").takeIf { it.isNotEmpty() },
             createdAt = json.optString("created_at"),
             updatedAt = json.optString("updated_at")
+        )
+    }
+    
+    // ============== TRANSACTION TAGS ==============
+    
+    /**
+     * Salva tags associadas a uma transacao.
+     */
+    suspend fun saveTransactionTags(transactionId: String, tagIds: List<String>): Boolean = withContext(Dispatchers.IO) {
+        if (tagIds.isEmpty()) return@withContext true
+        
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTION_TAGS] CREATE - Salvando ${tagIds.size} tags para transacao $transactionId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTION_TAGS] CREATE - Erro: usuario nao autenticado")
+                return@withContext false
+            }
+            
+            // Primeiro remove tags existentes
+            deleteTransactionTags(transactionId)
+            
+            // Insere novas tags
+            var success = true
+            for (tagId in tagIds) {
+                val conn = URL("$BASE_URL/rest/v1/transaction_tags").openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("apikey", API_KEY)
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Prefer", "return=minimal")
+                conn.doOutput = true
+                
+                val body = """{"transaction_id":"$transactionId","tag_id":"$tagId"}"""
+                conn.outputStream.write(body.toByteArray())
+                
+                if (conn.responseCode !in 200..299) {
+                    success = false
+                    Log.w(TAG, "[TRANSACTION_TAGS] CREATE - Falha ao associar tag $tagId")
+                }
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            if (success) {
+                Log.i(TAG, "[TRANSACTION_TAGS] CREATE - Sucesso: ${tagIds.size} tags associadas (${duration}ms)")
+            }
+            success
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTION_TAGS] CREATE - Erro apos ${duration}ms", e)
+            false
+        }
+    }
+    
+    /**
+     * Busca tags de uma transacao.
+     */
+    suspend fun getTransactionTags(transactionId: String): List<Tag> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTION_TAGS] GET - Buscando tags da transacao $transactionId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTION_TAGS] GET - Erro: usuario nao autenticado")
+                return@withContext emptyList()
+            }
+            
+            // Join com tabela tags para pegar dados da tag
+            val endpoint = "$BASE_URL/rest/v1/transaction_tags?transaction_id=eq.$transactionId&select=tags(id,name,color,user_id)"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                val tags = mutableListOf<Tag>()
+                
+                for (i in 0 until jsonArray.length()) {
+                    val item = jsonArray.getJSONObject(i)
+                    val tagJson = item.getJSONObject("tags")
+                    tags.add(Tag(
+                        id = tagJson.optString("id"),
+                        name = tagJson.optString("name"),
+                        color = tagJson.optString("color", "#357266"),
+                        userId = tagJson.optString("user_id")
+                    ))
+                }
+                
+                Log.i(TAG, "[TRANSACTION_TAGS] GET - Sucesso: ${tags.size} tags (${duration}ms)")
+                tags
+            } else {
+                Log.w(TAG, "[TRANSACTION_TAGS] GET - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTION_TAGS] GET - Erro apos ${duration}ms", e)
+            emptyList()
+        }
+    }
+    
+    /**
+     * Remove todas as tags de uma transacao.
+     */
+    suspend fun deleteTransactionTags(transactionId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        
+        try {
+            val token = UserSession.getAccessToken() ?: return@withContext false
+            
+            val conn = URL("$BASE_URL/rest/v1/transaction_tags?transaction_id=eq.$transactionId").openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            
+            val success = conn.responseCode in 200..299
+            val duration = System.currentTimeMillis() - startTime
+            Log.d(TAG, "[TRANSACTION_TAGS] DELETE - ${if (success) "Sucesso" else "Falha"} (${duration}ms)")
+            success
+        } catch (e: Exception) {
+            Log.e(TAG, "[TRANSACTION_TAGS] DELETE - Erro", e)
+            false
+        }
+    }
+    
+    // ============== ATTACHMENTS ==============
+    
+    /**
+     * Salva um anexo.
+     */
+    suspend fun saveAttachment(attachment: Attachment, token: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ATTACHMENTS] CREATE - Salvando anexo para transacao ${attachment.transactionId}")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/attachments").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = buildString {
+                append("{")
+                append("\"transaction_id\":\"${attachment.transactionId}\",")
+                append("\"user_id\":\"${attachment.userId}\",")
+                append("\"file_url\":\"${attachment.fileUrl}\"")
+                if (!attachment.fileName.isNullOrEmpty()) {
+                    append(",\"file_name\":\"${attachment.fileName}\"")
+                }
+                if (!attachment.fileType.isNullOrEmpty()) {
+                    append(",\"file_type\":\"${attachment.fileType}\"")
+                }
+                if (attachment.fileSize != null) {
+                    append(",\"file_size\":${attachment.fileSize}")
+                }
+                if (!attachment.mimeType.isNullOrEmpty()) {
+                    append(",\"mime_type\":\"${attachment.mimeType}\"")
+                }
+                if (!attachment.description.isNullOrEmpty()) {
+                    append(",\"description\":\"${attachment.description}\"")
+                }
+                append("}")
+            }
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[ATTACHMENTS] CREATE - Sucesso (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[ATTACHMENTS] CREATE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ATTACHMENTS] CREATE - Erro apos ${duration}ms", e)
+            false
+        }
+    }
+    
+    /**
+     * Busca anexos de uma transacao.
+     */
+    suspend fun getAttachments(transactionId: String): List<Attachment> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ATTACHMENTS] GET - Buscando anexos da transacao $transactionId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ATTACHMENTS] GET - Erro: usuario nao autenticado")
+                return@withContext emptyList()
+            }
+            
+            val endpoint = "$BASE_URL/rest/v1/attachments?transaction_id=eq.$transactionId&select=*&order=created_at.desc"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                val attachments = mutableListOf<Attachment>()
+                
+                for (i in 0 until jsonArray.length()) {
+                    attachments.add(parseAttachment(jsonArray.getJSONObject(i)))
+                }
+                
+                Log.i(TAG, "[ATTACHMENTS] GET - Sucesso: ${attachments.size} anexos (${duration}ms)")
+                attachments
+            } else {
+                Log.w(TAG, "[ATTACHMENTS] GET - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ATTACHMENTS] GET - Erro apos ${duration}ms", e)
+            emptyList()
+        }
+    }
+    
+    /**
+     * Exclui um anexo.
+     */
+    suspend fun deleteAttachment(attachmentId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ATTACHMENTS] DELETE - Excluindo anexo $attachmentId")
+        
+        try {
+            val token = UserSession.getAccessToken() ?: return@withContext false
+            
+            val conn = URL("$BASE_URL/rest/v1/attachments?id=eq.$attachmentId").openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[ATTACHMENTS] DELETE - Sucesso (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[ATTACHMENTS] DELETE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ATTACHMENTS] DELETE - Erro apos ${duration}ms", e)
+            false
+        }
+    }
+    
+    private fun parseAttachment(json: org.json.JSONObject): Attachment {
+        return Attachment(
+            id = json.optString("id"),
+            transactionId = json.optString("transaction_id"),
+            userId = json.optString("user_id"),
+            fileName = json.optString("file_name").takeIf { it.isNotEmpty() },
+            fileUrl = json.optString("file_url"),
+            fileType = json.optString("file_type", "image"),
+            fileSize = json.optInt("file_size").takeIf { it > 0 },
+            mimeType = json.optString("mime_type").takeIf { it.isNotEmpty() },
+            description = json.optString("description").takeIf { it.isNotEmpty() },
+            createdAt = json.optString("created_at")
         )
     }
 }

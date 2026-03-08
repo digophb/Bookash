@@ -240,22 +240,14 @@ class TransactionDetailActivity : AppCompatActivity() {
             // Status
             // TODO: carregar status se houver switch
             
-            // Carregar conta e categoria pelo ID
+            // Carregar categoria pelo ID
             lifecycleScope.launch {
-                // Buscar categoria pelo nome
-                selectedCategory = categories.find { it.name == t.category }
+                // Buscar categoria pelo ID
+                selectedCategory = categories.find { it.id == t.categoryId }
                 selectedCategory?.let { cat ->
                     categoryText.text = cat.name
                     categoryText.setTextColor(getColor(R.color.text_primary))
                     categoryIcon.visibility = View.VISIBLE
-                }
-                
-                // Buscar conta pelo ID
-                selectedAccount = accounts.find { it.id == t.accountId }
-                selectedAccount?.let { acc ->
-                    accountText.text = acc.name
-                    accountText.setTextColor(getColor(R.color.text_primary))
-                    accountIcon.visibility = View.VISIBLE
                 }
             }
         }
@@ -438,13 +430,11 @@ class TransactionDetailActivity : AppCompatActivity() {
                     id = transaction?.id ?: "",
                     userId = userId ?: "",
                     description = descriptionInput.text.toString().trim(),
-                    category = selectedCategory?.name ?: "",
+                    categoryId = selectedCategory?.id ?: "",
+                    categoryName = selectedCategory?.name ?: "",
                     amount = value,
                     type = transactionType,
-                    date = dateStr,
-                    status = transaction?.status ?: "paid",
-                    accountId = selectedAccount?.id ?: fromAccount?.id ?: "",
-                    toAccountId = toAccount?.id
+                    date = dateStr
                 )
 
                 val token = UserSession.getAccessToken() ?: ""

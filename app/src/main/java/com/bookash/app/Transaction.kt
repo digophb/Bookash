@@ -4,19 +4,38 @@ data class Transaction(
     val id: String = "",
     val userId: String = "",
     val description: String,
-    val category: String,
+    val categoryId: String = "", // UUID da categoria
+    val categoryName: String = "", // Nome da categoria (cache para exibicao)
     val amount: Double,
-    val type: String,
+    val type: String, // income, expense, transfer
     val date: String,
-    val status: String = "paid",
-    val accountId: String = "",
-    val toAccountId: String? = null, // Para transferências: conta de destino
-    val tags: List<String> = emptyList(),
-    val reminderDate: String? = null,
+    val creditCardId: String? = null, // UUID do cartao de credito
+    val notes: String? = null,
     val isRecurring: Boolean = false,
-    val recurrencePeriod: String = "",
-    val recurrenceCount: Int = 1,
+    val recurringType: String? = null, // daily, weekly, monthly, yearly
+    val recurringUntil: String? = null,
+    val isDeleted: Boolean = false,
+    val tags: List<Tag> = emptyList(), // Tags associadas (do modelo Tag.kt)
+    val attachments: List<Attachment> = emptyList(), // Anexos
     val iconRes: Int = 0
+)
+
+/**
+ * Attachment - Anexos de transacoes
+ * 
+ * Permite anexar fotos, recibos, documentos a transacoes.
+ */
+data class Attachment(
+    val id: String = "",
+    val transactionId: String = "",
+    val userId: String = "",
+    val fileName: String? = null,
+    val fileUrl: String,
+    val fileType: String = "image", // image, document, pdf
+    val fileSize: Int? = null,
+    val mimeType: String? = null,
+    val description: String? = null,
+    val createdAt: String = ""
 )
 
 data class Category(
