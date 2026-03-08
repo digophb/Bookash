@@ -90,6 +90,28 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var moreDetailsLayout: LinearLayout
     private lateinit var moreDetailsArrow: ImageView
     private var isMoreDetailsVisible = false
+    
+    // Modos
+    private lateinit var normalModeLayout: LinearLayout
+    private lateinit var transferModeLayout: LinearLayout
+    
+    // Transferência
+    private lateinit var transferDateInput: TextInputEditText
+    private lateinit var fromAccountField: LinearLayout
+    private lateinit var fromAccountIcon: ImageView
+    private lateinit var fromAccountText: TextView
+    private lateinit var toAccountField: LinearLayout
+    private lateinit var toAccountIcon: ImageView
+    private lateinit var toAccountText: TextView
+    private lateinit var transferObservationInput: TextInputEditText
+    private lateinit var transferTagField: LinearLayout
+    private lateinit var transferTagIcon: ImageView
+    private lateinit var transferTagText: TextView
+    
+    // Dados transferência
+    private var fromAccount: Account? = null
+    private var toAccount: Account? = null
+    private var transferTag: Tag? = null
 
     // Dados
     private var categories: List<Category> = emptyList()
@@ -177,6 +199,23 @@ class AddTransactionActivity : AppCompatActivity() {
         moreDetailsToggle = findViewById(R.id.moreDetailsToggle)
         moreDetailsLayout = findViewById(R.id.moreDetailsLayout)
         moreDetailsArrow = findViewById(R.id.moreDetailsArrow)
+        
+        // Modos
+        normalModeLayout = findViewById(R.id.normalModeLayout)
+        transferModeLayout = findViewById(R.id.transferModeLayout)
+        
+        // Transferência
+        transferDateInput = findViewById(R.id.transferDateInput)
+        fromAccountField = findViewById(R.id.fromAccountField)
+        fromAccountIcon = findViewById(R.id.fromAccountIcon)
+        fromAccountText = findViewById(R.id.fromAccountText)
+        toAccountField = findViewById(R.id.toAccountField)
+        toAccountIcon = findViewById(R.id.toAccountIcon)
+        toAccountText = findViewById(R.id.toAccountText)
+        transferObservationInput = findViewById(R.id.transferObservationInput)
+        transferTagField = findViewById(R.id.transferTagField)
+        transferTagIcon = findViewById(R.id.transferTagIcon)
+        transferTagText = findViewById(R.id.transferTagText)
 
         // Configurar formatação monetária
         valueInput.addTextChangedListener(CurrencyTextWatcher(valueInput))
@@ -207,12 +246,17 @@ class AddTransactionActivity : AppCompatActivity() {
                         titleText.text = "Nova Transferência"
                     }
                 }
+                updateModeVisibility()
             }
         }
 
         // Data
         dateInput.setOnClickListener { showDatePicker() }
         dateInput.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDatePicker() }
+        
+        // Data transferência
+        transferDateInput.setOnClickListener { showTransferDatePicker() }
+        transferDateInput.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showTransferDatePicker() }
 
         // Lembrete
         reminderDateInput.setOnClickListener { showReminderDatePicker() }
@@ -245,9 +289,24 @@ class AddTransactionActivity : AppCompatActivity() {
 
         // Frequência - campo clicável
         frequencyDropdown.setOnClickListener { showFrequencyPicker() }
+        
+        // Transferência - campos clicáveis
+        fromAccountField.setOnClickListener { showFromAccountPicker() }
+        toAccountField.setOnClickListener { showToAccountPicker() }
+        transferTagField.setOnClickListener { showTransferTagPicker() }
 
         // Salvar
         saveButton.setOnClickListener { saveTransaction() }
+    }
+    
+    private fun updateModeVisibility() {
+        if (transactionType == "transfer") {
+            normalModeLayout.visibility = View.GONE
+            transferModeLayout.visibility = View.VISIBLE
+        } else {
+            normalModeLayout.visibility = View.VISIBLE
+            transferModeLayout.visibility = View.GONE
+        }
     }
 
     private fun toggleMoreDetails() {
@@ -356,6 +415,101 @@ class AddTransactionActivity : AppCompatActivity() {
                 tagIcon.setColorFilter(getColor(R.color.text_secondary))
             }
             
+            popup.dismiss()
+        }
+        popup.show()
+    }
+
+    private fun showTransferDatePicker() {
+        val calendar = Calendar.getInstance()
+        val datePicker = DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                val cal = Calendar.getInstance()
+                cal.set(year, month, dayOfMonth)
+                selectedDate = cal.time
+                updateTransferDateDisplay()
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        datePicker.show()
+    }
+    
+    private fun updateTransferDateDisplay() {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+        transferDateInput.setText(dateFormat.format(selectedDate))
+    }
+    
+    private fun showFromAccountPicker() {
+        if (accounts.isEmpty()) {
+            ToastManager.showWarning(this, "Nenhuma conta cadastrada")
+            return
+        }
+        
+        val popup = ListPopupWindow(this)
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, accounts.map { it.name }))
+        popup.anchorView = fromAccountField
+        popup.setOnItemClickListener { _, _, position, _ ->
+            fromAccount = accounts[position]
+            fromAccountText.text = fromAccount?.name
+            fromAccountText.setTextColor(getColor(R.color.text_primary))
+            fromAccountIcon.visibility = View.VISIBLE
+            val iconRes = getBankIconResource(fromAccount?.icon ?: "wallet")
+            fromAccountIcon.setImageResource(iconRes)
+            popup.dismiss()
+        }
+        popup.show()
+    }
+    
+    private fun showToAccountPicker() {
+        if (accounts.isEmpty()) {
+            ToastManager.showWarning(this, "Nenhuma conta cadastrada")
+            return
+        }
+        
+        // Filtrar para não mostrar a conta de origem
+        val availableAccounts = accounts.filter { it.id != fromAccount?.id }
+        if (availableAccounts.isEmpty()) {
+            ToastManager.showWarning(this, "Selecione uma conta de origem diferente")
+            return
+        }
+        
+        val popup = ListPopupWindow(this)
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, availableAccounts.map { it.name }))
+        popup.anchorView = toAccountField
+        popup.setOnItemClickListener { _, _, position, _ ->
+            toAccount = availableAccounts[position]
+            toAccountText.text = toAccount?.name
+            toAccountText.setTextColor(getColor(R.color.text_primary))
+            toAccountIcon.visibility = View.VISIBLE
+            val iconRes = getBankIconResource(toAccount?.icon ?: "wallet")
+            toAccountIcon.setImageResource(iconRes)
+            popup.dismiss()
+        }
+        popup.show()
+    }
+    
+    private fun showTransferTagPicker() {
+        if (tags.isEmpty()) {
+            ToastManager.showWarning(this, "Nenhuma tag cadastrada")
+            return
+        }
+        
+        val popup = ListPopupWindow(this)
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, tags.map { it.name }))
+        popup.anchorView = transferTagField
+        popup.setOnItemClickListener { _, _, position, _ ->
+            transferTag = tags[position]
+            transferTagText.text = transferTag?.name
+            transferTagText.setTextColor(getColor(R.color.text_primary))
+            transferTagIcon.visibility = View.VISIBLE
+            try {
+                transferTagIcon.setColorFilter(Color.parseColor(transferTag?.color))
+            } catch (e: Exception) {
+                transferTagIcon.setColorFilter(getColor(R.color.text_secondary))
+            }
             popup.dismiss()
         }
         popup.show()
@@ -540,73 +694,119 @@ class AddTransactionActivity : AppCompatActivity() {
             return
         }
 
-        val description = descriptionInput.text.toString().trim()
-        if (description.isEmpty()) {
-            ToastManager.showWarning(this, "Digite uma descrição")
-            return
-        }
-
-        if (selectedAccount == null) {
-            ToastManager.showWarning(this, "Selecione uma conta")
-            return
+        // Validações diferentes para transferência
+        if (transactionType == "transfer") {
+            if (fromAccount == null) {
+                ToastManager.showWarning(this, "Selecione a conta de origem")
+                return
+            }
+            if (toAccount == null) {
+                ToastManager.showWarning(this, "Selecione a conta de destino")
+                return
+            }
+            if (fromAccount?.id == toAccount?.id) {
+                ToastManager.showWarning(this, "Contas de origem e destino devem ser diferentes")
+                return
+            }
+        } else {
+            val description = descriptionInput.text.toString().trim()
+            if (description.isEmpty()) {
+                ToastManager.showWarning(this, "Digite uma descrição")
+                return
+            }
+            if (selectedAccount == null) {
+                ToastManager.showWarning(this, "Selecione uma conta")
+                return
+            }
         }
 
         saveButton.isEnabled = false
-        saveButton.text = "Salvando..."
 
         lifecycleScope.launch {
             try {
-                val tags = selectedTag?.let { listOf(it.id) } ?: emptyList()
-                val frequency = if (repeatSwitch.isChecked) frequencyText.text.toString() else null
-                val frequencyCount = if (repeatSwitch.isChecked) {
-                    frequencyCountInput.text.toString().toIntOrNull() ?: 1
-                } else 1
-                val isReceived = receivedSwitch.isChecked
-
-                // Formatar data para ISO 8601
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                 val dateStr = isoDateFormat.format(selectedDate)
                 
-                // Formatar data do lembrete se existir
-                val reminderDateStr = if (reminderSwitch.isChecked && selectedReminderDate != null) {
-                    isoDateFormat.format(selectedReminderDate)
-                } else null
+                if (transactionType == "transfer") {
+                    // Salvar transferência
+                    val observation = transferObservationInput.text.toString().trim()
+                    val tags = transferTag?.let { listOf(it.id) } ?: emptyList()
+                    
+                    val transaction = Transaction(
+                        userId = userId ?: "",
+                        description = observation.ifEmpty { "Transferência" },
+                        category = "Transferência",
+                        amount = value,
+                        type = "transfer",
+                        date = dateStr,
+                        status = "paid",
+                        accountId = fromAccount!!.id,
+                        toAccountId = toAccount!!.id,
+                        tags = tags
+                    )
 
-                val transaction = Transaction(
-                    userId = userId ?: "",
-                    description = description,
-                    category = selectedCategory?.name ?: "",
-                    amount = value,
-                    type = transactionType,
-                    date = dateStr,
-                    status = if (isReceived) "paid" else "pending",
-                    accountId = selectedAccount!!.id,
-                    tags = tags,
-                    reminderDate = reminderDateStr,
-                    isRecurring = frequency != null,
-                    recurrencePeriod = frequency ?: "",
-                    recurrenceCount = frequencyCount
-                )
+                    val token = UserSession.getAccessToken() ?: ""
+                    
+                    val success = withContext(Dispatchers.IO) {
+                        SupabaseService.saveTransaction(transaction, token)
+                    }
 
-                val token = UserSession.getAccessToken() ?: ""
-                
-                val success = withContext(Dispatchers.IO) {
-                    SupabaseService.saveTransaction(transaction, token)
-                }
-
-                if (success) {
-                    ToastManager.showSuccess(this@AddTransactionActivity, "Transação salva com sucesso!")
-                    setResult(RESULT_OK)
-                    finish()
+                    if (success) {
+                        ToastManager.showSuccess(this@AddTransactionActivity, "Transferência realizada com sucesso!")
+                        setResult(RESULT_OK)
+                        finish()
+                    } else {
+                        ToastManager.showError(this@AddTransactionActivity, "Erro ao realizar transferência")
+                    }
                 } else {
-                    ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
+                    // Salvar receita/despesa
+                    val description = descriptionInput.text.toString().trim()
+                    val tags = selectedTag?.let { listOf(it.id) } ?: emptyList()
+                    val frequency = if (repeatSwitch.isChecked) frequencyText.text.toString() else null
+                    val frequencyCount = if (repeatSwitch.isChecked) {
+                        frequencyCountInput.text.toString().toIntOrNull() ?: 1
+                    } else 1
+                    val isReceived = receivedSwitch.isChecked
+
+                    val reminderDateStr = if (reminderSwitch.isChecked && selectedReminderDate != null) {
+                        isoDateFormat.format(selectedReminderDate)
+                    } else null
+
+                    val transaction = Transaction(
+                        userId = userId ?: "",
+                        description = description,
+                        category = selectedCategory?.name ?: "",
+                        amount = value,
+                        type = transactionType,
+                        date = dateStr,
+                        status = if (isReceived) "paid" else "pending",
+                        accountId = selectedAccount!!.id,
+                        tags = tags,
+                        reminderDate = reminderDateStr,
+                        isRecurring = frequency != null,
+                        recurrencePeriod = frequency ?: "",
+                        recurrenceCount = frequencyCount
+                    )
+
+                    val token = UserSession.getAccessToken() ?: ""
+                    
+                    val success = withContext(Dispatchers.IO) {
+                        SupabaseService.saveTransaction(transaction, token)
+                    }
+
+                    if (success) {
+                        ToastManager.showSuccess(this@AddTransactionActivity, "Transação salva com sucesso!")
+                        setResult(RESULT_OK)
+                        finish()
+                    } else {
+                        ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
+                    }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Erro ao salvar transação", e)
+                Log.e(TAG, "Erro ao salvar", e)
                 ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
             } finally {
                 saveButton.isEnabled = true
-                saveButton.text = "Salvar Transação"
             }
         }
     }

@@ -10,6 +10,7 @@ data class Transaction(
     val date: String,
     val status: String = "paid",
     val accountId: String = "",
+    val toAccountId: String? = null, // Para transferências: conta de destino
     val tags: List<String> = emptyList(),
     val reminderDate: String? = null,
     val isRecurring: Boolean = false,
