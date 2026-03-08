@@ -738,16 +738,26 @@
 
     </ScrollView>
 
-    <!-- Botão Salvar -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/saveButton"
+    <!-- FAB Salvar -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_margin="20dp"
-        android:text="Salvar Transação"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:backgroundTint="@color/primary"
-        app:cornerRadius="12dp" />
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/saveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="56dp"
+            android:layout_gravity="center_horizontal"
+            android:text="Salvar"
+            android:textColor="@color/background"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:icon="@drawable/ic_check"
+            app:iconTint="@color/background"
+            app:backgroundTint="@color/primary"
+            app:fabSize="auto" />
+
+    </FrameLayout>
 
 </LinearLayout>
