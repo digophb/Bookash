@@ -189,8 +189,13 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun showCategoryPicker() {
+        if (categories.isEmpty()) {
+            ToastManager.showWarning(this, "Nenhuma categoria cadastrada")
+            return
+        }
+        
         val popup = ListPopupWindow(this)
-        popup.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_category, categories.map { it.name }))
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, categories.map { it.name }))
         popup.anchorView = categoryField
         popup.setOnItemClickListener { _, _, position, _ ->
             selectedCategory = categories[position]
@@ -218,8 +223,13 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun showAccountPicker() {
+        if (accounts.isEmpty()) {
+            ToastManager.showWarning(this, "Nenhuma conta cadastrada")
+            return
+        }
+        
         val popup = ListPopupWindow(this)
-        popup.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_account, accounts.map { it.name }))
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, accounts.map { it.name }))
         popup.anchorView = accountField
         popup.setOnItemClickListener { _, _, position, _ ->
             selectedAccount = accounts[position]
@@ -237,8 +247,13 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun showTagPicker() {
+        if (tags.isEmpty()) {
+            ToastManager.showWarning(this, "Nenhuma tag cadastrada")
+            return
+        }
+        
         val popup = ListPopupWindow(this)
-        popup.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_tag, tags.map { it.name }))
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, tags.map { it.name }))
         popup.anchorView = tagField
         popup.setOnItemClickListener { _, _, position, _ ->
             selectedTag = tags[position]
