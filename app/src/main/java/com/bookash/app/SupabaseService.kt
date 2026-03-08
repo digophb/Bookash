@@ -903,23 +903,169 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Busca uma transacao especifica por ID.
+     */
+    suspend fun getTransactionById(transactionId: String): Transaction? = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTIONS] GET_BY_ID - Buscando: id=$transactionId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTIONS] GET_BY_ID - Erro: usuario nao autenticado")
+                return@withContext null
+            }
+            
+            val endpoint = "$BASE_URL/rest/v1/transactions?id=eq.$transactionId&select=*&limit=1"
+            
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                
+                if (jsonArray.length() > 0) {
+                    val transaction = parseTransaction(jsonArray.getJSONObject(0))
+                    Log.i(TAG, "[TRANSACTIONS] GET_BY_ID - Sucesso: '${transaction.description}' (${duration}ms)")
+                    transaction
+                } else {
+                    Log.w(TAG, "[TRANSACTIONS] GET_BY_ID - Nao encontrada (${duration}ms)")
+                    null
+                }
+            } else {
+                Log.w(TAG, "[TRANSACTIONS] GET_BY_ID - Falha: HTTP $responseCode (${duration}ms)")
+                null
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTIONS] GET_BY_ID - Erro apos ${duration}ms", e)
+            null
+        }
+    }
+    
+    /**
+     * Atualiza uma transacao existente.
+     */
+    suspend fun updateTransaction(transaction: Transaction, token: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTIONS] UPDATE - Iniciando: id=${transaction.id}, type=${transaction.type}")
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/transactions?id=eq.${transaction.id}").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = buildString {
+                append("{")
+                append("\"type\":\"${transaction.type}\",")
+                append("\"amount\":${transaction.amount},")
+                append("\"description\":\"${transaction.description}\",")
+                append("\"category\":\"${transaction.category}\",")
+                append("\"date\":\"${transaction.date}\",")
+                append("\"status\":\"${transaction.status}\"")
+                if (transaction.accountId.isNotEmpty()) {
+                    append(",\"account_id\":\"${transaction.accountId}\"")
+                }
+                if (transaction.isRecurring) {
+                    append(",\"is_recurring\":true")
+                    append(",\"recurrence_period\":\"${transaction.recurrencePeriod}\"")
+                    append(",\"recurrence_count\":${transaction.recurrenceCount}")
+                } else {
+                    append(",\"is_recurring\":false")
+                }
+                append("}")
+            }
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[TRANSACTIONS] UPDATE - Sucesso: '${transaction.description}' (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[TRANSACTIONS] UPDATE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTIONS] UPDATE - Erro ao atualizar transacao apos ${duration}ms", e)
+            false
+        }
+    }
+    
+    /**
+     * Exclui uma transacao.
+     */
+    suspend fun deleteTransaction(transactionId: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTIONS] DELETE - Iniciando: id=$transactionId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTIONS] DELETE - Erro: usuario nao autenticado")
+                return@withContext false
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/transactions?id=eq.$transactionId").openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[TRANSACTIONS] DELETE - Sucesso: id=$transactionId (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[TRANSACTIONS] DELETE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTIONS] DELETE - Erro ao excluir id=$transactionId apos ${duration}ms", e)
+            false
+        }
+    }
+    
+    private fun parseTransaction(json: org.json.JSONObject): Transaction {
+        val type = json.optString("type")
+        return Transaction(
+            id = json.optString("id"),
+            userId = json.optString("user_id"),
+            description = json.optString("description"),
+            category = json.optString("category"),
+            amount = json.optDouble("amount", 0.0),
+            type = type,
+            date = json.optString("date"),
+            status = json.optString("status", "paid"),
+            accountId = json.optString("account_id", ""),
+            toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
+            isRecurring = json.optBoolean("is_recurring", false),
+            recurrencePeriod = json.optString("recurrence_period", ""),
+            recurrenceCount = json.optInt("recurrence_count", 1),
+            iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+        )
+    }
+    
     private fun parseTransactions(jsonArray: JSONArray): List<Transaction> {
         val list = mutableListOf<Transaction>()
         for (i in 0 until jsonArray.length()) {
-            val json = jsonArray.getJSONObject(i)
-            val type = json.optString("type")
-            list.add(Transaction(
-                id = json.optString("id"),
-                userId = json.optString("user_id"),
-                description = json.optString("description"),
-                category = json.optString("category"),
-                amount = json.optDouble("amount", 0.0),
-                type = type,
-                date = json.optString("date"),
-                status = json.optString("status", "paid"),
-                accountId = json.optString("account_id", ""),
-                iconRes = if (type == "income") R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
-            ))
+            list.add(parseTransaction(jsonArray.getJSONObject(i)))
         }
         return list
     }

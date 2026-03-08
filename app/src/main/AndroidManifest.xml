@@ -47,9 +47,15 @@
             android:name=".MainActivity"
             android:exported="false" />
         
-        <!-- Adicionar Transação -->
+        <!-- Adicionar Transacao -->
         <activity
             android:name=".AddTransactionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
+        <!-- Detalhes da Transacao -->
+        <activity
+            android:name=".TransactionDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
         

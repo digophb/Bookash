@@ -101,7 +101,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupTransactionsList() {
-        transactionAdapter = TransactionAdapter()
+        transactionAdapter = TransactionAdapter { transaction ->
+            val intent = Intent(this, TransactionDetailActivity::class.java)
+            intent.putExtra(TransactionDetailActivity.EXTRA_TRANSACTION, transaction)
+            startActivityForResult(intent, REQUEST_ADD_TRANSACTION)
+        }
         transactionsRecycler.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = transactionAdapter

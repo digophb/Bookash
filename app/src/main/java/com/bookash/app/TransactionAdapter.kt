@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
 import java.util.Locale
 
-class TransactionAdapter : ListAdapter<Transaction, TransactionAdapter.TransactionViewHolder>(TransactionDiffCallback()) {
+class TransactionAdapter(
+    private val onItemClick: (Transaction) -> Unit = {}
+) : ListAdapter<Transaction, TransactionAdapter.TransactionViewHolder>(TransactionDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransactionViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -21,7 +23,7 @@ class TransactionAdapter : ListAdapter<Transaction, TransactionAdapter.Transacti
 
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
         val transaction = getItem(position)
-        holder.bind(transaction)
+        holder.bind(transaction, onItemClick)
     }
 
     class TransactionViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -30,7 +32,7 @@ class TransactionAdapter : ListAdapter<Transaction, TransactionAdapter.Transacti
         private val categoryText: TextView = view.findViewById(R.id.transactionCategory)
         private val amountText: TextView = view.findViewById(R.id.transactionAmount)
 
-        fun bind(transaction: Transaction) {
+        fun bind(transaction: Transaction, onItemClick: (Transaction) -> Unit) {
             descriptionText.text = transaction.description
             categoryText.text = transaction.category
             
@@ -40,12 +42,17 @@ class TransactionAdapter : ListAdapter<Transaction, TransactionAdapter.Transacti
             if (transaction.type == "income") {
                 amountText.text = "+$formattedAmount"
                 amountText.setTextColor(itemView.context.getColor(R.color.primary))
+            } else if (transaction.type == "transfer") {
+                amountText.text = formattedAmount
+                amountText.setTextColor(itemView.context.getColor(R.color.text_primary))
             } else {
                 amountText.text = "-$formattedAmount"
                 amountText.setTextColor(itemView.context.getColor(R.color.error))
             }
             
             iconImage.setImageResource(transaction.iconRes)
+            
+            itemView.setOnClickListener { onItemClick(transaction) }
         }
     }
 
