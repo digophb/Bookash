@@ -84,6 +84,12 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var reminderDateInput: TextInputEditText
     private lateinit var notesInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
+    
+    // Mais Detalhes
+    private lateinit var moreDetailsToggle: LinearLayout
+    private lateinit var moreDetailsLayout: LinearLayout
+    private lateinit var moreDetailsArrow: ImageView
+    private var isMoreDetailsVisible = false
 
     // Dados
     private var categories: List<Category> = emptyList()
@@ -168,6 +174,9 @@ class AddTransactionActivity : AppCompatActivity() {
         reminderDateInput = findViewById(R.id.reminderDateInput)
         notesInput = findViewById(R.id.notesInput)
         saveButton = findViewById(R.id.saveButton)
+        moreDetailsToggle = findViewById(R.id.moreDetailsToggle)
+        moreDetailsLayout = findViewById(R.id.moreDetailsLayout)
+        moreDetailsArrow = findViewById(R.id.moreDetailsArrow)
 
         // Configurar formatação monetária
         valueInput.addTextChangedListener(CurrencyTextWatcher(valueInput))
@@ -225,14 +234,11 @@ class AddTransactionActivity : AppCompatActivity() {
         // Conta - campo clicável
         accountField.setOnClickListener { showAccountPicker() }
 
+        // Mais Detalhes - toggle
+        moreDetailsToggle.setOnClickListener { toggleMoreDetails() }
+
         // Anexo - campo clicável
         attachField.setOnClickListener { showAttachOptions() }
-
-        // Tag - campo clicável
-        tagField.setOnClickListener { showTagPicker() }
-
-        // Conta - campo clicável
-        accountField.setOnClickListener { showAccountPicker() }
 
         // Tag - campo clicável
         tagField.setOnClickListener { showTagPicker() }
@@ -242,6 +248,32 @@ class AddTransactionActivity : AppCompatActivity() {
 
         // Salvar
         saveButton.setOnClickListener { saveTransaction() }
+    }
+
+    private fun toggleMoreDetails() {
+        isMoreDetailsVisible = !isMoreDetailsVisible
+        
+        if (isMoreDetailsVisible) {
+            moreDetailsLayout.visibility = View.VISIBLE
+            moreDetailsArrow.animate().rotation(0f).setDuration(200).start()
+            // Animação de slide down
+            moreDetailsLayout.alpha = 0f
+            moreDetailsLayout.translationY = -50f
+            moreDetailsLayout.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .start()
+        } else {
+            // Animação de slide up antes de esconder
+            moreDetailsArrow.animate().rotation(-90f).setDuration(200).start()
+            moreDetailsLayout.animate()
+                .alpha(0f)
+                .translationY(-50f)
+                .setDuration(300)
+                .withEndAction { moreDetailsLayout.visibility = View.GONE }
+                .start()
+        }
     }
 
     private fun showCategoryPicker() {

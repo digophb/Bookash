@@ -213,6 +213,38 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Data -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Data"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                style="@style/Widget.Bookash.TextInputLayout"
+                app:endIconDrawable="@drawable/ic_calendar"
+                app:endIconMode="custom"
+                app:endIconTint="@color/text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/dateInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Selecione a data"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/input_placeholder"
+                    android:inputType="none"
+                    android:focusable="false"
+                    android:clickable="true" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Categoria -->
             <TextView
                 android:layout_width="wrap_content"
@@ -284,7 +316,7 @@
                 android:background="@drawable/bg_dropdown_field"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="16dp">
 
                 <ImageView
                     android:id="@+id/accountIcon"
@@ -313,363 +345,394 @@
 
             </LinearLayout>
 
-            <!-- Anexar -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Anexo"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
+            <!-- Mais Detalhes (Label centralizada clicável) -->
             <LinearLayout
-                android:id="@+id/attachField"
+                android:id="@+id/moreDetailsToggle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:paddingVertical="16dp"
-                android:paddingHorizontal="16dp"
-                android:background="@drawable/bg_dropdown_field"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginBottom="24dp">
+                android:background="?attr/selectableItemBackground">
 
-                <ImageView
-                    android:id="@+id/attachIcon"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_attach"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/attachText"
+                <View
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:text="Adicionar foto (opcional)"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="16sp"
-                    android:ellipsize="end"
-                    android:maxLines="1" />
-
-                <ImageView
-                    android:id="@+id/attachPreview"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:scaleType="centerCrop"
-                    android:visibility="gone" />
-
-                <ImageView
-                    android:id="@+id/attachDropdownIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_dropdown"
-                    android:tint="@color/text_secondary" />
-
-            </LinearLayout>
-
-            <!-- Data -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Data"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                style="@style/Widget.Bookash.TextInputLayout"
-                app:endIconDrawable="@drawable/ic_calendar"
-                app:endIconMode="custom"
-                app:endIconTint="@color/text_secondary">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/dateInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Selecione a data"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder"
-                    android:inputType="none"
-                    android:focusable="false"
-                    android:clickable="true" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Tags -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tags"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <LinearLayout
-                android:id="@+id/tagField"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="16dp"
-                android:paddingHorizontal="16dp"
-                android:background="@drawable/bg_dropdown_field"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="24dp">
-
-                <ImageView
-                    android:id="@+id/tagIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_tag"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/tagText"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:text="Selecione uma tag (opcional)"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="16sp"
-                    android:ellipsize="end"
-                    android:maxLines="1" />
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_dropdown"
-                    android:tint="@color/text_secondary" />
-
-            </LinearLayout>
-
-            <!-- Switch Repetir (padrão da tela nova conta) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp"
-                android:layout_marginBottom="16dp">
+                    android:background="@color/base_sage"
+                    android:layout_marginEnd="12dp" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Repetir"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Criar transação recorrente"
+                        android:text="Mais detalhes"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:id="@+id/moreDetailsArrow"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_dropdown"
+                        android:tint="@color/text_secondary"
+                        android:rotation="-90"
+                        android:layout_marginStart="4dp" />
 
                 </LinearLayout>
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/repeatSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="false"
-                    app:thumbTint="@color/switch_thumb_color"
-                    app:trackTint="@color/switch_track_color" />
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="@color/base_sage"
+                    android:layout_marginStart="12dp" />
 
             </LinearLayout>
 
-            <!-- Frequência da Repetição (visível quando repetir ativado) -->
+            <!-- Container Mais Detalhes (expansível) -->
             <LinearLayout
-                android:id="@+id/repeatFrequencyLayout"
+                android:id="@+id/moreDetailsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginBottom="24dp"
                 android:visibility="gone">
 
+                <!-- Anexar -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Repetir a cada"
+                    android:text="Anexo"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="12dp" />
+
+                <LinearLayout
+                    android:id="@+id/attachField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="16dp"
+                    android:background="@drawable/bg_dropdown_field"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginBottom="24dp">
+
+                    <ImageView
+                        android:id="@+id/attachIcon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_attach"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/attachText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="Adicionar foto (opcional)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp"
+                        android:ellipsize="end"
+                        android:maxLines="1" />
+
+                    <ImageView
+                        android:id="@+id/attachPreview"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/attachDropdownIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_dropdown"
+                        android:tint="@color/text_secondary" />
+
+                </LinearLayout>
+
+                <!-- Tags -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tags"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="12dp" />
 
                 <LinearLayout
+                    android:id="@+id/tagField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:paddingVertical="16dp"
+                    android:paddingHorizontal="16dp"
+                    android:background="@drawable/bg_dropdown_field"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginBottom="24dp">
 
-                    <!-- Quantidade -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="80dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp"
-                        style="@style/Widget.Bookash.TextInputLayout">
+                    <ImageView
+                        android:id="@+id/tagIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_tag"
+                        android:visibility="gone" />
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/frequencyCountInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="1"
-                            android:text="1"
-                            android:textColor="@color/text_primary"
-                            android:textColorHint="@color/input_placeholder"
-                            android:inputType="number"
-                            android:maxLines="1"
-                            android:textAlignment="center" />
-
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Frequência -->
-                    <LinearLayout
-                        android:id="@+id/frequencyDropdown"
+                    <TextView
+                        android:id="@+id/tagText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:paddingVertical="16dp"
-                        android:paddingHorizontal="16dp"
-                        android:background="@drawable/bg_dropdown_field"
-                        android:clickable="true"
-                        android:focusable="true">
+                        android:layout_marginStart="12dp"
+                        android:text="Selecione uma tag (opcional)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp"
+                        android:ellipsize="end"
+                        android:maxLines="1" />
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_dropdown"
+                        android:tint="@color/text_secondary" />
+
+                </LinearLayout>
+
+                <!-- Switch Repetir -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="8dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/frequencyText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Repetir"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Criar transação recorrente"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/repeatSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        app:thumbTint="@color/switch_thumb_color"
+                        app:trackTint="@color/switch_track_color" />
+
+                </LinearLayout>
+
+                <!-- Frequência da Repetição (visível quando repetir ativado) -->
+                <LinearLayout
+                    android:id="@+id/repeatFrequencyLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="24dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Repetir a cada"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Quantidade -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="80dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="12dp"
+                            style="@style/Widget.Bookash.TextInputLayout">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/frequencyCountInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="1"
+                                android:text="1"
+                                android:textColor="@color/text_primary"
+                                android:textColorHint="@color/input_placeholder"
+                                android:inputType="number"
+                                android:maxLines="1"
+                                android:textAlignment="center" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Frequência -->
+                        <LinearLayout
+                            android:id="@+id/frequencyDropdown"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Mensal"
-                            android:textColor="@color/text_primary"
-                            android:textSize="16sp" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingVertical="16dp"
+                            android:paddingHorizontal="16dp"
+                            android:background="@drawable/bg_dropdown_field"
+                            android:clickable="true"
+                            android:focusable="true">
 
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_dropdown"
-                            android:tint="@color/text_secondary" />
+                            <TextView
+                                android:id="@+id/frequencyText"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Mensal"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp" />
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_dropdown"
+                                android:tint="@color/text_secondary" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
                 </LinearLayout>
 
-            </LinearLayout>
-
-            <!-- Switch Lembrete (padrão da tela nova conta) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="8dp"
-                android:layout_marginBottom="24dp">
-
+                <!-- Switch Lembrete -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="8dp"
+                    android:layout_marginBottom="24dp">
 
-                    <TextView
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Lembrete"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Receber notificação antes da data"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/reminderSwitch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Lembrete"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Receber notificação antes da data"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:checked="false"
+                        app:thumbTint="@color/switch_thumb_color"
+                        app:trackTint="@color/switch_track_color" />
 
                 </LinearLayout>
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/reminderSwitch"
+                <!-- Data do Lembrete (oculto por padrão) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/reminderDateLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    style="@style/Widget.Bookash.TextInputLayout"
+                    android:visibility="gone"
+                    app:endIconDrawable="@drawable/ic_calendar"
+                    app:endIconMode="custom"
+                    app:endIconTint="@color/text_secondary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/reminderDateInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Data do lembrete"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/input_placeholder"
+                        android:inputType="none"
+                        android:focusable="false"
+                        android:clickable="true" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Notas -->
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="false"
-                    app:thumbTint="@color/switch_thumb_color"
-                    app:trackTint="@color/switch_track_color" />
+                    android:text="Notas (opcional)"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    style="@style/Widget.Bookash.TextInputLayout">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/notesInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Adicione observações..."
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/input_placeholder"
+                        android:inputType="textMultiLine"
+                        android:minLines="2"
+                        android:maxLines="4" />
+
+                </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
-
-            <!-- Data do Lembrete (oculto por padrão) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/reminderDateLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                style="@style/Widget.Bookash.TextInputLayout"
-                android:visibility="gone"
-                app:endIconDrawable="@drawable/ic_calendar"
-                app:endIconMode="custom"
-                app:endIconTint="@color/text_secondary">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/reminderDateInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Data do lembrete"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder"
-                    android:inputType="none"
-                    android:focusable="false"
-                    android:clickable="true" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Notas -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Notas (opcional)"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                style="@style/Widget.Bookash.TextInputLayout">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/notesInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Adicione observações..."
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/input_placeholder"
-                    android:inputType="textMultiLine"
-                    android:minLines="2"
-                    android:maxLines="4" />
-
-            </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
 
