@@ -101,6 +101,12 @@
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
         
+        <!-- Transactions Activity -->
+        <activity
+            android:name=".TransactionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
         <!-- FileProvider para compartilhar arquivos -->
         <provider
             android:name="androidx.core.content.FileProvider"

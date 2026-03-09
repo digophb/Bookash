@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nestedScroll: NestedScrollView
     private lateinit var avatarCard: MaterialCardView
     private lateinit var emptyState: View
+    private lateinit var seeAllText: TextView
     
     private lateinit var transactionAdapter: TransactionAdapter
     private val transactions = mutableListOf<Transaction>()
@@ -53,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         setupFab()
         setupAvatarClick()
         setupScrollBehavior()
+        setupSeeAllClick()
         loadUserData()
         loadTransactions()
     }
@@ -70,13 +72,17 @@ class MainActivity : AppCompatActivity() {
         nestedScroll = findViewById(R.id.nestedScroll)
         avatarCard = findViewById(R.id.avatarCard)
         emptyState = findViewById(R.id.emptyState)
+        seeAllText = findViewById(R.id.seeAllText)
     }
 
     private fun setupBottomNavigation() {
         bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> true
-                R.id.nav_transactions -> true
+                R.id.nav_transactions -> {
+                    startActivity(Intent(this, TransactionsActivity::class.java))
+                    false
+                }
                 R.id.nav_planning -> true
                 R.id.nav_reports -> true
                 R.id.nav_more -> {
@@ -149,6 +155,12 @@ class MainActivity : AppCompatActivity() {
                 bottomNavigation.visibility = View.VISIBLE
             }
         })
+    }
+
+    private fun setupSeeAllClick() {
+        seeAllText.setOnClickListener {
+            startActivity(Intent(this, TransactionsActivity::class.java))
+        }
     }
 
     private fun loadUserData() {
