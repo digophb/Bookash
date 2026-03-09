@@ -44,6 +44,14 @@ class MainActivity : AppCompatActivity() {
         
         // Inicializar UserSession
         UserSession.init(this)
+        
+        // Se não está logado, ir para Login
+        if (!UserSession.isLoggedIn()) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+        
         userId = UserSession.getUserId()
         
         setContentView(R.layout.activity_main)

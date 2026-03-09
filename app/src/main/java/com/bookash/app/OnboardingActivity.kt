@@ -44,6 +44,25 @@ class OnboardingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Inicializar UserSession
+        UserSession.init(this)
+        
+        // Se usuário já está autenticado, ir direto para MainActivity
+        if (UserSession.isLoggedIn()) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
+        
+        // Se onboarding já foi concluído, ir para Login
+        val prefs = getSharedPreferences("bookash_prefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("onboarding_completed", false)) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+        
         setContentView(R.layout.activity_onboarding)
 
         viewPager = findViewById(R.id.viewPager)
