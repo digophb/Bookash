@@ -852,7 +852,10 @@ object SupabaseService {
         }
     }
     
-    suspend fun saveTransaction(transaction: Transaction, token: String): Boolean = withContext(Dispatchers.IO) {
+    /**
+     * Salva uma nova transacao e retorna o ID criado.
+     */
+    suspend fun saveTransaction(transaction: Transaction, token: String): String? = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[TRANSACTIONS] CREATE - Iniciando: type=${transaction.type}, desc='${transaction.description}'")
         
@@ -862,7 +865,7 @@ object SupabaseService {
             conn.setRequestProperty("apikey", API_KEY)
             conn.setRequestProperty("Authorization", "Bearer $token")
             conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.setRequestProperty("Prefer", "return=representation")
             conn.doOutput = true
             
             val body = buildString {
@@ -898,16 +901,24 @@ object SupabaseService {
             val duration = System.currentTimeMillis() - startTime
             
             if (responseCode in 200..299) {
-                Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso: ${transaction.type} '${transaction.description}' (${duration}ms)")
-                true
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = org.json.JSONArray(response)
+                if (jsonArray.length() > 0) {
+                    val transactionId = jsonArray.getJSONObject(0).optString("id")
+                    Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso: id=$transactionId (${duration}ms)")
+                    transactionId
+                } else {
+                    Log.w(TAG, "[TRANSACTIONS] CREATE - Sucesso mas sem ID retornado (${duration}ms)")
+                    null
+                }
             } else {
                 Log.w(TAG, "[TRANSACTIONS] CREATE - Falha: HTTP $responseCode (${duration}ms)")
-                false
+                null
             }
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transacao apos ${duration}ms", e)
-            false
+            null
         }
     }
     

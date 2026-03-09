@@ -70,9 +70,13 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var attachPreview: ImageView
     private lateinit var attachDropdownIcon: ImageView
     private lateinit var dateInput: TextInputEditText
-    private lateinit var tagField: LinearLayout
-    private lateinit var tagIcon: ImageView
-    private lateinit var tagText: TextView
+    
+    // Tags - múltiplas (até 3)
+    private lateinit var tagsContainer: LinearLayout
+    private lateinit var selectedTagsGroup: com.google.android.material.chip.ChipGroup
+    private lateinit var addTagButton: LinearLayout
+    private lateinit var addTagText: TextView
+    
     private lateinit var receivedSwitch: MaterialSwitch
     private lateinit var repeatSwitch: MaterialSwitch
     private lateinit var repeatFrequencyLayout: LinearLayout
@@ -104,14 +108,16 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var toAccountIcon: ImageView
     private lateinit var toAccountText: TextView
     private lateinit var transferObservationInput: TextInputEditText
-    private lateinit var transferTagField: LinearLayout
-    private lateinit var transferTagIcon: ImageView
-    private lateinit var transferTagText: TextView
+    
+    // Tags transferência - múltiplas (até 3)
+    private lateinit var transferTagsContainer: LinearLayout
+    private lateinit var transferSelectedTagsGroup: com.google.android.material.chip.ChipGroup
+    private lateinit var transferAddTagButton: LinearLayout
+    private lateinit var transferAddTagText: TextView
     
     // Dados transferência
     private var fromAccount: Account? = null
     private var toAccount: Account? = null
-    private var transferTag: Tag? = null
 
     // Dados
     private var categories: List<Category> = emptyList()
@@ -121,7 +127,8 @@ class AddTransactionActivity : AppCompatActivity() {
     // Dados selecionados
     private var selectedCategory: Category? = null
     private var selectedAccount: Account? = null
-    private var selectedTag: Tag? = null
+    private var selectedTags: MutableList<Tag> = mutableListOf() // Até 3 tags
+    private var transferSelectedTags: MutableList<Tag> = mutableListOf() // Tags para transferência
     private var selectedDate: Date = Date()
     private var selectedReminderDate: Date? = null
     private var selectedImageUri: Uri? = null
@@ -182,9 +189,13 @@ class AddTransactionActivity : AppCompatActivity() {
         attachPreview = findViewById(R.id.attachPreview)
         attachDropdownIcon = findViewById(R.id.attachDropdownIcon)
         dateInput = findViewById(R.id.dateInput)
-        tagField = findViewById(R.id.tagField)
-        tagIcon = findViewById(R.id.tagIcon)
-        tagText = findViewById(R.id.tagText)
+        
+        // Tags - múltiplas
+        tagsContainer = findViewById(R.id.tagsContainer)
+        selectedTagsGroup = findViewById(R.id.selectedTagsGroup)
+        addTagButton = findViewById(R.id.addTagButton)
+        addTagText = findViewById(R.id.addTagText)
+        
         receivedSwitch = findViewById(R.id.receivedSwitch)
         repeatSwitch = findViewById(R.id.repeatSwitch)
         repeatFrequencyLayout = findViewById(R.id.repeatFrequencyLayout)
@@ -213,9 +224,12 @@ class AddTransactionActivity : AppCompatActivity() {
         toAccountIcon = findViewById(R.id.toAccountIcon)
         toAccountText = findViewById(R.id.toAccountText)
         transferObservationInput = findViewById(R.id.transferObservationInput)
-        transferTagField = findViewById(R.id.transferTagField)
-        transferTagIcon = findViewById(R.id.transferTagIcon)
-        transferTagText = findViewById(R.id.transferTagText)
+        
+        // Tags transferência - múltiplas
+        transferTagsContainer = findViewById(R.id.transferTagsContainer)
+        transferSelectedTagsGroup = findViewById(R.id.transferSelectedTagsGroup)
+        transferAddTagButton = findViewById(R.id.transferAddTagButton)
+        transferAddTagText = findViewById(R.id.transferAddTagText)
 
         // Configurar formatação monetária
         valueInput.addTextChangedListener(CurrencyTextWatcher(valueInput))
@@ -285,7 +299,7 @@ class AddTransactionActivity : AppCompatActivity() {
         attachField.setOnClickListener { showAttachOptions() }
 
         // Tag - campo clicável
-        tagField.setOnClickListener { showTagPicker() }
+        addTagButton.setOnClickListener { showTagPicker() }
 
         // Frequência - campo clicável
         frequencyDropdown.setOnClickListener { showFrequencyPicker() }
@@ -293,7 +307,7 @@ class AddTransactionActivity : AppCompatActivity() {
         // Transferência - campos clicáveis
         fromAccountField.setOnClickListener { showFromAccountPicker() }
         toAccountField.setOnClickListener { showToAccountPicker() }
-        transferTagField.setOnClickListener { showTransferTagPicker() }
+        transferAddTagButton.setOnClickListener { showTransferTagPicker() }
 
         // Salvar
         saveButton.setOnClickListener { saveTransaction() }
@@ -399,25 +413,91 @@ class AddTransactionActivity : AppCompatActivity() {
             return
         }
         
+        // Filtrar tags que já estão selecionadas
+        val availableTags = tags.filter { tag -> 
+            selectedTags.none { it.id == tag.id }
+        }
+        
+        if (availableTags.isEmpty()) {
+            ToastManager.showInfo(this, "Máximo de 3 tags selecionadas")
+            return
+        }
+        
         val popup = ListPopupWindow(this)
-        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, tags.map { it.name }))
-        popup.anchorView = tagField
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, availableTags.map { it.name }))
+        popup.anchorView = addTagButton
         popup.setOnItemClickListener { _, _, position, _ ->
-            selectedTag = tags[position]
-            tagText.text = selectedTag?.name
-            tagText.setTextColor(getColor(R.color.text_primary))
-            
-            // Mostrar ícone com cor da tag
-            tagIcon.visibility = View.VISIBLE
-            try {
-                tagIcon.setColorFilter(Color.parseColor(selectedTag?.color))
-            } catch (e: Exception) {
-                tagIcon.setColorFilter(getColor(R.color.text_secondary))
-            }
-            
+            val tag = availableTags[position]
+            addSelectedTag(tag)
             popup.dismiss()
         }
         popup.show()
+    }
+    
+    private fun addSelectedTag(tag: Tag) {
+        if (selectedTags.size >= 3) {
+            ToastManager.showWarning(this, "Máximo de 3 tags permitidas")
+            return
+        }
+        
+        selectedTags.add(tag)
+        updateSelectedTagsUI()
+    }
+    
+    private fun removeSelectedTag(tag: Tag) {
+        selectedTags.remove(tag)
+        updateSelectedTagsUI()
+    }
+    
+    private fun updateSelectedTagsUI() {
+        if (selectedTags.isEmpty()) {
+            selectedTagsGroup.visibility = View.GONE
+            addTagText.text = "Adicionar tag"
+        } else {
+            selectedTagsGroup.visibility = View.VISIBLE
+            selectedTagsGroup.removeAllViews()
+            
+            for (tag in selectedTags) {
+                val chip = com.google.android.material.chip.Chip(this).apply {
+                    text = tag.name
+                    isCloseIconVisible = true
+                    setOnCloseIconClickListener {
+                        removeSelectedTag(tag)
+                    }
+                    
+                    // Aplicar cor da tag com bom contraste
+                    try {
+                        val tagColor = Color.parseColor(tag.color)
+                        chipBackgroundColor = android.content.res.ColorStateList.valueOf(tagColor)
+                        
+                        // Calcular cor do texto para contraste
+                        val textColor = if (isColorDark(tagColor)) {
+                            Color.WHITE
+                        } else {
+                            Color.parseColor("#1A1A1A")
+                        }
+                        setTextColor(textColor)
+                        closeIconTint = android.content.res.ColorStateList.valueOf(textColor)
+                    } catch (e: Exception) {
+                        // Fallback para cores padrão
+                        chipBackgroundColor = android.content.res.ColorStateList.valueOf(getColor(R.color.primary))
+                        setTextColor(Color.WHITE)
+                    }
+                }
+                selectedTagsGroup.addView(chip)
+            }
+            
+            // Atualizar texto do botão
+            val remaining = 3 - selectedTags.size
+            addTagText.text = if (remaining > 0) "Adicionar tag ($remaining restantes)" else "Limite atingido"
+            addTagButton.isEnabled = selectedTags.size < 3
+            addTagButton.alpha = if (selectedTags.size < 3) 1f else 0.5f
+        }
+    }
+    
+    private fun isColorDark(color: Int): Boolean {
+        val darkness = 1 - (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255
+        return darkness >= 0.5
     }
 
     private fun showTransferDatePicker() {
@@ -497,22 +577,85 @@ class AddTransactionActivity : AppCompatActivity() {
             return
         }
         
+        // Filtrar tags que já estão selecionadas
+        val availableTags = tags.filter { tag -> 
+            transferSelectedTags.none { it.id == tag.id }
+        }
+        
+        if (availableTags.isEmpty()) {
+            ToastManager.showInfo(this, "Máximo de 3 tags selecionadas")
+            return
+        }
+        
         val popup = ListPopupWindow(this)
-        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, tags.map { it.name }))
-        popup.anchorView = transferTagField
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, availableTags.map { it.name }))
+        popup.anchorView = transferAddTagButton
         popup.setOnItemClickListener { _, _, position, _ ->
-            transferTag = tags[position]
-            transferTagText.text = transferTag?.name
-            transferTagText.setTextColor(getColor(R.color.text_primary))
-            transferTagIcon.visibility = View.VISIBLE
-            try {
-                transferTagIcon.setColorFilter(Color.parseColor(transferTag?.color))
-            } catch (e: Exception) {
-                transferTagIcon.setColorFilter(getColor(R.color.text_secondary))
-            }
+            val tag = availableTags[position]
+            addTransferSelectedTag(tag)
             popup.dismiss()
         }
         popup.show()
+    }
+    
+    private fun addTransferSelectedTag(tag: Tag) {
+        if (transferSelectedTags.size >= 3) {
+            ToastManager.showWarning(this, "Máximo de 3 tags permitidas")
+            return
+        }
+        
+        transferSelectedTags.add(tag)
+        updateTransferSelectedTagsUI()
+    }
+    
+    private fun removeTransferSelectedTag(tag: Tag) {
+        transferSelectedTags.remove(tag)
+        updateTransferSelectedTagsUI()
+    }
+    
+    private fun updateTransferSelectedTagsUI() {
+        if (transferSelectedTags.isEmpty()) {
+            transferSelectedTagsGroup.visibility = View.GONE
+            transferAddTagText.text = "Adicionar tag"
+        } else {
+            transferSelectedTagsGroup.visibility = View.VISIBLE
+            transferSelectedTagsGroup.removeAllViews()
+            
+            for (tag in transferSelectedTags) {
+                val chip = com.google.android.material.chip.Chip(this).apply {
+                    text = tag.name
+                    isCloseIconVisible = true
+                    setOnCloseIconClickListener {
+                        removeTransferSelectedTag(tag)
+                    }
+                    
+                    // Aplicar cor da tag com bom contraste
+                    try {
+                        val tagColor = Color.parseColor(tag.color)
+                        chipBackgroundColor = android.content.res.ColorStateList.valueOf(tagColor)
+                        
+                        // Calcular cor do texto para contraste
+                        val textColor = if (isColorDark(tagColor)) {
+                            Color.WHITE
+                        } else {
+                            Color.parseColor("#1A1A1A")
+                        }
+                        setTextColor(textColor)
+                        closeIconTint = android.content.res.ColorStateList.valueOf(textColor)
+                    } catch (e: Exception) {
+                        chipBackgroundColor = android.content.res.ColorStateList.valueOf(getColor(R.color.primary))
+                        setTextColor(Color.WHITE)
+                    }
+                }
+                transferSelectedTagsGroup.addView(chip)
+            }
+            
+            // Atualizar texto do botão
+            val remaining = 3 - transferSelectedTags.size
+            transferAddTagText.text = if (remaining > 0) "Adicionar tag ($remaining restantes)" else "Limite atingido"
+            transferAddTagButton.isEnabled = transferSelectedTags.size < 3
+            transferAddTagButton.alpha = if (transferSelectedTags.size < 3) 1f else 0.5f
+        }
     }
 
     private fun showFrequencyPicker() {
@@ -743,11 +886,19 @@ class AddTransactionActivity : AppCompatActivity() {
 
                     val token = UserSession.getAccessToken() ?: ""
                     
-                    val success = withContext(Dispatchers.IO) {
+                    val transactionId = withContext(Dispatchers.IO) {
                         SupabaseService.saveTransaction(transaction, token)
                     }
 
-                    if (success) {
+                    if (transactionId != null) {
+                        // Salvar tags se houver
+                        if (transferSelectedTags.isNotEmpty()) {
+                            val tagIds = transferSelectedTags.map { it.id }
+                            withContext(Dispatchers.IO) {
+                                SupabaseService.saveTransactionTags(transactionId, tagIds)
+                            }
+                        }
+                        
                         ToastManager.showSuccess(this@AddTransactionActivity, "Transferencia realizada!")
                         setResult(RESULT_OK)
                         finish()
@@ -779,11 +930,19 @@ class AddTransactionActivity : AppCompatActivity() {
 
                     val token = UserSession.getAccessToken() ?: ""
                     
-                    val success = withContext(Dispatchers.IO) {
+                    val transactionId = withContext(Dispatchers.IO) {
                         SupabaseService.saveTransaction(transaction, token)
                     }
 
-                    if (success) {
+                    if (transactionId != null) {
+                        // Salvar tags se houver
+                        if (selectedTags.isNotEmpty()) {
+                            val tagIds = selectedTags.map { it.id }
+                            withContext(Dispatchers.IO) {
+                                SupabaseService.saveTransactionTags(transactionId, tagIds)
+                            }
+                        }
+                        
                         ToastManager.showSuccess(this@AddTransactionActivity, "Transacao salva!")
                         setResult(RESULT_OK)
                         finish()
