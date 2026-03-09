@@ -1805,23 +1805,8 @@ object SupabaseService {
             val body = buildString {
                 append("{")
                 append("\"transaction_id\":\"${attachment.transactionId}\",")
-                append("\"user_id\":\"${attachment.userId}\",")
-                append("\"file_url\":\"${attachment.fileUrl}\"")
-                if (!attachment.fileName.isNullOrEmpty()) {
-                    append(",\"file_name\":\"${attachment.fileName}\"")
-                }
-                if (!attachment.fileType.isNullOrEmpty()) {
-                    append(",\"file_type\":\"${attachment.fileType}\"")
-                }
-                if (attachment.fileSize != null) {
-                    append(",\"file_size\":${attachment.fileSize}")
-                }
-                if (!attachment.mimeType.isNullOrEmpty()) {
-                    append(",\"mime_type\":\"${attachment.mimeType}\"")
-                }
-                if (!attachment.description.isNullOrEmpty()) {
-                    append(",\"description\":\"${attachment.description}\"")
-                }
+                append("\"url\":\"${attachment.url}\",")
+                append("\"type\":\"${attachment.type}\"")
                 append("}")
             }
             conn.outputStream.write(body.toByteArray())

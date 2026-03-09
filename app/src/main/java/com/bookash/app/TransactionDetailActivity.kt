@@ -445,10 +445,11 @@ class TransactionDetailActivity : AppCompatActivity() {
                         SupabaseService.updateTransaction(newTransaction, token)
                     }
                 } else {
-                    // Create
-                    withContext(Dispatchers.IO) {
+                    // Create - retorna ID da transação
+                    val transactionId = withContext(Dispatchers.IO) {
                         SupabaseService.saveTransaction(newTransaction, token)
                     }
+                    transactionId != null
                 }
 
                 if (success) {
