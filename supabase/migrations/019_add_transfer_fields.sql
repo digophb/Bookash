@@ -24,6 +24,18 @@ COMMENT ON COLUMN public.transactions.from_account_id IS 'Conta de origem em tra
 COMMENT ON COLUMN public.transactions.to_account_id IS 'Conta de destino em transferencias';
 
 -- ============================================================================
+-- Atualizar constraint de tipo para incluir 'transfer'
+-- ============================================================================
+
+-- Remover constraint antigo
+ALTER TABLE public.transactions DROP CONSTRAINT IF EXISTS transactions_type_check;
+
+-- Adicionar novo constraint com 'transfer'
+ALTER TABLE public.transactions 
+ADD CONSTRAINT transactions_type_check 
+CHECK (type IN ('income', 'expense', 'transfer'));
+
+-- ============================================================================
 -- Desabilitar RLS em accounts para testes (producao: usar politicas corretas)
 -- ============================================================================
 ALTER TABLE public.accounts DISABLE ROW LEVEL SECURITY;
