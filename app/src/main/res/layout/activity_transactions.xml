@@ -20,7 +20,7 @@
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_back"
             app:title="Transações"
-            app:titleTextAppearance="@style/TextAppearance.Bookash.Title" />
+            app:titleTextColor="@color/text_primary" />
 
         <!-- Filtros -->
         <LinearLayout
@@ -130,7 +130,7 @@
                 <ImageView
                     android:layout_width="80dp"
                     android:layout_height="80dp"
-                    android:src="@drawable/ic_transaction"
+                    android:src="@drawable/ic_empty_transactions"
                     android:alpha="0.3" />
 
                 <TextView
