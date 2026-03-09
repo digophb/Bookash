@@ -884,6 +884,13 @@ object SupabaseService {
                 if (transaction.creditCardId != null) {
                     append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
                 }
+                // Campos de transferencia
+                if (transaction.fromAccountId != null) {
+                    append(",\"from_account_id\":\"${transaction.fromAccountId}\"")
+                }
+                if (transaction.toAccountId != null) {
+                    append(",\"to_account_id\":\"${transaction.toAccountId}\"")
+                }
                 if (transaction.isRecurring) {
                     append(",\"is_recurring\":true")
                     if (transaction.recurringType != null) {
@@ -1080,6 +1087,8 @@ object SupabaseService {
             amount = json.optDouble("amount", 0.0),
             type = type,
             date = json.optString("date"),
+            fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() },
+            toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
             creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
             notes = json.optString("notes").takeIf { it.isNotEmpty() },
             isRecurring = json.optBoolean("is_recurring", false),

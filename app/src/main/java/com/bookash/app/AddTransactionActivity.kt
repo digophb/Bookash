@@ -881,7 +881,9 @@ class AddTransactionActivity : AppCompatActivity() {
                         categoryName = "Transferencia",
                         amount = value,
                         type = "transfer",
-                        date = dateStr
+                        date = dateStr,
+                        fromAccountId = fromAccount?.id,
+                        toAccountId = toAccount?.id
                     )
 
                     val token = UserSession.getAccessToken() ?: ""
