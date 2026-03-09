@@ -224,13 +224,17 @@ class MainActivity : AppCompatActivity() {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(java.util.Date())
         
         transactions.forEach { t ->
-            if (t.type == "income") {
-                totalIncome += t.amount
-                if (t.date == today) {
-                    dailyIncome += t.amount
+            when (t.type) {
+                "income" -> {
+                    totalIncome += t.amount
+                    if (t.date == today) {
+                        dailyIncome += t.amount
+                    }
                 }
-            } else {
-                totalExpense += t.amount
+                "expense" -> {
+                    totalExpense += t.amount
+                }
+                // transferência é ignorada pois não altera o saldo total
             }
         }
         

@@ -129,22 +129,28 @@ class TransactionsActivity : AppCompatActivity() {
 
         transactionsRecycler.visibility = View.VISIBLE
         emptyState.visibility = View.GONE
-        totalContainer.visibility = View.VISIBLE
 
-        // Calcular total
-        val total = filteredTransactions.sumOf { transaction ->
-            when (transaction.type) {
-                "income" -> transaction.amount
-                "expense" -> -transaction.amount
-                else -> 0.0
+        // Transferências não alteram o saldo total, então escondemos o total
+        if (currentFilter == "transfer") {
+            totalContainer.visibility = View.GONE
+        } else {
+            totalContainer.visibility = View.VISIBLE
+
+            // Calcular total (transferências são ignoradas pois não alteram o saldo)
+            val total = filteredTransactions.sumOf { transaction ->
+                when (transaction.type) {
+                    "income" -> transaction.amount
+                    "expense" -> -transaction.amount
+                    else -> 0.0
+                }
             }
-        }
 
-        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-        totalValue.text = formatter.format(total)
-        totalValue.setTextColor(
-            if (total >= 0) getColor(R.color.primary) else getColor(R.color.error)
-        )
+            val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+            totalValue.text = formatter.format(total)
+            totalValue.setTextColor(
+                if (total >= 0) getColor(R.color.primary) else getColor(R.color.error)
+            )
+        }
 
         // Atualizar adapter
         transactionAdapter.submitList(filteredTransactions)
