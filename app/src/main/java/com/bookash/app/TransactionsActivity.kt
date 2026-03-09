@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,6 +33,7 @@ class TransactionsActivity : AppCompatActivity() {
     private lateinit var transactionsRecycler: androidx.recyclerview.widget.RecyclerView
     private lateinit var emptyState: View
     private lateinit var progressBar: ProgressBar
+    private lateinit var transactionAdapter: TransactionAdapter
 
     // Data
     private var allTransactions: List<Transaction> = emptyList()
@@ -64,7 +66,11 @@ class TransactionsActivity : AppCompatActivity() {
         emptyState = findViewById(R.id.emptyState)
         progressBar = findViewById(R.id.progressBar)
 
+        transactionAdapter = TransactionAdapter { transaction ->
+            openTransactionDetail(transaction)
+        }
         transactionsRecycler.layoutManager = LinearLayoutManager(this)
+        transactionsRecycler.adapter = transactionAdapter
     }
 
     private fun setupListeners() {
@@ -72,15 +78,10 @@ class TransactionsActivity : AppCompatActivity() {
             finish()
         }
 
-        filterChipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
-            currentFilter = when (checkedIds.firstOrNull()) {
-                R.id.chipIncome -> "income"
-                R.id.chipExpense -> "expense"
-                R.id.chipTransfer -> "transfer"
-                else -> "all"
-            }
-            applyFilter()
-        }
+        chipAll.setOnClickListener { currentFilter = "all"; applyFilter() }
+        chipIncome.setOnClickListener { currentFilter = "income"; applyFilter() }
+        chipExpense.setOnClickListener { currentFilter = "expense"; applyFilter() }
+        chipTransfer.setOnClickListener { currentFilter = "transfer"; applyFilter() }
     }
 
     private fun loadTransactions() {
@@ -145,11 +146,8 @@ class TransactionsActivity : AppCompatActivity() {
             if (total >= 0) getColor(R.color.primary) else getColor(R.color.error)
         )
 
-        // Adapter
-        val adapter = TransactionAdapter(filteredTransactions) { transaction ->
-            openTransactionDetail(transaction)
-        }
-        transactionsRecycler.adapter = adapter
+        // Atualizar adapter
+        transactionAdapter.submitList(filteredTransactions)
     }
 
     private fun openTransactionDetail(transaction: Transaction) {
