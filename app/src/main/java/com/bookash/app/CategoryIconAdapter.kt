@@ -26,20 +26,19 @@ class CategoryIconAdapter(
         IconItem("refund", R.drawable.ic_icon_refund),
         IconItem("loan", R.drawable.ic_icon_loan),
         IconItem("savings", R.drawable.ic_icon_savings),
-        IconItem("donation", R.drawable.ic_icon_donation),
+        // donation removido - duplicado de heart
         
         // Alimentação
         IconItem("food", R.drawable.ic_category_food),
         IconItem("restaurant", R.drawable.ic_icon_restaurant),
         IconItem("coffee", R.drawable.ic_icon_coffee),
-        IconItem("grocery", R.drawable.ic_icon_grocery),
         IconItem("drinks", R.drawable.ic_icon_drinks),
         IconItem("bar", R.drawable.ic_icon_bar),
+        // grocery removido - duplicado de shopping
         
         // Transporte
         IconItem("transport", R.drawable.ic_category_transport),
-        IconItem("car", R.drawable.ic_icon_car),
-        IconItem("taxi", R.drawable.ic_icon_taxi),
+        // car e taxi removidos - duplicados de transport
         IconItem("fuel", R.drawable.ic_icon_fuel),
         IconItem("parking", R.drawable.ic_icon_parking),
         IconItem("toll", R.drawable.ic_icon_toll),
@@ -53,12 +52,12 @@ class CategoryIconAdapter(
         IconItem("rent", R.drawable.ic_icon_rent),
         IconItem("furniture", R.drawable.ic_icon_furniture),
         IconItem("repair", R.drawable.ic_icon_repair),
+        // gas removido - duplicado de home
         
         // Contas
         IconItem("utilities", R.drawable.ic_icon_utilities),
         IconItem("electricity", R.drawable.ic_icon_electricity),
         IconItem("water", R.drawable.ic_icon_water),
-        IconItem("gas", R.drawable.ic_icon_gas),
         IconItem("internet", R.drawable.ic_icon_internet),
         IconItem("phone", R.drawable.ic_icon_phone),
         IconItem("taxes", R.drawable.ic_icon_taxes),
