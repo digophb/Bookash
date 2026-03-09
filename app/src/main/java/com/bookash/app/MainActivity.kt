@@ -270,6 +270,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    override fun onResume() {
+        super.onResume()
+        // Recarregar dados ao voltar para o dashboard
+        // Isso garante que o saldo seja atualizado após criar/editar contas
+        loadTransactions()
+    }
+    
     companion object {
         private const val REQUEST_ADD_TRANSACTION = 1001
     }

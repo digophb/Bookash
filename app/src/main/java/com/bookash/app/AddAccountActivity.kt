@@ -17,6 +17,8 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class AddAccountActivity : AppCompatActivity() {
@@ -39,6 +41,9 @@ class AddAccountActivity : AppCompatActivity() {
     private var editingAccountId: String? = null
     private var userId: String? = null
     private var isNameManuallyEdited = false
+    
+    // Saldo original para detectar mudanças na edição
+    private var originalBalance: Double = 0.0
     
     // Para formatação monetária
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
@@ -196,6 +201,7 @@ class AddAccountActivity : AppCompatActivity() {
             nameInput.setText(name)
             isNameManuallyEdited = true
             balanceInput.setText(String.format("%.2f", balance))
+            originalBalance = balance // Salvar saldo original para detectar mudanças
             selectedBank = icon
             selectedType = type
             includeInBalanceSwitch.isChecked = includeInBalance
@@ -250,18 +256,73 @@ class AddAccountActivity : AppCompatActivity() {
                 SupabaseService.saveAccount(account, userId!!)
             }
 
-            btnSave.isEnabled = true
-
             if (success) {
+                // Criar transação de reajuste se necessário
+                createAdjustmentTransactionIfNeeded(account, balance)
+                
                 val resultIntent = Intent().apply {
                     putExtra("account_action", if (editingAccountId != null) "edit" else "create")
                     putExtra("account_name", account.name)
+                    putExtra("needs_refresh", true)
                 }
                 setResult(RESULT_OK, resultIntent)
                 finish()
             } else {
                 ToastManager.showError(this@AddAccountActivity, "Erro ao salvar conta")
             }
+            
+            btnSave.isEnabled = true
         }
+    }
+    
+    /**
+     * Cria transação de reajuste quando:
+     * 1. Nova conta com saldo inicial != 0
+     * 2. Edição que alterou o saldo
+     */
+    private suspend fun createAdjustmentTransactionIfNeeded(account: Account, newBalance: Double) {
+        val token = UserSession.getAccessToken() ?: return
+        val currentUserId = userId ?: return
+        
+        val adjustmentAmount: Double
+        val transactionType: String
+        
+        if (editingAccountId != null) {
+            // Edição: calcular diferença
+            val difference = newBalance - originalBalance
+            
+            if (difference == 0.0) {
+                // Sem mudança de saldo, não criar transação
+                return
+            }
+            
+            adjustmentAmount = kotlin.math.abs(difference)
+            transactionType = if (difference > 0) "income" else "expense"
+        } else {
+            // Nova conta
+            if (newBalance == 0.0) {
+                // Saldo zero, não criar transação
+                return
+            }
+            
+            adjustmentAmount = kotlin.math.abs(newBalance)
+            transactionType = if (newBalance > 0) "income" else "expense"
+        }
+        
+        // Criar transação de reajuste
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val description = "Reajuste - ${account.name}"
+        
+        val transaction = Transaction(
+            userId = currentUserId,
+            description = description,
+            amount = adjustmentAmount,
+            type = transactionType,
+            date = today,
+            categoryId = "",
+            categoryName = ""
+        )
+        
+        SupabaseService.saveTransaction(transaction, token)
     }
 }
