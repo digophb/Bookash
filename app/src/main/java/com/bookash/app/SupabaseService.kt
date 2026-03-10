@@ -42,12 +42,11 @@ object SupabaseService {
                 return@withContext emptyList()
             }
             
-            // Busca categorias padrão (user_id NULL) + categorias do usuário
-            // Usa or=(user_id.is.null,user_id.eq.$userId) para combinar ambas
+            // Busca apenas categorias do usuario (isolamento total)
             val endpoint = if (type != null) {
-                "$BASE_URL/rest/v1/categories?or=(user_id.is.null,user_id.eq.$userId)&type=eq.$type&select=*&order=is_default.desc,name.asc"
+                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&type=eq.$type&select=*&order=is_default.desc,name.asc"
             } else {
-                "$BASE_URL/rest/v1/categories?or=(user_id.is.null,user_id.eq.$userId)&select=*&order=is_default.desc,name.asc"
+                "$BASE_URL/rest/v1/categories?user_id=eq.$userId&select=*&order=is_default.desc,name.asc"
             }
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -794,6 +793,93 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Calcula o saldo de uma conta baseado nas transacoes.
+     * Receitas somam, despesas subtraem, transferencias consideram origem/destino.
+     */
+    suspend fun getAccountCalculatedBalance(accountId: String): Double = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ACCOUNTS] BALANCE - Calculando saldo para conta: $accountId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] BALANCE - Erro: usuario nao autenticado")
+                return@withContext 0.0
+            }
+            
+            var balance = 0.0
+            
+            // 1. Receitas associadas a esta conta (account_id)
+            val incomeEndpoint = "$BASE_URL/rest/v1/transactions?account_id=eq.$accountId&type=eq.income&select=amount"
+            val incomeConn = URL(incomeEndpoint).openConnection() as HttpURLConnection
+            incomeConn.requestMethod = "GET"
+            incomeConn.setRequestProperty("apikey", API_KEY)
+            incomeConn.setRequestProperty("Authorization", "Bearer $token")
+            
+            if (incomeConn.responseCode == 200) {
+                val incomeResponse = incomeConn.inputStream.bufferedReader().readText()
+                val incomeArray = org.json.JSONArray(incomeResponse)
+                for (i in 0 until incomeArray.length()) {
+                    balance += incomeArray.getJSONObject(i).optDouble("amount", 0.0)
+                }
+            }
+            
+            // 2. Despesas associadas a esta conta (account_id)
+            val expenseEndpoint = "$BASE_URL/rest/v1/transactions?account_id=eq.$accountId&type=eq.expense&select=amount"
+            val expenseConn = URL(expenseEndpoint).openConnection() as HttpURLConnection
+            expenseConn.requestMethod = "GET"
+            expenseConn.setRequestProperty("apikey", API_KEY)
+            expenseConn.setRequestProperty("Authorization", "Bearer $token")
+            
+            if (expenseConn.responseCode == 200) {
+                val expenseResponse = expenseConn.inputStream.bufferedReader().readText()
+                val expenseArray = org.json.JSONArray(expenseResponse)
+                for (i in 0 until expenseArray.length()) {
+                    balance -= expenseArray.getJSONObject(i).optDouble("amount", 0.0)
+                }
+            }
+            
+            // 3. Transferencias recebidas (to_account_id = esta conta)
+            val transferInEndpoint = "$BASE_URL/rest/v1/transactions?to_account_id=eq.$accountId&type=eq.transfer&select=amount"
+            val transferInConn = URL(transferInEndpoint).openConnection() as HttpURLConnection
+            transferInConn.requestMethod = "GET"
+            transferInConn.setRequestProperty("apikey", API_KEY)
+            transferInConn.setRequestProperty("Authorization", "Bearer $token")
+            
+            if (transferInConn.responseCode == 200) {
+                val transferInResponse = transferInConn.inputStream.bufferedReader().readText()
+                val transferInArray = org.json.JSONArray(transferInResponse)
+                for (i in 0 until transferInArray.length()) {
+                    balance += transferInArray.getJSONObject(i).optDouble("amount", 0.0)
+                }
+            }
+            
+            // 4. Transferencias enviadas (from_account_id = esta conta)
+            val transferOutEndpoint = "$BASE_URL/rest/v1/transactions?from_account_id=eq.$accountId&type=eq.transfer&select=amount"
+            val transferOutConn = URL(transferOutEndpoint).openConnection() as HttpURLConnection
+            transferOutConn.requestMethod = "GET"
+            transferOutConn.setRequestProperty("apikey", API_KEY)
+            transferOutConn.setRequestProperty("Authorization", "Bearer $token")
+            
+            if (transferOutConn.responseCode == 200) {
+                val transferOutResponse = transferOutConn.inputStream.bufferedReader().readText()
+                val transferOutArray = org.json.JSONArray(transferOutResponse)
+                for (i in 0 until transferOutArray.length()) {
+                    balance -= transferOutArray.getJSONObject(i).optDouble("amount", 0.0)
+                }
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] BALANCE - Saldo calculado: R$ $balance (${duration}ms)")
+            balance
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ACCOUNTS] BALANCE - Erro ao calcular saldo após ${duration}ms", e)
+            0.0
+        }
+    }
+    
     private fun parseAccounts(jsonArray: JSONArray): List<Account> {
         val list = mutableListOf<Account>()
         for (i in 0 until jsonArray.length()) {
@@ -883,6 +969,10 @@ object SupabaseService {
                 }
                 if (transaction.creditCardId != null) {
                     append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
+                }
+                // Conta associada
+                if (transaction.accountId != null) {
+                    append(",\"account_id\":\"${transaction.accountId}\"")
                 }
                 // Campos de transferencia
                 if (transaction.fromAccountId != null) {
@@ -1087,6 +1177,7 @@ object SupabaseService {
             amount = json.optDouble("amount", 0.0),
             type = type,
             date = json.optString("date"),
+            accountId = json.optString("account_id").takeIf { it.isNotEmpty() },
             fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() },
             toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
             creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },

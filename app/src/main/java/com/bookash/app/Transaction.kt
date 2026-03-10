@@ -13,8 +13,9 @@ data class Transaction(
     val amount: Double,
     val type: String, // income, expense, transfer
     val date: String,
+    val accountId: String? = null, // Conta associada (receitas/despesas)
     val fromAccountId: String? = null, // Conta de origem (transferencias)
-    val toAccountId: String? = null, // Conta de destino (transferencias)
+    val toAccountId: String? = null // Conta de destino (transferencias)
     val creditCardId: String? = null, // UUID do cartao de credito
     val notes: String? = null,
     val isRecurring: Boolean = false,
