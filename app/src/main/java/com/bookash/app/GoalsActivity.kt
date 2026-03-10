@@ -3,33 +3,76 @@ package com.bookash.app
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import com.google.android.material.card.MaterialCardView
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.UUID
 
 class GoalsActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "GoalsActivity"
-        const val PREFS_NAME = "goals_prefs"
-        const val KEY_DAILY_ENABLED = "daily_enabled"
-        const val KEY_DAILY_AMOUNT = "daily_amount"
-        const val KEY_WEEKLY_ENABLED = "weekly_enabled"
-        const val KEY_WEEKLY_AMOUNT = "weekly_amount"
-        const val KEY_MONTHLY_ENABLED = "monthly_enabled"
-        const val KEY_MONTHLY_AMOUNT = "monthly_amount"
-        const val KEY_YEARLY_ENABLED = "yearly_enabled"
-        const val KEY_YEARLY_AMOUNT = "yearly_amount"
-        const val KEY_SELECTED_GOAL = "selected_goal"
+        private const val PREFS_NAME = "goals_prefs"
+        private const val KEY_DAILY_ENABLED = "daily_enabled"
+        private const val KEY_DAILY_AMOUNT = "daily_amount"
+        private const val KEY_WEEKLY_ENABLED = "weekly_enabled"
+        private const val KEY_WEEKLY_AMOUNT = "weekly_amount"
+        private const val KEY_MONTHLY_ENABLED = "monthly_enabled"
+        private const val KEY_MONTHLY_AMOUNT = "monthly_amount"
+        private const val KEY_YEARLY_ENABLED = "yearly_enabled"
+        private const val KEY_YEARLY_AMOUNT = "yearly_amount"
+        private const val KEY_SELECTED_GOAL = "selected_goal"
+        
+        fun getSelectedGoal(context: Context): String? {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getString(KEY_SELECTED_GOAL, null)
+        }
+
+        fun setSelectedGoal(context: Context, goalType: String) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_SELECTED_GOAL, goalType).apply()
+        }
+
+        fun getGoal(context: Context, type: String): Pair<Boolean, Double> {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val enabled = when (type) {
+                "daily" -> prefs.getBoolean(KEY_DAILY_ENABLED, false)
+                "weekly" -> prefs.getBoolean(KEY_WEEKLY_ENABLED, false)
+                "monthly" -> prefs.getBoolean(KEY_MONTHLY_ENABLED, false)
+                "yearly" -> prefs.getBoolean(KEY_YEARLY_ENABLED, false)
+                else -> false
+            }
+            val amountKey = when (type) {
+                "daily" -> KEY_DAILY_AMOUNT
+                "weekly" -> KEY_WEEKLY_AMOUNT
+                "monthly" -> KEY_MONTHLY_AMOUNT
+                "yearly" -> KEY_YEARLY_AMOUNT
+                else -> ""
+            }
+            val amount = prefs.getString(amountKey, "0")?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
+            return Pair(enabled, amount)
+        }
+
+        fun hasEnabledGoals(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_DAILY_ENABLED, false) ||
+                    prefs.getBoolean(KEY_WEEKLY_ENABLED, false) ||
+                    prefs.getBoolean(KEY_MONTHLY_ENABLED, false) ||
+                    prefs.getBoolean(KEY_YEARLY_ENABLED, false)
+        }
+
+        fun getEnabledGoals(context: Context): List<String> {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val goals = mutableListOf<String>()
+            if (prefs.getBoolean(KEY_DAILY_ENABLED, false)) goals.add("daily")
+            if (prefs.getBoolean(KEY_WEEKLY_ENABLED, false)) goals.add("weekly")
+            if (prefs.getBoolean(KEY_MONTHLY_ENABLED, false)) goals.add("monthly")
+            if (prefs.getBoolean(KEY_YEARLY_ENABLED, false)) goals.add("yearly")
+            return goals
+        }
     }
 
     private lateinit var toolbar: androidx.appcompat.widget.Toolbar
@@ -103,18 +146,10 @@ class GoalsActivity : AppCompatActivity() {
         }
 
         // Input listeners - salvar ao perder foco
-        inputDaily.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) saveGoals()
-        }
-        inputWeekly.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) saveGoals()
-        }
-        inputMonthly.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) saveGoals()
-        }
-        inputYearly.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) saveGoals()
-        }
+        inputDaily.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoals() }
+        inputWeekly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoals() }
+        inputMonthly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoals() }
+        inputYearly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoals() }
     }
 
     private fun loadGoals() {
@@ -145,86 +180,17 @@ class GoalsActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val editor = prefs.edit()
 
-        // Salvar meta diária
+        // Salvar metas
         editor.putBoolean(KEY_DAILY_ENABLED, switchDaily.isChecked)
         editor.putString(KEY_DAILY_AMOUNT, inputDaily.text.toString())
-
-        // Salvar meta semanal
         editor.putBoolean(KEY_WEEKLY_ENABLED, switchWeekly.isChecked)
         editor.putString(KEY_WEEKLY_AMOUNT, inputWeekly.text.toString())
-
-        // Salvar meta mensal
         editor.putBoolean(KEY_MONTHLY_ENABLED, switchMonthly.isChecked)
         editor.putString(KEY_MONTHLY_AMOUNT, inputMonthly.text.toString())
-
-        // Salvar meta anual
         editor.putBoolean(KEY_YEARLY_ENABLED, switchYearly.isChecked)
         editor.putString(KEY_YEARLY_AMOUNT, inputYearly.text.toString())
 
         editor.apply()
-
-        // Se nenhuma meta está selecionada, definir a primeira ativa como selecionada
-        if (getSelectedGoal() == null) {
-            val firstEnabled = when {
-                switchDaily.isChecked -> "daily"
-                switchWeekly.isChecked -> "weekly"
-                switchMonthly.isChecked -> "monthly"
-                switchYearly.isChecked -> "yearly"
-                else -> null
-            }
-            firstEnabled?.let { setSelectedGoal(it) }
-        }
-
         Log.d(TAG, "Metas salvas")
-    }
-
-    companion object {
-        fun getSelectedGoal(context: Context): String? {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return prefs.getString(KEY_SELECTED_GOAL, null)
-        }
-
-        fun setSelectedGoal(context: Context, goalType: String) {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putString(KEY_SELECTED_GOAL, goalType).apply()
-        }
-
-        fun getGoal(context: Context, type: String): Pair<Boolean, Double> {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val enabled = when (type) {
-                "daily" -> prefs.getBoolean(KEY_DAILY_ENABLED, false)
-                "weekly" -> prefs.getBoolean(KEY_WEEKLY_ENABLED, false)
-                "monthly" -> prefs.getBoolean(KEY_MONTHLY_ENABLED, false)
-                "yearly" -> prefs.getBoolean(KEY_YEARLY_ENABLED, false)
-                else -> false
-            }
-            val amountKey = when (type) {
-                "daily" -> KEY_DAILY_AMOUNT
-                "weekly" -> KEY_WEEKLY_AMOUNT
-                "monthly" -> KEY_MONTHLY_AMOUNT
-                "yearly" -> KEY_YEARLY_AMOUNT
-                else -> ""
-            }
-            val amount = prefs.getString(amountKey, "0")?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
-            return Pair(enabled, amount)
-        }
-
-        fun hasEnabledGoals(context: Context): Boolean {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return prefs.getBoolean(KEY_DAILY_ENABLED, false) ||
-                    prefs.getBoolean(KEY_WEEKLY_ENABLED, false) ||
-                    prefs.getBoolean(KEY_MONTHLY_ENABLED, false) ||
-                    prefs.getBoolean(KEY_YEARLY_ENABLED, false)
-        }
-
-        fun getEnabledGoals(context: Context): List<String> {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val goals = mutableListOf<String>()
-            if (prefs.getBoolean(KEY_DAILY_ENABLED, false)) goals.add("daily")
-            if (prefs.getBoolean(KEY_WEEKLY_ENABLED, false)) goals.add("weekly")
-            if (prefs.getBoolean(KEY_MONTHLY_ENABLED, false)) goals.add("monthly")
-            if (prefs.getBoolean(KEY_YEARLY_ENABLED, false)) goals.add("yearly")
-            return goals
-        }
     }
 }

@@ -40,8 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goalSelector: View
     private lateinit var goalTypeText: TextView
     private lateinit var goalProgressText: TextView
-    private lateinit var goalTargetText: TextView
-    private lateinit var goalProgressBar: View
+    private lateinit var goalProgressBar: android.widget.ProgressBar
     private lateinit var goalPercentText: TextView
     
     private lateinit var transactionAdapter: TransactionAdapter
@@ -50,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     
     // Meta atual selecionada
     private var currentGoalType: String = "monthly"
+    private var goals: List<Goal> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +100,6 @@ class MainActivity : AppCompatActivity() {
         goalSelector = findViewById(R.id.goalSelector)
         goalTypeText = findViewById(R.id.goalTypeText)
         goalProgressText = findViewById(R.id.goalProgressText)
-        goalTargetText = findViewById(R.id.goalTargetText)
         goalProgressBar = findViewById(R.id.goalProgressBar)
         goalPercentText = findViewById(R.id.goalPercentText)
     }
@@ -217,7 +216,7 @@ class MainActivity : AppCompatActivity() {
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Selecionar Meta")
-            .setSingleChoiceItems(goalNames, currentIndex) { dialog, which ->
+            .setSingleChoiceItems(goalNames as Array<CharSequence>, currentIndex) { dialog, which ->
                 currentGoalType = enabledGoals[which]
                 GoalsActivity.setSelectedGoal(this, currentGoalType)
                 updateGoalsCard()
@@ -235,7 +234,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         // Carregar meta selecionada ou a primeira disponível
-        var selectedGoal = GoalsActivity.getSelectedGoal(this)
+        var selectedGoal: String? = GoalsActivity.getSelectedGoal(this)
         if (selectedGoal == null || !GoalsActivity.getGoal(this, selectedGoal).first) {
             selectedGoal = GoalsActivity.getEnabledGoals(this).firstOrNull()
         }
@@ -246,7 +245,9 @@ class MainActivity : AppCompatActivity() {
         }
         
         currentGoalType = selectedGoal
-        val (enabled, targetAmount) = GoalsActivity.getGoal(this, selectedGoal)
+        val goalData = GoalsActivity.getGoal(this, selectedGoal)
+        val enabled = goalData.first
+        val targetAmount = goalData.second
         
         if (!enabled || targetAmount <= 0) {
             goalsCard.visibility = View.GONE
@@ -268,25 +269,24 @@ class MainActivity : AppCompatActivity() {
         val spent = calculateSpentForPeriod(selectedGoal)
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
-        goalProgressText.text = formatter.format(spent)
-        goalTargetText.text = formatter.format(targetAmount)
+        goalProgressText.text = "${formatter.format(spent)} de ${formatter.format(targetAmount)}"
         
         // Calcular percentual
-        val percent = if (targetAmount > 0) ((spent / targetAmount) * 100).toInt().coerceIn(0, 100) else 0
-        goalPercentText.text = "$percent% alcançado"
+        val percent = if (targetAmount > 0.0) {
+            ((spent / targetAmount) * 100.0).toInt().coerceIn(0, 100)
+        } else {
+            0
+        }
+        goalPercentText.text = "$percent%"
         
         // Atualizar barra de progresso
-        val layoutParams = goalProgressBar.layoutParams as android.widget.LinearLayout.LayoutParams
-        layoutParams.weight = percent.toFloat()
-        goalProgressBar.layoutParams = layoutParams
+        goalProgressBar.progress = percent
         
         // Mudar cor se passou da meta
         if (spent > targetAmount) {
-            goalProgressBar.setBackgroundResource(R.color.error)
             goalPercentText.setTextColor(getColor(R.color.error))
         } else {
-            goalProgressBar.setBackgroundResource(R.drawable.bg_progress_income)
-            goalPercentText.setTextColor(getColor(R.color.text_secondary))
+            goalPercentText.setTextColor(getColor(R.color.primary))
         }
     }
     

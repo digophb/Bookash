@@ -472,6 +472,130 @@
             </com.google.android.material.card.MaterialCardView>
 
             <!-- ====== TRANSAÇÕES RECENTES ====== -->
+            <!-- ====== CARD METAS ====== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/goalsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Header com seletor de meta -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_target"
+                            android:tint="@color/primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Meta"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="8dp" />
+
+                        <!-- Seletor de meta -->
+                        <LinearLayout
+                            android:id="@+id/goalSelector"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="@drawable/bg_chip"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"
+                            android:clickable="true"
+                            android:focusable="true">
+
+                            <TextView
+                                android:id="@+id/goalTypeText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mensal"
+                                android:textColor="@color/primary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:src="@drawable/ic_dropdown"
+                                android:tint="@color/primary"
+                                android:layout_marginStart="4dp" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Barra de progresso -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:id="@+id/goalProgressText"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="R$ 0,00 de R$ 0,00"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/goalPercentText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0%"
+                                android:textColor="@color/primary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
+
+                        <ProgressBar
+                            android:id="@+id/goalProgressBar"
+                            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:layout_marginTop="8dp"
+                            android:progress="0"
+                            android:max="100"
+                            android:progressDrawable="@drawable/progress_goal" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ====== CARD ÚLTIMOS LANÇAMENTOS ====== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
