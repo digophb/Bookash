@@ -206,7 +206,8 @@ class MainActivity : AppCompatActivity() {
             
             val loadedTransactions = SupabaseService.getTransactions(userId)
             transactions.clear()
-            transactions.addAll(loadedTransactions)
+            // Mostrar apenas os últimos 3 lançamentos no dashboard
+            transactions.addAll(loadedTransactions.take(3))
             
             if (transactions.isEmpty()) {
                 emptyState.visibility = View.VISIBLE
