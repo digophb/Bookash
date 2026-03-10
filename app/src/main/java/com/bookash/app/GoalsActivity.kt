@@ -46,6 +46,7 @@ class GoalsActivity : AppCompatActivity() {
 
     private var userId: String? = null
     private var goals: MutableList<Goal> = mutableListOf()
+    private var isLoading = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,7 @@ class GoalsActivity : AppCompatActivity() {
 
         userId = UserSession.getUserId()
         initViews()
+        setupSwitchColors()
         setupListeners()
         loadGoals()
     }
@@ -74,41 +76,62 @@ class GoalsActivity : AppCompatActivity() {
 
         toolbar.setNavigationOnClickListener { finish() }
     }
+    
+    private fun setupSwitchColors() {
+        val switches = listOf(switchDaily, switchWeekly, switchMonthly, switchYearly)
+        switches.forEach { switch ->
+            updateSwitchColor(switch, switch.isChecked)
+        }
+    }
+    
+    private fun updateSwitchColor(switch: SwitchMaterial, isChecked: Boolean) {
+        val color = if (isChecked) {
+            getColor(R.color.primary)
+        } else {
+            getColor(R.color.text_secondary)
+        }
+        switch.trackTintList = android.content.res.ColorStateList.valueOf(color)
+    }
 
     private fun setupListeners() {
         // Switch listeners - habilitar/desabilitar campos
         switchDaily.setOnCheckedChangeListener { _, isChecked ->
+            updateSwitchColor(switchDaily, isChecked)
             inputLayoutDaily.isEnabled = isChecked
             if (!isChecked) inputDaily.setText("")
-            saveGoal("daily", isChecked)
+            if (!isLoading) saveGoal("daily", isChecked)
         }
 
         switchWeekly.setOnCheckedChangeListener { _, isChecked ->
+            updateSwitchColor(switchWeekly, isChecked)
             inputLayoutWeekly.isEnabled = isChecked
             if (!isChecked) inputWeekly.setText("")
-            saveGoal("weekly", isChecked)
+            if (!isLoading) saveGoal("weekly", isChecked)
         }
 
         switchMonthly.setOnCheckedChangeListener { _, isChecked ->
+            updateSwitchColor(switchMonthly, isChecked)
             inputLayoutMonthly.isEnabled = isChecked
             if (!isChecked) inputMonthly.setText("")
-            saveGoal("monthly", isChecked)
+            if (!isLoading) saveGoal("monthly", isChecked)
         }
 
         switchYearly.setOnCheckedChangeListener { _, isChecked ->
+            updateSwitchColor(switchYearly, isChecked)
             inputLayoutYearly.isEnabled = isChecked
             if (!isChecked) inputYearly.setText("")
-            saveGoal("yearly", isChecked)
+            if (!isLoading) saveGoal("yearly", isChecked)
         }
 
         // Input listeners - salvar ao perder foco
-        inputDaily.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoal("daily", switchDaily.isChecked) }
-        inputWeekly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoal("weekly", switchWeekly.isChecked) }
-        inputMonthly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoal("monthly", switchMonthly.isChecked) }
-        inputYearly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) saveGoal("yearly", switchYearly.isChecked) }
+        inputDaily.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus && switchDaily.isChecked) saveGoal("daily", true) }
+        inputWeekly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus && switchWeekly.isChecked) saveGoal("weekly", true) }
+        inputMonthly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus && switchMonthly.isChecked) saveGoal("monthly", true) }
+        inputYearly.setOnFocusChangeListener { _, hasFocus -> if (!hasFocus && switchYearly.isChecked) saveGoal("yearly", true) }
     }
 
     private fun loadGoals() {
+        isLoading = true
         lifecycleScope.launch {
             try {
                 val loadedGoals = withContext(Dispatchers.IO) {
@@ -122,29 +145,35 @@ class GoalsActivity : AppCompatActivity() {
                     when (goal.type) {
                         "daily" -> {
                             switchDaily.isChecked = goal.isEnabled
-                            inputDaily.setText(String.format("%.2f", goal.targetAmount))
+                            inputDaily.setText(if (goal.targetAmount > 0) String.format("%.2f", goal.targetAmount) else "")
                             inputLayoutDaily.isEnabled = goal.isEnabled
+                            updateSwitchColor(switchDaily, goal.isEnabled)
                         }
                         "weekly" -> {
                             switchWeekly.isChecked = goal.isEnabled
-                            inputWeekly.setText(String.format("%.2f", goal.targetAmount))
+                            inputWeekly.setText(if (goal.targetAmount > 0) String.format("%.2f", goal.targetAmount) else "")
                             inputLayoutWeekly.isEnabled = goal.isEnabled
+                            updateSwitchColor(switchWeekly, goal.isEnabled)
                         }
                         "monthly" -> {
                             switchMonthly.isChecked = goal.isEnabled
-                            inputMonthly.setText(String.format("%.2f", goal.targetAmount))
+                            inputMonthly.setText(if (goal.targetAmount > 0) String.format("%.2f", goal.targetAmount) else "")
                             inputLayoutMonthly.isEnabled = goal.isEnabled
+                            updateSwitchColor(switchMonthly, goal.isEnabled)
                         }
                         "yearly" -> {
                             switchYearly.isChecked = goal.isEnabled
-                            inputYearly.setText(String.format("%.2f", goal.targetAmount))
+                            inputYearly.setText(if (goal.targetAmount > 0) String.format("%.2f", goal.targetAmount) else "")
                             inputLayoutYearly.isEnabled = goal.isEnabled
+                            updateSwitchColor(switchYearly, goal.isEnabled)
                         }
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao carregar metas", e)
                 ToastManager.showError(this@GoalsActivity, "Erro ao carregar metas")
+            } finally {
+                isLoading = false
             }
         }
     }
@@ -179,6 +208,7 @@ class GoalsActivity : AppCompatActivity() {
                     val index = goals.indexOfFirst { it.type == type }
                     if (index >= 0) goals[index] = goal else goals.add(goal)
                     Log.d(TAG, "Meta $type salva com sucesso")
+                    ToastManager.showSuccess(this@GoalsActivity, "Meta salva")
                 } else {
                     ToastManager.showError(this@GoalsActivity, "Erro ao salvar meta")
                 }
