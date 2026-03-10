@@ -33,6 +33,11 @@ class AddAccountActivity : AppCompatActivity() {
     private lateinit var includeInBalanceSwitch: SwitchMaterial
     private lateinit var btnSave: MaterialButton
     private lateinit var bankSectionTitle: TextView
+    
+    // Saldo calculado
+    private lateinit var calculatedBalanceSection: View
+    private lateinit var calculatedBalanceText: TextView
+    private lateinit var calculatedBalanceProgress: android.widget.ProgressBar
 
     private lateinit var bankAdapter: BankIconAdapter
 
@@ -72,6 +77,11 @@ class AddAccountActivity : AppCompatActivity() {
         balanceInput = findViewById(R.id.balanceInput)
         includeInBalanceSwitch = findViewById(R.id.includeInBalanceSwitch)
         btnSave = findViewById(R.id.btnSave)
+        
+        // Saldo calculado
+        calculatedBalanceSection = findViewById(R.id.calculatedBalanceSection)
+        calculatedBalanceText = findViewById(R.id.calculatedBalanceText)
+        calculatedBalanceProgress = findViewById(R.id.calculatedBalanceProgress)
     }
 
     private fun setupAdapters() {
@@ -224,6 +234,40 @@ class AddAccountActivity : AppCompatActivity() {
         
         // Atualizar visibilidade inicial
         updateBankVisibility()
+        
+        // Carregar saldo calculado (apenas em modo edicao)
+        if (editingAccountId != null) {
+            loadCalculatedBalance()
+        }
+    }
+    
+    private fun loadCalculatedBalance() {
+        val accountId = editingAccountId ?: return
+        
+        calculatedBalanceSection.visibility = View.VISIBLE
+        calculatedBalanceProgress.visibility = View.VISIBLE
+        calculatedBalanceText.text = "Calculando..."
+        
+        lifecycleScope.launch {
+            try {
+                val calculatedBalance = SupabaseService.getAccountCalculatedBalance(accountId)
+                calculatedBalanceProgress.visibility = View.GONE
+                
+                val formattedBalance = currencyFormat.format(calculatedBalance)
+                calculatedBalanceText.text = formattedBalance
+                
+                // Cor baseada no valor
+                val color = if (calculatedBalance >= 0) {
+                    getColor(R.color.success)
+                } else {
+                    getColor(R.color.error)
+                }
+                calculatedBalanceText.setTextColor(color)
+            } catch (e: Exception) {
+                calculatedBalanceProgress.visibility = View.GONE
+                calculatedBalanceText.text = "Erro ao calcular"
+            }
+        }
     }
 
     private fun saveAccount() {
