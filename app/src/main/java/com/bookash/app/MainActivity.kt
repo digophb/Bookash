@@ -35,9 +35,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var emptyState: View
     private lateinit var seeAllText: TextView
     
+    // Metas
+    private lateinit var goalsCard: MaterialCardView
+    private lateinit var goalSelector: View
+    private lateinit var goalTypeText: TextView
+    private lateinit var goalProgressText: TextView
+    private lateinit var goalTargetText: TextView
+    private lateinit var goalProgressBar: View
+    private lateinit var goalPercentText: TextView
+    
     private lateinit var transactionAdapter: TransactionAdapter
     private val transactions = mutableListOf<Transaction>()
     private var userId: String? = null
+    
+    // Meta atual selecionada
+    private var currentGoalType: String = "monthly"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         setupAvatarClick()
         setupScrollBehavior()
         setupSeeAllClick()
+        setupGoalSelector()
         loadUserData()
         loadTransactions()
     }
@@ -81,6 +94,15 @@ class MainActivity : AppCompatActivity() {
         avatarCard = findViewById(R.id.avatarCard)
         emptyState = findViewById(R.id.emptyState)
         seeAllText = findViewById(R.id.seeAllText)
+        
+        // Metas
+        goalsCard = findViewById(R.id.goalsCard)
+        goalSelector = findViewById(R.id.goalSelector)
+        goalTypeText = findViewById(R.id.goalTypeText)
+        goalProgressText = findViewById(R.id.goalProgressText)
+        goalTargetText = findViewById(R.id.goalTargetText)
+        goalProgressBar = findViewById(R.id.goalProgressBar)
+        goalPercentText = findViewById(R.id.goalPercentText)
     }
 
     private fun setupBottomNavigation() {
@@ -170,6 +192,130 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, TransactionsActivity::class.java))
         }
     }
+    
+    private fun setupGoalSelector() {
+        goalSelector.setOnClickListener {
+            showGoalSelector()
+        }
+    }
+    
+    private fun showGoalSelector() {
+        val enabledGoals = GoalsActivity.getEnabledGoals(this)
+        if (enabledGoals.isEmpty()) return
+        
+        val goalNames = enabledGoals.map { type ->
+            when (type) {
+                "daily" -> "Diária"
+                "weekly" -> "Semanal"
+                "monthly" -> "Mensal"
+                "yearly" -> "Anual"
+                else -> type
+            }
+        }.toTypedArray()
+        
+        val currentIndex = enabledGoals.indexOf(currentGoalType).takeIf { it >= 0 } ?: 0
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Selecionar Meta")
+            .setSingleChoiceItems(goalNames, currentIndex) { dialog, which ->
+                currentGoalType = enabledGoals[which]
+                GoalsActivity.setSelectedGoal(this, currentGoalType)
+                updateGoalsCard()
+                dialog.dismiss()
+            }
+            .show()
+    }
+    
+    private fun updateGoalsCard() {
+        val hasGoals = GoalsActivity.hasEnabledGoals(this)
+        
+        if (!hasGoals) {
+            goalsCard.visibility = View.GONE
+            return
+        }
+        
+        // Carregar meta selecionada ou a primeira disponível
+        var selectedGoal = GoalsActivity.getSelectedGoal(this)
+        if (selectedGoal == null || !GoalsActivity.getGoal(this, selectedGoal).first) {
+            selectedGoal = GoalsActivity.getEnabledGoals(this).firstOrNull()
+        }
+        
+        if (selectedGoal == null) {
+            goalsCard.visibility = View.GONE
+            return
+        }
+        
+        currentGoalType = selectedGoal
+        val (enabled, targetAmount) = GoalsActivity.getGoal(this, selectedGoal)
+        
+        if (!enabled || targetAmount <= 0) {
+            goalsCard.visibility = View.GONE
+            return
+        }
+        
+        goalsCard.visibility = View.VISIBLE
+        
+        // Atualizar texto do tipo
+        goalTypeText.text = when (selectedGoal) {
+            "daily" -> "Diária"
+            "weekly" -> "Semanal"
+            "monthly" -> "Mensal"
+            "yearly" -> "Anual"
+            else -> selectedGoal
+        }
+        
+        // Calcular gastos do período
+        val spent = calculateSpentForPeriod(selectedGoal)
+        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+        
+        goalProgressText.text = formatter.format(spent)
+        goalTargetText.text = formatter.format(targetAmount)
+        
+        // Calcular percentual
+        val percent = if (targetAmount > 0) ((spent / targetAmount) * 100).toInt().coerceIn(0, 100) else 0
+        goalPercentText.text = "$percent% alcançado"
+        
+        // Atualizar barra de progresso
+        val layoutParams = goalProgressBar.layoutParams as android.widget.LinearLayout.LayoutParams
+        layoutParams.weight = percent.toFloat()
+        goalProgressBar.layoutParams = layoutParams
+        
+        // Mudar cor se passou da meta
+        if (spent > targetAmount) {
+            goalProgressBar.setBackgroundResource(R.color.error)
+            goalPercentText.setTextColor(getColor(R.color.error))
+        } else {
+            goalProgressBar.setBackgroundResource(R.drawable.bg_progress_income)
+            goalPercentText.setTextColor(getColor(R.color.text_secondary))
+        }
+    }
+    
+    private fun calculateSpentForPeriod(period: String): Double {
+        val calendar = java.util.Calendar.getInstance()
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        
+        val startDate = when (period) {
+            "daily" -> {
+                dateFormat.format(calendar.time)
+            }
+            "weekly" -> {
+                calendar.set(java.util.Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek())
+                dateFormat.format(calendar.time)
+            }
+            "monthly" -> {
+                calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+                dateFormat.format(calendar.time)
+            }
+            "yearly" -> {
+                calendar.set(java.util.Calendar.DAY_OF_YEAR, 1)
+                dateFormat.format(calendar.time)
+            }
+            else -> dateFormat.format(calendar.time)
+        }
+        
+        // Filtrar transações do período (apenas despesas)
+        return transactions.filter { it.type == "expense" && it.date >= startDate }.sumOf { it.amount }
+    }
 
     private fun loadUserData() {
         val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
@@ -220,6 +366,9 @@ class MainActivity : AppCompatActivity() {
             
             // Calcular totais
             updateTotals()
+            
+            // Atualizar card de metas
+            updateGoalsCard()
         }
     }
     

@@ -40,6 +40,10 @@ class ManageFragment : Fragment() {
             view.findViewById<MaterialCardView>(R.id.optionTags)?.setOnClickListener {
                 startActivity(android.content.Intent(requireContext(), TagsActivity::class.java))
             }
+
+            view.findViewById<MaterialCardView>(R.id.optionGoals)?.setOnClickListener {
+                startActivity(android.content.Intent(requireContext(), GoalsActivity::class.java))
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Erro no onViewCreated: ${e.message}", e)
         }

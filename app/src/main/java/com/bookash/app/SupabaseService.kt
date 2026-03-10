@@ -1916,4 +1916,118 @@ object SupabaseService {
             createdAt = json.optString("created_at")
         )
     }
+    
+    // ============== GOALS ==============
+    
+    /**
+     * Busca todas as metas do usuário.
+     */
+    suspend fun getGoals(userId: String): List<Goal> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[GOALS] GET - Buscando metas para usuario $userId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[GOALS] GET - Erro: usuário não autenticado")
+                return@withContext emptyList<Goal>()
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/goals?user_id=eq.$userId&select=*").openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = JSONArray(response)
+                val goals = mutableListOf<Goal>()
+                for (i in 0 until jsonArray.length()) {
+                    goals.add(parseGoal(jsonArray.getJSONObject(i)))
+                }
+                Log.i(TAG, "[GOALS] GET - Sucesso: ${goals.size} metas (${duration}ms)")
+                goals
+            } else {
+                Log.w(TAG, "[GOALS] GET - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[GOALS] GET - Erro após ${duration}ms", e)
+            emptyList()
+        }
+    }
+    
+    /**
+     * Salva uma meta (cria ou atualiza).
+     */
+    suspend fun saveGoal(goal: Goal): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[GOALS] SAVE - Salvando meta: ${goal.type}")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[GOALS] SAVE - Erro: usuário não autenticado")
+                return@withContext false
+            }
+            
+            val url = if (goal.id.isNotEmpty()) {
+                "$BASE_URL/rest/v1/goals?id=eq.${goal.id}"
+            } else {
+                "$BASE_URL/rest/v1/goals"
+            }
+            
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.requestMethod = if (goal.id.isNotEmpty()) "PATCH" else "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """
+                {
+                    "user_id": "${goal.userId}",
+                    "type": "${goal.type}",
+                    "target_amount": ${goal.targetAmount},
+                    "is_enabled": ${goal.isEnabled},
+                    "updated_at": "${goal.updatedAt}"
+                    ${if (goal.id.isEmpty()) ""","created_at": "${goal.createdAt}"""" else ""}
+                }
+            """.trimIndent()
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[GOALS] SAVE - Sucesso: ${goal.type} (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[GOALS] SAVE - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[GOALS] SAVE - Erro após ${duration}ms", e)
+            false
+        }
+    }
+    
+    private fun parseGoal(json: org.json.JSONObject): Goal {
+        return Goal(
+            id = json.optString("id"),
+            userId = json.optString("user_id"),
+            type = json.optString("type"),
+            targetAmount = json.optDouble("target_amount", 0.0),
+            isEnabled = json.optBoolean("is_enabled", false),
+            createdAt = json.optString("created_at"),
+            updatedAt = json.optString("updated_at")
+        )
+    }
 }
