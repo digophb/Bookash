@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity() {
     // Meta atual selecionada
     private var currentGoalType: String = "monthly"
     private var goals: List<Goal> = emptyList()
-    private var goals: List<Goal> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
