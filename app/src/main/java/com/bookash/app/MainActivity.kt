@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     // Meta atual selecionada
     private var currentGoalType: String = "monthly"
     private var goals: List<Goal> = emptyList()
+    private var goals: List<Goal> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -201,25 +202,19 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showGoalSelector() {
-        val enabledGoals = GoalsActivity.getEnabledGoals(this)
+        val enabledGoals = goals.filter { it.isEnabled }
         if (enabledGoals.isEmpty()) return
         
-        val goalNames = enabledGoals.map { type ->
-            when (type) {
-                "daily" -> "Diária"
-                "weekly" -> "Semanal"
-                "monthly" -> "Mensal"
-                "yearly" -> "Anual"
-                else -> type
-            }
+        val goalNames = enabledGoals.map { goal ->
+            goal.getDisplayName()
         }.toTypedArray()
         
-        val currentIndex = enabledGoals.indexOf(currentGoalType).takeIf { it >= 0 } ?: 0
+        val currentIndex = enabledGoals.indexOfFirst { it.type == currentGoalType }.takeIf { it >= 0 } ?: 0
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Selecionar Meta")
             .setSingleChoiceItems(goalNames as Array<CharSequence>, currentIndex) { dialog, which ->
-                currentGoalType = enabledGoals[which]
+                currentGoalType = enabledGoals[which].type
                 GoalsActivity.setSelectedGoal(this, currentGoalType)
                 updateGoalsCard()
                 dialog.dismiss()
@@ -228,55 +223,42 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun updateGoalsCard() {
-        val hasGoals = GoalsActivity.hasEnabledGoals(this)
+        val enabledGoals = goals.filter { it.isEnabled }
         
-        if (!hasGoals) {
+        if (enabledGoals.isEmpty()) {
             goalsCard.visibility = View.GONE
             return
         }
         
         // Carregar meta selecionada ou a primeira disponível
-        var selectedGoal: String? = GoalsActivity.getSelectedGoal(this)
-        if (selectedGoal == null || !GoalsActivity.getGoal(this, selectedGoal).first) {
-            selectedGoal = GoalsActivity.getEnabledGoals(this).firstOrNull()
+        var selectedGoalType: String? = GoalsActivity.getSelectedGoal(this)
+        if (selectedGoalType == null || enabledGoals.none { it.type == selectedGoalType }) {
+            selectedGoalType = enabledGoals.firstOrNull()?.type
         }
         
-        if (selectedGoal == null) {
+        val goal = enabledGoals.find { it.type == selectedGoalType }
+        
+        if (goal == null || goal.targetAmount <= 0) {
             goalsCard.visibility = View.GONE
             return
         }
         
-        currentGoalType = selectedGoal
-        val goalData = GoalsActivity.getGoal(this, selectedGoal)
-        val enabled = goalData.first
-        val targetAmount = goalData.second
-        
-        if (!enabled || targetAmount <= 0) {
-            goalsCard.visibility = View.GONE
-            return
-        }
-        
+        currentGoalType = goal.type
         goalsCard.visibility = View.VISIBLE
         
         // Atualizar texto do tipo
-        goalTypeText.text = when (selectedGoal) {
-            "daily" -> "Diária"
-            "weekly" -> "Semanal"
-            "monthly" -> "Mensal"
-            "yearly" -> "Anual"
-            else -> selectedGoal
-        }
+        goalTypeText.text = goal.getDisplayName()
         
         // Calcular gastos do período
-        val spent = calculateSpentForPeriod(selectedGoal)
+        val spent = calculateSpentForPeriod(goal.type)
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
         goalProgressText.text = formatter.format(spent)
-        goalTargetText.text = formatter.format(targetAmount)
+        goalTargetText.text = formatter.format(goal.targetAmount)
         
         // Calcular percentual
-        val percent = if (targetAmount > 0.0) {
-            ((spent / targetAmount) * 100.0).toInt().coerceIn(0, 100)
+        val percent = if (goal.targetAmount > 0.0) {
+            ((spent / goal.targetAmount) * 100.0).toInt().coerceIn(0, 100)
         } else {
             0
         }
@@ -288,7 +270,7 @@ class MainActivity : AppCompatActivity() {
         goalProgressBar.layoutParams = layoutParams
         
         // Mudar cor se passou da meta
-        if (spent > targetAmount) {
+        if (spent > goal.targetAmount) {
             goalProgressBar.setBackgroundResource(R.color.error)
             goalPercentText.setTextColor(getColor(R.color.error))
         } else {
