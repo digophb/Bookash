@@ -6,9 +6,12 @@ import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.chip.Chip
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -19,6 +22,7 @@ class TransactionsActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "TransactionsActivity"
+        private const val REQUEST_ADD_TRANSACTION = 1001
     }
 
     // Views
@@ -34,6 +38,9 @@ class TransactionsActivity : AppCompatActivity() {
     private lateinit var emptyState: View
     private lateinit var progressBar: ProgressBar
     private lateinit var transactionAdapter: TransactionAdapter
+    private lateinit var bottomNavigation: BottomNavigationView
+    private lateinit var fabAdd: FloatingActionButton
+    private lateinit var nestedScroll: NestedScrollView
 
     // Data
     private var allTransactions: List<Transaction> = emptyList()
@@ -65,12 +72,18 @@ class TransactionsActivity : AppCompatActivity() {
         transactionsRecycler = findViewById(R.id.transactionsRecycler)
         emptyState = findViewById(R.id.emptyState)
         progressBar = findViewById(R.id.progressBar)
+        bottomNavigation = findViewById(R.id.bottomNavigation)
+        fabAdd = findViewById(R.id.fabAdd)
+        nestedScroll = findViewById(R.id.nestedScroll)
 
         transactionAdapter = TransactionAdapter { transaction ->
             openTransactionDetail(transaction)
         }
         transactionsRecycler.layoutManager = LinearLayoutManager(this)
         transactionsRecycler.adapter = transactionAdapter
+        
+        // Marcar item de transações como selecionado
+        bottomNavigation.selectedItemId = R.id.nav_transactions
     }
 
     private fun setupListeners() {
@@ -82,6 +95,43 @@ class TransactionsActivity : AppCompatActivity() {
         chipIncome.setOnClickListener { currentFilter = "income"; applyFilter() }
         chipExpense.setOnClickListener { currentFilter = "expense"; applyFilter() }
         chipTransfer.setOnClickListener { currentFilter = "transfer"; applyFilter() }
+        
+        fabAdd.setOnClickListener {
+            val intent = Intent(this, AddTransactionActivity::class.java)
+            startActivityForResult(intent, REQUEST_ADD_TRANSACTION)
+        }
+        
+        setupBottomNavigation()
+        setupScrollBehavior()
+    }
+    
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    finish()
+                    true
+                }
+                R.id.nav_transactions -> true
+                R.id.nav_planning -> true
+                R.id.nav_reports -> true
+                R.id.nav_more -> {
+                    startActivity(Intent(this, MoreOptionsActivity::class.java))
+                    false
+                }
+                else -> false
+            }
+        }
+    }
+    
+    private fun setupScrollBehavior() {
+        nestedScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, _ ->
+            if (scrollY > 0) {
+                fabAdd.hide()
+            } else {
+                fabAdd.show()
+            }
+        })
     }
 
     private fun loadTransactions() {
@@ -160,6 +210,15 @@ class TransactionsActivity : AppCompatActivity() {
         val intent = Intent(this, TransactionDetailActivity::class.java)
         intent.putExtra(TransactionDetailActivity.EXTRA_TRANSACTION, transaction)
         startActivity(intent)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK) {
+            loadTransactions()
+        }
     }
 
     override fun onResume() {
