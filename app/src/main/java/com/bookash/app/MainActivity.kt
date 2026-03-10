@@ -40,7 +40,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goalSelector: View
     private lateinit var goalTypeText: TextView
     private lateinit var goalProgressText: TextView
-    private lateinit var goalProgressBar: android.widget.ProgressBar
+    private lateinit var goalTargetText: TextView
+    private lateinit var goalProgressBar: View
     private lateinit var goalPercentText: TextView
     
     private lateinit var transactionAdapter: TransactionAdapter
@@ -100,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         goalSelector = findViewById(R.id.goalSelector)
         goalTypeText = findViewById(R.id.goalTypeText)
         goalProgressText = findViewById(R.id.goalProgressText)
+        goalTargetText = findViewById(R.id.goalTargetText)
         goalProgressBar = findViewById(R.id.goalProgressBar)
         goalPercentText = findViewById(R.id.goalPercentText)
     }
@@ -269,7 +271,8 @@ class MainActivity : AppCompatActivity() {
         val spent = calculateSpentForPeriod(selectedGoal)
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
-        goalProgressText.text = "${formatter.format(spent)} de ${formatter.format(targetAmount)}"
+        goalProgressText.text = formatter.format(spent)
+        goalTargetText.text = formatter.format(targetAmount)
         
         // Calcular percentual
         val percent = if (targetAmount > 0.0) {
@@ -277,16 +280,20 @@ class MainActivity : AppCompatActivity() {
         } else {
             0
         }
-        goalPercentText.text = "$percent%"
+        goalPercentText.text = "$percent% alcançado"
         
-        // Atualizar barra de progresso
-        goalProgressBar.progress = percent
+        // Atualizar barra de progresso (View com weight)
+        val layoutParams = goalProgressBar.layoutParams as android.widget.LinearLayout.LayoutParams
+        layoutParams.weight = percent.toFloat()
+        goalProgressBar.layoutParams = layoutParams
         
         // Mudar cor se passou da meta
         if (spent > targetAmount) {
+            goalProgressBar.setBackgroundResource(R.color.error)
             goalPercentText.setTextColor(getColor(R.color.error))
         } else {
-            goalPercentText.setTextColor(getColor(R.color.primary))
+            goalProgressBar.setBackgroundResource(R.drawable.bg_progress_income)
+            goalPercentText.setTextColor(getColor(R.color.text_secondary))
         }
     }
     
