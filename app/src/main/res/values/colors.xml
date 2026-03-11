@@ -14,6 +14,7 @@
     <color name="primary_light">#4A8A7C</color>
     <color name="primary_dark">#2A5A50</color>
     <color name="primary_variant">#0E3B43</color>
+    <color name="primary_container">#1A4F57</color>
     
     <!-- ====== SECONDARY (Elementos secundários) ====== -->
     <color name="secondary">#0E3B43</color>
