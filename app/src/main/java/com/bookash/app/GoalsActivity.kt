@@ -215,13 +215,16 @@ class GoalsActivity : AppCompatActivity() {
         }
 
         val existingGoal = goals.find { it.type == type }
+        val now = java.time.LocalDateTime.now().toString()
         
         val goal = Goal(
             id = existingGoal?.id ?: "",
             userId = userId ?: "",
             type = type,
             targetAmount = amount,
-            isEnabled = isEnabled
+            isEnabled = isEnabled,
+            createdAt = existingGoal?.createdAt ?: now,
+            updatedAt = now
         )
 
         val btnToDisable = when (type) {
