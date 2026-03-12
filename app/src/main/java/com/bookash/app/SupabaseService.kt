@@ -884,18 +884,22 @@ object SupabaseService {
         val list = mutableListOf<Account>()
         for (i in 0 until jsonArray.length()) {
             val json = jsonArray.getJSONObject(i)
-            list.add(Account(
-                id = json.optString("id"),
-                name = json.optString("name"),
-                balance = json.optDouble("balance", 0.0),
-                type = json.optString("type", "corrente"),
-                icon = json.optString("icon", "wallet"),
-                isArchived = json.optBoolean("is_archived", false),
-                includeInBalance = json.optBoolean("include_in_balance", true),
-                userId = json.optString("user_id", "")
-            ))
+            list.add(parseAccount(json))
         }
         return list
+    }
+    
+    private fun parseAccount(json: JSONObject): Account {
+        return Account(
+            id = json.optString("id"),
+            name = json.optString("name"),
+            balance = json.optDouble("balance", 0.0),
+            type = json.optString("type", "corrente"),
+            icon = json.optString("icon", "wallet"),
+            isArchived = json.optBoolean("is_archived", false),
+            includeInBalance = json.optBoolean("include_in_balance", true),
+            userId = json.optString("user_id", "")
+        )
     }
     
     // ============== TRANSACTIONS ==============
