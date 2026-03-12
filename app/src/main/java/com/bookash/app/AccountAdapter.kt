@@ -14,8 +14,7 @@ import java.util.Locale
 
 class AccountAdapter(
     private val onEditClick: ((Account) -> Unit)? = null,
-    private val onArchiveClick: ((Account) -> Unit)? = null,
-    private val onDeleteClick: ((Account) -> Unit)? = null
+    private val onArchiveClick: ((Account) -> Unit)? = null
 ) : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
 
     private val items = mutableListOf<Account>()
@@ -86,9 +85,8 @@ class AccountAdapter(
                 onArchiveClick?.invoke(account)
             }
             
-            deleteButton.setOnClickListener {
-                onDeleteClick?.invoke(account)
-            }
+            // Esconder botão de deletar
+            deleteButton.visibility = View.GONE
         }
         
         private fun getIconResource(iconName: String): Int {

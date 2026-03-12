@@ -927,7 +927,10 @@ class AddTransactionActivity : AppCompatActivity() {
                             "Mensal" -> "monthly"
                             "Anual" -> "yearly"
                             else -> null
-                        }
+                        },
+                        // Associar conta: receita usa toAccountId, despesa usa fromAccountId
+                        toAccountId = if (transactionType == "income") selectedAccount?.id else null,
+                        fromAccountId = if (transactionType == "expense") selectedAccount?.id else null
                     )
 
                     val token = UserSession.getAccessToken() ?: ""

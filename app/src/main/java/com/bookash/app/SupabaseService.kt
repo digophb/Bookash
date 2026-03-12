@@ -810,8 +810,8 @@ object SupabaseService {
             
             var balance = 0.0
             
-            // 1. Receitas associadas a esta conta (account_id)
-            val incomeEndpoint = "$BASE_URL/rest/v1/transactions?account_id=eq.$accountId&type=eq.income&select=amount"
+            // 1. Receitas: to_account_id = esta conta
+            val incomeEndpoint = "$BASE_URL/rest/v1/transactions?to_account_id=eq.$accountId&type=eq.income&select=amount"
             val incomeConn = URL(incomeEndpoint).openConnection() as HttpURLConnection
             incomeConn.requestMethod = "GET"
             incomeConn.setRequestProperty("apikey", API_KEY)
@@ -825,8 +825,8 @@ object SupabaseService {
                 }
             }
             
-            // 2. Despesas associadas a esta conta (account_id)
-            val expenseEndpoint = "$BASE_URL/rest/v1/transactions?account_id=eq.$accountId&type=eq.expense&select=amount"
+            // 2. Despesas: from_account_id = esta conta
+            val expenseEndpoint = "$BASE_URL/rest/v1/transactions?from_account_id=eq.$accountId&type=eq.expense&select=amount"
             val expenseConn = URL(expenseEndpoint).openConnection() as HttpURLConnection
             expenseConn.requestMethod = "GET"
             expenseConn.setRequestProperty("apikey", API_KEY)
@@ -1003,6 +1003,18 @@ object SupabaseService {
                 if (jsonArray.length() > 0) {
                     val transactionId = jsonArray.getJSONObject(0).optString("id")
                     Log.i(TAG, "[TRANSACTIONS] CREATE - Sucesso: id=$transactionId (${duration}ms)")
+                    
+                    // Atualizar saldo da conta se houver conta associada
+                    if (transaction.accountId != null) {
+                        updateAccountBalanceAfterTransaction(transaction.accountId, transaction.type, transaction.amount)
+                    }
+                    
+                    // Para transferências, atualizar ambas as contas
+                    if (transaction.type == "transfer" && transaction.fromAccountId != null && transaction.toAccountId != null) {
+                        updateAccountBalanceAfterTransaction(transaction.fromAccountId, "expense", transaction.amount)
+                        updateAccountBalanceAfterTransaction(transaction.toAccountId, "income", transaction.amount)
+                    }
+                    
                     transactionId
                 } else {
                     Log.w(TAG, "[TRANSACTIONS] CREATE - Sucesso mas sem ID retornado (${duration}ms)")
@@ -1016,6 +1028,87 @@ object SupabaseService {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transacao apos ${duration}ms", e)
             null
+        }
+    }
+    
+    private suspend fun updateAccountBalanceAfterTransaction(accountId: String, type: String, amount: Double) {
+        try {
+            // Buscar saldo atual
+            val account = getAccountById(accountId)
+            if (account == null) {
+                Log.w(TAG, "[ACCOUNTS] UPDATE_BALANCE - Conta não encontrada: $accountId")
+                return
+            }
+            
+            // Calcular novo saldo
+            val newBalance = when (type) {
+                "income" -> account.balance + amount
+                "expense" -> account.balance - amount
+                else -> account.balance // transferência é tratada separadamente
+            }
+            
+            // Atualizar saldo
+            updateAccountBalance(accountId, newBalance)
+            Log.i(TAG, "[ACCOUNTS] UPDATE_BALANCE - Saldo atualizado: $accountId, $type, $amount -> $newBalance")
+        } catch (e: Exception) {
+            Log.e(TAG, "[ACCOUNTS] UPDATE_BALANCE - Erro ao atualizar saldo", e)
+        }
+    }
+    
+    suspend fun getAccountById(accountId: String): Account? = withContext(Dispatchers.IO) {
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                return@withContext null
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId&select=*").openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            
+            val responseCode = conn.responseCode
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = org.json.JSONArray(response)
+                if (jsonArray.length() > 0) {
+                    parseAccount(jsonArray.getJSONObject(0))
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "[ACCOUNTS] GET_BY_ID - Erro", e)
+            null
+        }
+    }
+    
+    suspend fun updateAccountBalance(accountId: String, newBalance: Double): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                return@withContext false
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/accounts?id=eq.$accountId").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+            
+            val body = """{"balance":$newBalance}"""
+            conn.outputStream.write(body.toByteArray())
+            
+            val responseCode = conn.responseCode
+            responseCode in 200..299
+        } catch (e: Exception) {
+            Log.e(TAG, "[ACCOUNTS] UPDATE_BALANCE - Erro", e)
+            false
         }
     }
     

@@ -39,8 +39,7 @@ class AccountsActivity : AppCompatActivity() {
 
         accountAdapter = AccountAdapter(
             onEditClick = { account -> openEditAccount(account) },
-            onArchiveClick = { account -> showArchiveAccountDialog(account) },
-            onDeleteClick = { account -> showDeleteAccountDialog(account) }
+            onArchiveClick = { account -> showArchiveAccountDialog(account) }
         )
         accountsRecycler.layoutManager = LinearLayoutManager(this)
         accountsRecycler.adapter = accountAdapter
