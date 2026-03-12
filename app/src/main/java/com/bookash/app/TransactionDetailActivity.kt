@@ -19,6 +19,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -94,7 +95,6 @@ class TransactionDetailActivity : AppCompatActivity() {
 
         initViews()
         setupListeners()
-        loadData()
         
         // Verificar se é edição ou visualização
         transactionId = intent.getStringExtra(EXTRA_TRANSACTION_ID)
@@ -191,6 +191,13 @@ class TransactionDetailActivity : AppCompatActivity() {
 
     private fun loadTransactionById() {
         lifecycleScope.launch {
+            // Primeiro garantir que categorias e contas estejam carregadas
+            if (categories.isEmpty() || accounts.isEmpty()) {
+                categories = userId?.let { SupabaseService.getCategories(it) } ?: emptyList()
+                accounts = userId?.let { SupabaseService.getAccounts(it) } ?: emptyList()
+                Log.d(TAG, "Dados carregados: ${categories.size} categorias, ${accounts.size} contas")
+            }
+            
             transaction = transactionId?.let { SupabaseService.getTransactionById(it) }
             if (transaction != null) {
                 loadTransactionData()
@@ -203,6 +210,14 @@ class TransactionDetailActivity : AppCompatActivity() {
 
     private fun loadTransactionData() {
         transaction?.let { t ->
+            // Se contas ainda não carregadas, carregar agora de forma síncrona (bloqueante)
+            if (accounts.isEmpty()) {
+                runBlocking {
+                    categories = userId?.let { SupabaseService.getCategories(it) } ?: emptyList()
+                    accounts = userId?.let { SupabaseService.getAccounts(it) } ?: emptyList()
+                }
+            }
+            
             // Tipo
             transactionType = t.type
             when (t.type) {
@@ -225,8 +240,18 @@ class TransactionDetailActivity : AppCompatActivity() {
             val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             valueInput.setText(formatter.format(t.amount))
             
-            // Descricao
-            descriptionInput.setText(t.description)
+            // Descricao (para transferências, usar descrição personalizada ou vazio)
+            if (t.type == "transfer") {
+                // Manter descrição original se houver, senão usar nome das contas
+                val desc = t.description.ifEmpty {
+                    val from = t.fromAccountName ?: "Conta origem"
+                    val to = t.toAccountName ?: "Conta destino"
+                    "Transferência de $from para $to"
+                }
+                descriptionInput.setText(desc)
+            } else {
+                descriptionInput.setText(t.description)
+            }
             
             // Data
             try {
@@ -237,17 +262,44 @@ class TransactionDetailActivity : AppCompatActivity() {
                 Log.e(TAG, "Erro ao parsear data", e)
             }
             
-            // Status
-            // TODO: carregar status se houver switch
-            
             // Carregar categoria pelo ID
-            lifecycleScope.launch {
-                // Buscar categoria pelo ID
-                selectedCategory = categories.find { it.id == t.categoryId }
-                selectedCategory?.let { cat ->
-                    categoryText.text = cat.name
-                    categoryText.setTextColor(getColor(R.color.text_primary))
-                    categoryIcon.visibility = View.VISIBLE
+            selectedCategory = categories.find { it.id == t.categoryId }
+            selectedCategory?.let { cat ->
+                categoryText.text = cat.name
+                categoryText.setTextColor(getColor(R.color.text_primary))
+                categoryIcon.visibility = View.VISIBLE
+            }
+            
+            // Carregar contas para transferências
+            if (t.type == "transfer") {
+                // Carregar conta de origem
+                t.fromAccountId?.let { fromId ->
+                    fromAccount = accounts.find { it.id == fromId }
+                    fromAccount?.let { acc ->
+                        fromAccountText.text = acc.name
+                        fromAccountText.setTextColor(getColor(R.color.text_primary))
+                        fromAccountIcon.visibility = View.VISIBLE
+                    }
+                }
+                
+                // Carregar conta de destino
+                t.toAccountId?.let { toId ->
+                    toAccount = accounts.find { it.id == toId }
+                    toAccount?.let { acc ->
+                        toAccountText.text = acc.name
+                        toAccountText.setTextColor(getColor(R.color.text_primary))
+                        toAccountIcon.visibility = View.VISIBLE
+                    }
+                }
+            } else {
+                // Para receitas/despesas, carregar conta associada
+                t.accountId?.let { accId ->
+                    selectedAccount = accounts.find { it.id == accId }
+                    selectedAccount?.let { acc ->
+                        accountText.text = acc.name
+                        accountText.setTextColor(getColor(R.color.text_primary))
+                        accountIcon.visibility = View.VISIBLE
+                    }
                 }
             }
         }
@@ -434,7 +486,10 @@ class TransactionDetailActivity : AppCompatActivity() {
                     categoryName = selectedCategory?.name ?: "",
                     amount = value,
                     type = transactionType,
-                    date = dateStr
+                    date = dateStr,
+                    accountId = if (transactionType != "transfer") selectedAccount?.id else null,
+                    fromAccountId = if (transactionType == "transfer") fromAccount?.id else null,
+                    toAccountId = if (transactionType == "transfer") toAccount?.id else null
                 )
 
                 val token = UserSession.getAccessToken() ?: ""

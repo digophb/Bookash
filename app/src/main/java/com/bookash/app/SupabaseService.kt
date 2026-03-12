@@ -936,6 +936,10 @@ object SupabaseService {
             val categories = getCategories(userId)
             val categoryMap = categories.associateBy { it.id }
             
+            // Buscar contas para preencher nomes nas transferências
+            val accounts = getAccounts(userId)
+            val accountMap = accounts.associateBy { it.id }
+            
             val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&order=date.desc&limit=$limit&select=*"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -948,7 +952,7 @@ object SupabaseService {
             
             if (responseCode == 200) {
                 val response = conn.inputStream.bufferedReader().readText()
-                val transactions = parseTransactionsWithCategory(JSONArray(response), categoryMap)
+                val transactions = parseTransactionsWithCategory(JSONArray(response), categoryMap, accountMap)
                 Log.i(TAG, "[TRANSACTIONS] GET - Sucesso: ${transactions.size} transações encontradas (${duration}ms)")
                 transactions
             } else {
@@ -1150,6 +1154,11 @@ object SupabaseService {
                 return@withContext null
             }
             
+            // Buscar contas para preencher nomes
+            val userId = UserSession.getUserId()
+            val accounts = userId?.let { getAccounts(it) } ?: emptyList()
+            val accountMap = accounts.associateBy { it.id }
+            
             val endpoint = "$BASE_URL/rest/v1/transactions?id=eq.$transactionId&select=*&limit=1"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -1165,7 +1174,39 @@ object SupabaseService {
                 val jsonArray = JSONArray(response)
                 
                 if (jsonArray.length() > 0) {
-                    val transaction = parseTransaction(jsonArray.getJSONObject(0))
+                    val json = jsonArray.getJSONObject(0)
+                    // Parse manual para incluir accountMap
+                    val type = json.optString("type")
+                    val categoryId = json.optString("category_id", "")
+                    val fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() }
+                    val toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() }
+                    
+                    val transaction = Transaction(
+                        id = json.optString("id"),
+                        userId = json.optString("user_id"),
+                        description = json.optString("description"),
+                        categoryId = categoryId,
+                        categoryName = "", // Será preenchido posteriormente se necessário
+                        amount = json.optDouble("amount", 0.0),
+                        type = type,
+                        date = json.optString("date"),
+                        accountId = json.optString("account_id").takeIf { it.isNotEmpty() },
+                        fromAccountId = fromAccountId,
+                        toAccountId = toAccountId,
+                        fromAccountName = fromAccountId?.let { accountMap[it]?.name },
+                        toAccountName = toAccountId?.let { accountMap[it]?.name },
+                        creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
+                        notes = json.optString("notes").takeIf { it.isNotEmpty() },
+                        isRecurring = json.optBoolean("is_recurring", false),
+                        recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
+                        recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+                        isDeleted = json.optBoolean("is_deleted", false),
+                        iconRes = when (type) {
+                            "income" -> R.drawable.ic_arrow_up
+                            "expense" -> R.drawable.ic_arrow_down
+                            else -> R.drawable.ic_transfer
+                        }
+                    )
                     Log.i(TAG, "[TRANSACTIONS] GET_BY_ID - Sucesso: '${transaction.description}' (${duration}ms)")
                     transaction
                 } else {
@@ -1207,6 +1248,15 @@ object SupabaseService {
                 append("\"date\":\"${transaction.date}\"")
                 if (transaction.categoryId.isNotEmpty()) {
                     append(",\"category_id\":\"${transaction.categoryId}\"")
+                }
+                if (transaction.accountId != null) {
+                    append(",\"account_id\":\"${transaction.accountId}\"")
+                }
+                if (transaction.fromAccountId != null) {
+                    append(",\"from_account_id\":\"${transaction.fromAccountId}\"")
+                }
+                if (transaction.toAccountId != null) {
+                    append(",\"to_account_id\":\"${transaction.toAccountId}\"")
                 }
                 if (!transaction.notes.isNullOrEmpty()) {
                     append(",\"notes\":\"${transaction.notes}\"")
@@ -1311,13 +1361,20 @@ object SupabaseService {
         )
     }
     
-    private fun parseTransactionsWithCategory(jsonArray: JSONArray, categoryMap: Map<String, Category>): List<Transaction> {
+    private fun parseTransactionsWithCategory(
+        jsonArray: JSONArray, 
+        categoryMap: Map<String, Category>,
+        accountMap: Map<String, Account>
+    ): List<Transaction> {
         val list = mutableListOf<Transaction>()
         for (i in 0 until jsonArray.length()) {
             val json = jsonArray.getJSONObject(i)
             val type = json.optString("type")
             val categoryId = json.optString("category_id", "")
             val category = categoryMap[categoryId]
+            
+            val fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() }
+            val toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() }
             
             val transaction = Transaction(
                 id = json.optString("id"),
@@ -1329,8 +1386,10 @@ object SupabaseService {
                 type = type,
                 date = json.optString("date"),
                 accountId = json.optString("account_id").takeIf { it.isNotEmpty() },
-                fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() },
-                toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
+                fromAccountId = fromAccountId,
+                toAccountId = toAccountId,
+                fromAccountName = fromAccountId?.let { accountMap[it]?.name },
+                toAccountName = toAccountId?.let { accountMap[it]?.name },
                 creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
                 notes = json.optString("notes").takeIf { it.isNotEmpty() },
                 isRecurring = json.optBoolean("is_recurring", false),

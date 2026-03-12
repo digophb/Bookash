@@ -33,7 +33,15 @@ class TransactionAdapter(
         private val amountText: TextView = view.findViewById(R.id.transactionAmount)
 
         fun bind(transaction: Transaction, onItemClick: (Transaction) -> Unit) {
-            descriptionText.text = transaction.description
+            // Para transferências, mostrar contas de origem e destino na descrição
+            if (transaction.type == "transfer") {
+                val fromAccount = transaction.fromAccountName ?: "Conta origem"
+                val toAccount = transaction.toAccountName ?: "Conta destino"
+                descriptionText.text = "$fromAccount → $toAccount"
+            } else {
+                descriptionText.text = transaction.description
+            }
+            
             categoryText.text = transaction.categoryName.ifEmpty { "Sem categoria" }
             
             val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
