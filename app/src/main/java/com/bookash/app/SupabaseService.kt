@@ -609,6 +609,12 @@ object SupabaseService {
                 """{"name":"Beleza","type":"expense","color":"#E91E63","icon":"beauty","user_id":"$userId"}""",
                 // Receitas
                 """{"name":"Salário","type":"income","color":"#45B7D1","icon":"salary","user_id":"$userId"}""",
+                """{"name":"Freelance","type":"income","color":"#2ECC71","icon":"work","user_id":"$userId"}""",
+                """{"name":"Investimentos","type":"income","color":"#F1C40F","icon":"investment","user_id":"$userId"}""",
+                """{"name":"Vendas","type":"income","color":"#E74C3C","icon":"sales","user_id":"$userId"}""",
+                """{"name":"Aluguel","type":"income","color":"#9B59B6","icon":"rent","user_id":"$userId"}""",
+                """{"name":"Comissões","type":"income","color":"#1ABC9C","icon":"commission","user_id":"$userId"}""",
+                """{"name":"Aposentadoria","type":"income","color":"#3498DB","icon":"retirement","user_id":"$userId"}""",
                 // Transferência
                 """{"name":"Transferência","type":"transfer","color":"#7B68EE","icon":"transfer","user_id":"$userId"}"""
             )
@@ -635,7 +641,7 @@ object SupabaseService {
             val duration = System.currentTimeMillis() - startTime
             
             if (allSuccess) {
-                Log.i(TAG, "[CATEGORIES] DEFAULT - Sucesso: 14 categorias padrao criadas (${duration}ms)")
+                Log.i(TAG, "[CATEGORIES] DEFAULT - Sucesso: 20 categorias padrao criadas (${duration}ms)")
             } else {
                 Log.w(TAG, "[CATEGORIES] DEFAULT - Parcial: algumas categorias falharam (${duration}ms)")
             }
