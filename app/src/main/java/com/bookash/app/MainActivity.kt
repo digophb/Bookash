@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         setupSeeAllClick()
         setupGoalSelector()
         loadUserData()
+        loadGoals()
         loadTransactions()
     }
 
@@ -278,6 +279,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun loadGoals() {
+        lifecycleScope.launch {
+            try {
+                goals = SupabaseService.getGoals(userId ?: "")
+                updateGoalsCard()
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Erro ao carregar metas", e)
+            }
+        }
+    }
+    
     private fun calculateSpentForPeriod(period: String): Double {
         val calendar = java.util.Calendar.getInstance()
         val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -301,8 +313,8 @@ class MainActivity : AppCompatActivity() {
             else -> dateFormat.format(calendar.time)
         }
         
-        // Filtrar transações do período (apenas despesas)
-        return transactions.filter { it.type == "expense" && it.date >= startDate }.sumOf { it.amount }
+        // Filtrar transações do período (apenas RECEITAS/ganhos, não despesas)
+        return transactions.filter { it.type == "income" && it.date >= startDate }.sumOf { it.amount }
     }
 
     private fun loadUserData() {
@@ -412,6 +424,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // Recarregar dados ao voltar para o dashboard
         // Isso garante que o saldo seja atualizado após criar/editar contas
+        loadGoals()
         loadTransactions()
     }
     
