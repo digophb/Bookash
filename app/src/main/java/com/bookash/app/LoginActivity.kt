@@ -128,10 +128,13 @@ class LoginActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     loginButton.isEnabled = true
                     loginButton.text = "Entrar"
-                    
+
                     if (result.first) {
-                        ToastManager.showSuccess(this@LoginActivity, "Login realizado com sucesso!")
-                        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                        // Navegar para o dashboard sem mostrar toast aqui
+                        // O toast será mostrado no MainActivity
+                        val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                        intent.putExtra("SHOW_WELCOME_TOAST", true)
+                        startActivity(intent)
                         finish()
                     } else {
                         ToastManager.showError(this@LoginActivity, result.second)

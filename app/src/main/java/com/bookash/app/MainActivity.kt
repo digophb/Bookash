@@ -82,6 +82,23 @@ class MainActivity : AppCompatActivity() {
         loadUserData()
         loadGoals()
         loadTransactions()
+        
+        // Mostrar toast de boas-vindas se veio do login
+        if (intent.getBooleanExtra("SHOW_WELCOME_TOAST", false)) {
+            val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
+            val userName = prefs.getString("user_name", null)
+            val displayName = if (!userName.isNullOrEmpty()) {
+                userName.split(" ").firstOrNull() ?: "Usuário"
+            } else {
+                val email = prefs.getString("user_email", null)
+                if (!email.isNullOrEmpty()) {
+                    email.split("@").firstOrNull()?.capitalize() ?: "Usuário"
+                } else {
+                    "Usuário"
+                }
+            }
+            ToastManager.showSuccess(this, "Bem-vindo de volta, $displayName!")
+        }
     }
 
     private fun initViews() {
