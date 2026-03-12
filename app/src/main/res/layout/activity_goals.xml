@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_back"
-            app:title="Metas de Gastos"
+            app:title="Metas de Ganhos"
             app:titleTextColor="@color/text_primary" />
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -123,7 +123,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Limite de gastos por dia"
+                        android:text="Limite de ganhos por dia"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
@@ -206,7 +206,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Limite de gastos por semana"
+                        android:text="Limite de ganhos por semana"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
@@ -289,7 +289,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Limite de gastos por mês"
+                        android:text="Limite de ganhos por mês"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
@@ -372,7 +372,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Limite de gastos por ano"
+                        android:text="Limite de ganhos por ano"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
