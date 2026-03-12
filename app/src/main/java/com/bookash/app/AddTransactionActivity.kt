@@ -355,11 +355,30 @@ class AddTransactionActivity : AppCompatActivity() {
             return
         }
         
+        // Filtrar categorias pelo tipo de transação selecionado
+        val filteredCategories = when (transactionType) {
+            "income" -> categories.filter { it.type == "income" }
+            "expense" -> categories.filter { it.type == "expense" }
+            "transfer" -> categories.filter { it.type == "transfer" }
+            else -> categories
+        }
+        
+        if (filteredCategories.isEmpty()) {
+            val typeLabel = when (transactionType) {
+                "income" -> "receitas"
+                "expense" -> "despesas"
+                "transfer" -> "transferências"
+                else -> "este tipo"
+            }
+            ToastManager.showInfo(this, "Nenhuma categoria de $typeLabel cadastrada")
+            return
+        }
+        
         val popup = ListPopupWindow(this)
-        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, categories.map { it.name }))
+        popup.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, filteredCategories.map { it.name }))
         popup.anchorView = categoryField
         popup.setOnItemClickListener { _, _, position, _ ->
-            selectedCategory = categories[position]
+            selectedCategory = filteredCategories[position]
             categoryText.text = selectedCategory?.name
             categoryText.setTextColor(getColor(R.color.text_primary))
             

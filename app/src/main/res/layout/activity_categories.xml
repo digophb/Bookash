@@ -85,8 +85,8 @@
         android:id="@+id/fabAddCategory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
         android:src="@drawable/ic_add"
         app:backgroundTint="@color/primary"
         app:tint="@color/background" />
