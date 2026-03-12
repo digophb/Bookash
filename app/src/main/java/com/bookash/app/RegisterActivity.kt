@@ -141,7 +141,12 @@ class RegisterActivity : AppCompatActivity() {
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Erro ao criar contas: ${e.message}")
                                 }
-                                // Categorias são criadas automaticamente pela trigger do banco
+                                try {
+                                    SupabaseService.createDefaultCategories(userId)
+                                    Log.d(TAG, "Categorias padrao criadas")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Erro ao criar categorias: ${e.message}")
+                                }
                                 try {
                                     SupabaseService.createDefaultTags(userId)
                                     Log.d(TAG, "Tags padrao criadas")

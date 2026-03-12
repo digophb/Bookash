@@ -594,14 +594,23 @@ object SupabaseService {
             
             // Criar categorias padrao
             val defaultCategories = listOf(
-                """{"name":"Alimentacao","type":"expense","color":"#FF6B6B","icon":"restaurant","user_id":"$userId"}""",
-                """{"name":"Transporte","type":"expense","color":"#4ECDC4","icon":"directions_car","user_id":"$userId"}""",
-                """{"name":"Salario","type":"income","color":"#45B7D1","icon":"attach_money","user_id":"$userId"}""",
-                """{"name":"Lazer","type":"expense","color":"#96CEB4","icon":"sports_esports","user_id":"$userId"}""",
-                """{"name":"Saude","type":"expense","color":"#FFEAA7","icon":"local_hospital","user_id":"$userId"}""",
-                """{"name":"Educacao","type":"expense","color":"#DDA0DD","icon":"school","user_id":"$userId"}""",
+                // Despesas
+                """{"name":"Alimentação","type":"expense","color":"#FF6B6B","icon":"food","user_id":"$userId"}""",
+                """{"name":"Transporte","type":"expense","color":"#4ECDC4","icon":"transport","user_id":"$userId"}""",
+                """{"name":"Lazer","type":"expense","color":"#96CEB4","icon":"entertainment","user_id":"$userId"}""",
+                """{"name":"Saúde","type":"expense","color":"#FFEAA7","icon":"health","user_id":"$userId"}""",
+                """{"name":"Educação","type":"expense","color":"#DDA0DD","icon":"education","user_id":"$userId"}""",
                 """{"name":"Moradia","type":"expense","color":"#98D8C8","icon":"home","user_id":"$userId"}""",
-                """{"name":"Outros","type":"expense","color":"#B0BEC5","icon":"more_horiz","user_id":"$userId"}"""
+                """{"name":"Outros","type":"expense","color":"#B0BEC5","icon":"other","user_id":"$userId"}""",
+                """{"name":"Vestuário","type":"expense","color":"#F39C12","icon":"shopping","user_id":"$userId"}""",
+                """{"name":"Serviços","type":"expense","color":"#3498DB","icon":"services","user_id":"$userId"}""",
+                """{"name":"Pets","type":"expense","color":"#E67E22","icon":"pets","user_id":"$userId"}""",
+                """{"name":"Assinaturas","type":"expense","color":"#9B59B6","icon":"subscription","user_id":"$userId"}""",
+                """{"name":"Beleza","type":"expense","color":"#E91E63","icon":"beauty","user_id":"$userId"}""",
+                // Receitas
+                """{"name":"Salário","type":"income","color":"#45B7D1","icon":"salary","user_id":"$userId"}""",
+                // Transferência
+                """{"name":"Transferência","type":"transfer","color":"#7B68EE","icon":"transfer","user_id":"$userId"}"""
             )
             
             var allSuccess = true
@@ -626,7 +635,7 @@ object SupabaseService {
             val duration = System.currentTimeMillis() - startTime
             
             if (allSuccess) {
-                Log.i(TAG, "[CATEGORIES] DEFAULT - Sucesso: 8 categorias padrao criadas (${duration}ms)")
+                Log.i(TAG, "[CATEGORIES] DEFAULT - Sucesso: 14 categorias padrao criadas (${duration}ms)")
             } else {
                 Log.w(TAG, "[CATEGORIES] DEFAULT - Parcial: algumas categorias falharam (${duration}ms)")
             }
