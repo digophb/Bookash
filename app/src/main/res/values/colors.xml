@@ -78,4 +78,10 @@
     
     <!-- Tag selected background -->
     <color name="tag_selected_background">#E8F4F2</color>
+    
+    <!-- Filter chips (contraste com background #0E3B43) -->
+    <color name="filter_chip_background_unchecked">#1A4F57</color>
+    <color name="filter_chip_background_checked">#A3BBAD</color>
+    <color name="filter_chip_text_unchecked">#A3BBAD</color>
+    <color name="filter_chip_text_checked">#0E3B43</color>
 </resources>

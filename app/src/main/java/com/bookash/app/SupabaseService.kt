@@ -917,6 +917,10 @@ object SupabaseService {
                 return@withContext emptyList()
             }
             
+            // Buscar categorias para preencher nome e ícone
+            val categories = getCategories(userId)
+            val categoryMap = categories.associateBy { it.id }
+            
             val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&order=date.desc&limit=$limit&select=*"
             
             val conn = URL(endpoint).openConnection() as HttpURLConnection
@@ -929,7 +933,7 @@ object SupabaseService {
             
             if (responseCode == 200) {
                 val response = conn.inputStream.bufferedReader().readText()
-                val transactions = parseTransactions(JSONArray(response))
+                val transactions = parseTransactionsWithCategory(JSONArray(response), categoryMap)
                 Log.i(TAG, "[TRANSACTIONS] GET - Sucesso: ${transactions.size} transações encontradas (${duration}ms)")
                 transactions
             } else {
@@ -1290,6 +1294,67 @@ object SupabaseService {
                 else -> R.drawable.ic_transfer
             }
         )
+    }
+    
+    private fun parseTransactionsWithCategory(jsonArray: JSONArray, categoryMap: Map<String, Category>): List<Transaction> {
+        val list = mutableListOf<Transaction>()
+        for (i in 0 until jsonArray.length()) {
+            val json = jsonArray.getJSONObject(i)
+            val type = json.optString("type")
+            val categoryId = json.optString("category_id", "")
+            val category = categoryMap[categoryId]
+            
+            val transaction = Transaction(
+                id = json.optString("id"),
+                userId = json.optString("user_id"),
+                description = json.optString("description"),
+                categoryId = categoryId,
+                categoryName = category?.name ?: "",
+                amount = json.optDouble("amount", 0.0),
+                type = type,
+                date = json.optString("date"),
+                accountId = json.optString("account_id").takeIf { it.isNotEmpty() },
+                fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() },
+                toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
+                creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
+                notes = json.optString("notes").takeIf { it.isNotEmpty() },
+                isRecurring = json.optBoolean("is_recurring", false),
+                recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
+                recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+                isDeleted = json.optBoolean("is_deleted", false),
+                iconRes = getCategoryIconResource(category?.icon, type)
+            )
+            list.add(transaction)
+        }
+        return list
+    }
+    
+    private fun getCategoryIconResource(iconName: String?, transactionType: String): Int {
+        if (iconName.isNullOrEmpty()) {
+            return when (transactionType) {
+                "income" -> R.drawable.ic_arrow_up
+                "expense" -> R.drawable.ic_arrow_down
+                else -> R.drawable.ic_transfer
+            }
+        }
+        
+        return when (iconName.lowercase().trim()) {
+            "food", "alimentacao", "alimentação" -> R.drawable.ic_category_food
+            "transport", "transporte" -> R.drawable.ic_category_transport
+            "health", "saude", "saúde" -> R.drawable.ic_category_health
+            "education", "educacao", "educação" -> R.drawable.ic_category_education
+            "shopping", "compras" -> R.drawable.ic_category_shopping
+            "home", "casa", "moradia" -> R.drawable.ic_category_home
+            "movie", "entertainment", "lazer" -> R.drawable.ic_category_movie
+            "salary", "salario", "salário", "renda" -> R.drawable.ic_category_salary
+            "other", "outros" -> R.drawable.ic_category_other
+            "category" -> R.drawable.ic_category
+            else -> when (transactionType) {
+                "income" -> R.drawable.ic_arrow_up
+                "expense" -> R.drawable.ic_arrow_down
+                else -> R.drawable.ic_transfer
+            }
+        }
     }
     
     private fun parseTransactions(jsonArray: JSONArray): List<Transaction> {
