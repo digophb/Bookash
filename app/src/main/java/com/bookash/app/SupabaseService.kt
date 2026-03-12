@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -2379,5 +2380,36 @@ object SupabaseService {
             createdAt = json.optString("created_at"),
             updatedAt = json.optString("updated_at")
         )
+    }
+    
+    // ============== LOGS ==============
+    
+    /**
+     * Salva um log no banco de dados para debugging/auditoria
+     */
+    suspend fun saveLog(level: String, tag: String, message: String, userId: String? = null) = withContext(Dispatchers.IO) {
+        val actualUserId = userId ?: UserSession.getUserId() ?: return@withContext
+        
+        try {
+            val conn = URL("$BASE_URL/rest/v1/logs").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer ${UserSession.getAccessToken()}")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.doOutput = true
+            
+            val json = JSONObject().apply {
+                put("user_id", actualUserId)
+                put("level", level)
+                put("tag", tag)
+                put("message", message)
+            }
+            
+            conn.outputStream.write(json.toString().toByteArray())
+            conn.responseCode // ignora resposta, apenas tenta salvar
+        } catch (e: Exception) {
+            // Se falhar salvar log, não interromper fluxo principal
+            Log.e(TAG, "Falha ao salvar log no banco: ${e.message}")
+        }
     }
 }
