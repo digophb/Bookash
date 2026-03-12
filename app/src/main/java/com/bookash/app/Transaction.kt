@@ -22,7 +22,9 @@ data class Transaction(
     val notes: String? = null,
     val isRecurring: Boolean = false,
     val recurringType: String? = null, // daily, weekly, monthly, yearly
+    val recurringCount: Int? = null, // Quantidade de repetições (null = infinito)
     val recurringUntil: String? = null,
+    val status: String? = "completed", // pending, completed
     val isDeleted: Boolean = false,
     val tags: List<Tag> = emptyList(), // Tags associadas (do modelo Tag.kt)
     val attachments: List<Attachment> = emptyList(), // Anexos

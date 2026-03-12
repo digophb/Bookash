@@ -1009,10 +1009,18 @@ object SupabaseService {
                 if (transaction.toAccountId != null) {
                     append(",\"to_account_id\":\"${transaction.toAccountId}\"")
                 }
+                // Status
+                if (transaction.status != null) {
+                    append(",\"status\":\"${transaction.status}\"")
+                }
+                // Recorrência
                 if (transaction.isRecurring) {
                     append(",\"is_recurring\":true")
                     if (transaction.recurringType != null) {
                         append(",\"recurring_type\":\"${transaction.recurringType}\"")
+                    }
+                    if (transaction.recurringCount != null) {
+                        append(",\"recurring_count\":${transaction.recurringCount}")
                     }
                     if (transaction.recurringUntil != null) {
                         append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
@@ -1258,6 +1266,9 @@ object SupabaseService {
                 if (transaction.toAccountId != null) {
                     append(",\"to_account_id\":\"${transaction.toAccountId}\"")
                 }
+                if (transaction.status != null) {
+                    append(",\"status\":\"${transaction.status}\"")
+                }
                 if (!transaction.notes.isNullOrEmpty()) {
                     append(",\"notes\":\"${transaction.notes}\"")
                 }
@@ -1268,6 +1279,9 @@ object SupabaseService {
                     append(",\"is_recurring\":true")
                     if (transaction.recurringType != null) {
                         append(",\"recurring_type\":\"${transaction.recurringType}\"")
+                    }
+                    if (transaction.recurringCount != null) {
+                        append(",\"recurring_count\":${transaction.recurringCount}")
                     }
                     if (transaction.recurringUntil != null) {
                         append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
@@ -1347,11 +1361,15 @@ object SupabaseService {
             accountId = json.optString("account_id").takeIf { it.isNotEmpty() },
             fromAccountId = json.optString("from_account_id").takeIf { it.isNotEmpty() },
             toAccountId = json.optString("to_account_id").takeIf { it.isNotEmpty() },
+            fromAccountName = null,
+            toAccountName = null,
             creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
             notes = json.optString("notes").takeIf { it.isNotEmpty() },
             isRecurring = json.optBoolean("is_recurring", false),
             recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
+            recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
             recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+            status = json.optString("status").takeIf { it.isNotEmpty() },
             isDeleted = json.optBoolean("is_deleted", false),
             iconRes = when (type) {
                 "income" -> R.drawable.ic_arrow_up
@@ -1394,7 +1412,9 @@ object SupabaseService {
                 notes = json.optString("notes").takeIf { it.isNotEmpty() },
                 isRecurring = json.optBoolean("is_recurring", false),
                 recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
+                recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
                 recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+                status = json.optString("status").takeIf { it.isNotEmpty() },
                 isDeleted = json.optBoolean("is_deleted", false),
                 iconRes = getCategoryIconResource(category?.icon, type)
             )

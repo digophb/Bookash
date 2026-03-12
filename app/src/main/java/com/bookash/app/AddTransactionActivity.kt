@@ -887,90 +887,135 @@ class AddTransactionActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                val dateStr = isoDateFormat.format(selectedDate)
+                val baseDate = selectedDate
+                val baseDateStr = isoDateFormat.format(baseDate)
                 
-                if (transactionType == "transfer") {
-                    // Salvar transferência
-                    val observation = transferObservationInput.text.toString().trim()
-                    
-                    val transaction = Transaction(
-                        userId = userId ?: "",
-                        description = observation.ifEmpty { "Transferencia" },
-                        categoryId = "",
-                        categoryName = "Transferencia",
-                        amount = value,
-                        type = "transfer",
-                        date = dateStr,
-                        fromAccountId = fromAccount?.id,
-                        toAccountId = toAccount?.id
-                    )
-
-                    val token = UserSession.getAccessToken() ?: ""
-                    
-                    val transactionId = withContext(Dispatchers.IO) {
-                        SupabaseService.saveTransaction(transaction, token)
-                    }
-
-                    if (transactionId != null) {
-                        // Salvar tags se houver
-                        if (transferSelectedTags.isNotEmpty()) {
-                            val tagIds = transferSelectedTags.map { it.id }
-                            withContext(Dispatchers.IO) {
-                                SupabaseService.saveTransactionTags(transactionId, tagIds)
-                            }
-                        }
-                        
-                        setResult(RESULT_OK)
-                        finish()
-                    } else {
-                        ToastManager.showError(this@AddTransactionActivity, "Erro ao realizar transferencia")
-                    }
+                // Status baseado no switch "recebido"
+                val baseStatus = if (receivedSwitch.isChecked) "completed" else "pending"
+                
+                // Verificar se é recorrente
+                val isRecurring = repeatSwitch.isChecked
+                val frequency = if (isRecurring) frequencyText.text.toString() else null
+                val recurringType = when (frequency) {
+                    "Diario" -> "daily"
+                    "Semanal" -> "weekly"
+                    "Mensal" -> "monthly"
+                    "Anual" -> "yearly"
+                    else -> null
+                }
+                val count = if (isRecurring) {
+                    frequencyCountInput.text.toString().toIntOrNull()?.coerceAtLeast(1) ?: 1
                 } else {
-                    // Salvar receita/despesa
-                    val description = descriptionInput.text.toString().trim()
-                    val frequency = if (repeatSwitch.isChecked) frequencyText.text.toString() else null
-                    
-                    val transaction = Transaction(
-                        userId = userId ?: "",
-                        description = description,
-                        categoryId = selectedCategory?.id ?: "",
-                        categoryName = selectedCategory?.name ?: "",
-                        amount = value,
-                        type = transactionType,
-                        date = dateStr,
-                        isRecurring = frequency != null,
-                        recurringType = when (frequency) {
-                            "Diario" -> "daily"
-                            "Semanal" -> "weekly"
-                            "Mensal" -> "monthly"
-                            "Anual" -> "yearly"
-                            else -> null
-                        },
-                        // Associar conta: receita usa toAccountId, despesa usa fromAccountId
-                        toAccountId = if (transactionType == "income") selectedAccount?.id else null,
-                        fromAccountId = if (transactionType == "expense") selectedAccount?.id else null
-                    )
-
-                    val token = UserSession.getAccessToken() ?: ""
-                    
-                    val transactionId = withContext(Dispatchers.IO) {
-                        SupabaseService.saveTransaction(transaction, token)
+                    1
+                }
+                
+                // Lista de transações a serem salvas
+                val transactionsToSave = mutableListOf<Transaction>()
+                
+                for (i in 0 until count) {
+                    // Calcular data desta ocorrência
+                    val occurrenceDate = if (i == 0) baseDate else {
+                        val cal = Calendar.getInstance().apply { time = baseDate }
+                        when (recurringType) {
+                            "daily" -> cal.add(Calendar.DAY_OF_MONTH, i)
+                            "weekly" -> cal.add(Calendar.WEEK_OF_YEAR, i)
+                            "monthly" -> cal.add(Calendar.MONTH, i)
+                            "yearly" -> cal.add(Calendar.YEAR, i)
+                            else -> cal
+                        }
+                        cal.time
                     }
-
-                    if (transactionId != null) {
-                        // Salvar tags se houver
-                        if (selectedTags.isNotEmpty()) {
-                            val tagIds = selectedTags.map { it.id }
+                    val dateStr = isoDateFormat.format(occurrenceDate)
+                    
+                    // Apenas a primeira transação tem isRecurring=true e campos de recorrência preenchidos
+                    val thisIsRecurring = isRecurring && i == 0
+                    val thisRecurringType = if (thisIsRecurring) recurringType else null
+                    val thisRecurringCount = if (thisIsRecurring) count else null
+                    // Calcular recurringUntil (data da última ocorrência) apenas para a primeira
+                    val thisRecurringUntil = if (thisIsRecurring) {
+                        val lastCal = Calendar.getInstance().apply { time = baseDate }
+                        when (recurringType) {
+                            "daily" -> lastCal.add(Calendar.DAY_OF_MONTH, count - 1)
+                            "weekly" -> lastCal.add(Calendar.WEEK_OF_YEAR, count - 1)
+                            "monthly" -> lastCal.add(Calendar.MONTH, count - 1)
+                            "yearly" -> lastCal.add(Calendar.YEAR, count - 1)
+                            else -> lastCal
+                        }
+                        isoDateFormat.format(lastCal.time)
+                    } else {
+                        null
+                    }
+                    
+                    // Construir transação
+                    val transaction = if (transactionType == "transfer") {
+                        Transaction(
+                            userId = userId ?: "",
+                            description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
+                            categoryId = "",
+                            categoryName = "Transferencia",
+                            amount = value,
+                            type = "transfer",
+                            date = dateStr,
+                            fromAccountId = fromAccount?.id,
+                            toAccountId = toAccount?.id,
+                            status = baseStatus,
+                            isRecurring = thisIsRecurring,
+                            recurringType = thisRecurringType,
+                            recurringCount = thisRecurringCount,
+                            recurringUntil = thisRecurringUntil
+                        )
+                    } else {
+                        val description = descriptionInput.text.toString().trim()
+                        Transaction(
+                            userId = userId ?: "",
+                            description = description,
+                            categoryId = selectedCategory?.id ?: "",
+                            categoryName = selectedCategory?.name ?: "",
+                            amount = value,
+                            type = transactionType,
+                            date = dateStr,
+                            accountId = selectedAccount?.id,
+                            fromAccountId = if (transactionType == "expense") selectedAccount?.id else null,
+                            toAccountId = if (transactionType == "income") selectedAccount?.id else null,
+                            status = baseStatus,
+                            isRecurring = thisIsRecurring,
+                            recurringType = thisRecurringType,
+                            recurringCount = thisRecurringCount,
+                            recurringUntil = thisRecurringUntil
+                        )
+                    }
+                    transactionsToSave.add(transaction)
+                }
+                
+                // Salvar todas as transações
+                val token = UserSession.getAccessToken() ?: ""
+                var firstTransactionId: String? = null
+                
+                transactionsToSave.forEachIndexed { index, trans ->
+                    val transactionId = withContext(Dispatchers.IO) {
+                        SupabaseService.saveTransaction(trans, token)
+                    }
+                    
+                    if (transactionId != null && index == 0) {
+                        firstTransactionId = transactionId
+                        // Salvar tags apenas para a primeira transação
+                        val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
+                        if (tagsToSave.isNotEmpty()) {
+                            val tagIds = tagsToSave.map { it.id }
                             withContext(Dispatchers.IO) {
                                 SupabaseService.saveTransactionTags(transactionId, tagIds)
                             }
                         }
-                        
-                        setResult(RESULT_OK)
-                        finish()
-                    } else {
-                        ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transacao")
                     }
+                }
+                
+                if (firstTransactionId != null) {
+                    val msg = if (count > 1) "Transações criadas com sucesso!" else "Transação criada!"
+                    ToastManager.showSuccess(this@AddTransactionActivity, msg)
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao salvar", e)

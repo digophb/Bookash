@@ -45,14 +45,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goalProgressSpace: View
     private lateinit var goalPercentText: TextView
     
+    // Pendentes
+    private lateinit var pendingIncomeCount: TextView
+    private lateinit var pendingIncomeTotal: TextView
+    private lateinit var pendingIncomeRecycler: RecyclerView
+    private lateinit var pendingExpenseCount: TextView
+    private lateinit var pendingExpenseTotal: TextView
+    private lateinit var pendingExpenseRecycler: RecyclerView
+    
     private lateinit var transactionAdapter: TransactionAdapter
     private val transactions = mutableListOf<Transaction>()
     private var allTransactions: List<Transaction> = emptyList() // Todas para cálculos
     private var userId: String? = null
     
-    // Meta atual selecionada
-    private var currentGoalType: String = "monthly"
-    private var goals: List<Goal> = emptyList()
+    // Adaptadores para pendentes
+    private lateinit var pendingIncomeAdapter: TransactionAdapter
+    private lateinit var pendingExpenseAdapter: TransactionAdapter
+    private val pendingIncomeTransactions = mutableListOf<Transaction>()
+    private val pendingExpenseTransactions = mutableListOf<Transaction>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,6 +135,33 @@ class MainActivity : AppCompatActivity() {
         goalProgressBar = findViewById(R.id.goalProgressBar)
         goalProgressSpace = findViewById(R.id.goalProgressSpace)
         goalPercentText = findViewById(R.id.goalPercentText)
+        
+        // Pendentes
+        pendingIncomeCount = findViewById(R.id.pendingIncomeCount)
+        pendingIncomeTotal = findViewById(R.id.pendingIncomeTotal)
+        pendingIncomeRecycler = findViewById(R.id.pendingIncomeRecycler)
+        pendingExpenseCount = findViewById(R.id.pendingExpenseCount)
+        pendingExpenseTotal = findViewById(R.id.pendingExpenseTotal)
+        pendingExpenseRecycler = findViewById(R.id.pendingExpenseRecycler)
+        
+        // Setup adapters pendentes
+        pendingIncomeAdapter = TransactionAdapter { transaction ->
+            val intent = Intent(this, TransactionDetailActivity::class.java)
+            intent.putExtra(TransactionDetailActivity.EXTRA_TRANSACTION, transaction)
+            startActivityForResult(intent, REQUEST_ADD_TRANSACTION)
+        }
+        pendingIncomeRecycler.layoutManager = LinearLayoutManager(this)
+        pendingIncomeRecycler.adapter = pendingIncomeAdapter
+        pendingIncomeRecycler.isNestedScrollingEnabled = false
+        
+        pendingExpenseAdapter = TransactionAdapter { transaction ->
+            val intent = Intent(this, TransactionDetailActivity::class.java)
+            intent.putExtra(TransactionDetailActivity.EXTRA_TRANSACTION, transaction)
+            startActivityForResult(intent, REQUEST_ADD_TRANSACTION)
+        }
+        pendingExpenseRecycler.layoutManager = LinearLayoutManager(this)
+        pendingExpenseRecycler.adapter = pendingExpenseAdapter
+        pendingExpenseRecycler.isNestedScrollingEnabled = false
     }
 
     private fun setupBottomNavigation() {
@@ -396,6 +433,47 @@ class MainActivity : AppCompatActivity() {
             
             // Atualizar card de metas
             updateGoalsCard()
+            
+            // Carregar transações pendentes
+            loadPendingTransactions(loadedTransactions)
+        }
+    }
+    
+    private fun loadPendingTransactions(allTransactions: List<Transaction>) {
+        val pendingList = allTransactions.filter { it.status == "pending" }
+        val pendingIncome = pendingList.filter { it.type == "income" }
+        val pendingExpense = pendingList.filter { it.type == "expense" }
+        
+        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+        
+        // Atualizar receitas pendentes
+        if (pendingIncome.isEmpty()) {
+            findViewById<View>(R.id.pendingIncomeCount).visibility = View.GONE
+            findViewById<View>(R.id.pendingIncomeTotal).visibility = View.GONE
+            pendingIncomeRecycler.visibility = View.GONE
+        } else {
+            findViewById<View>(R.id.pendingIncomeCount).visibility = View.VISIBLE
+            findViewById<View>(R.id.pendingIncomeTotal).visibility = View.VISIBLE
+            pendingIncomeRecycler.visibility = View.VISIBLE
+            pendingIncomeCount.text = pendingIncome.size.toString()
+            val totalIncome = pendingIncome.sumOf { it.amount }
+            pendingIncomeTotal.text = formatter.format(totalIncome)
+            pendingIncomeAdapter.submitList(pendingIncome.take(5))
+        }
+        
+        // Atualizar despesas pendentes
+        if (pendingExpense.isEmpty()) {
+            findViewById<View>(R.id.pendingExpenseCount).visibility = View.GONE
+            findViewById<View>(R.id.pendingExpenseTotal).visibility = View.GONE
+            pendingExpenseRecycler.visibility = View.GONE
+        } else {
+            findViewById<View>(R.id.pendingExpenseCount).visibility = View.VISIBLE
+            findViewById<View>(R.id.pendingExpenseTotal).visibility = View.VISIBLE
+            pendingExpenseRecycler.visibility = View.VISIBLE
+            pendingExpenseCount.text = pendingExpense.size.toString()
+            val totalExpense = pendingExpense.sumOf { it.amount }
+            pendingExpenseTotal.text = formatter.format(totalExpense)
+            pendingExpenseAdapter.submitList(pendingExpense.take(5))
         }
     }
     
