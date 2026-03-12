@@ -320,7 +320,10 @@ class MainActivity : AppCompatActivity() {
         }
         
         // Filtrar transações do período (apenas RECEITAS/ganhos, não despesas)
-        return allTransactions.filter { it.type == "income" && it.date >= startDate }.sumOf { it.amount }
+        // Extrair apenas a parte da data (YYYY-MM-DD) para comparação
+        return allTransactions.filter { 
+            it.type == "income" && it.date.substring(0, 10) >= startDate 
+        }.sumOf { it.amount }
     }
 
     private fun loadUserData() {
@@ -382,7 +385,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateTotals() {
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
-        // Data de hoje no formato ISO
+        // Data de hoje no formato ISO (apenas a parte da data)
         val isoDateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
         val today = isoDateFormat.format(java.util.Date())
         
@@ -392,10 +395,13 @@ class MainActivity : AppCompatActivity() {
         
         // Usar todas as transações para cálculos
         allTransactions.forEach { t ->
+            // Extrair apenas a parte da data (YYYY-MM-DD) da string ISO completa
+            val transactionDate = t.date.substring(0, 10)
+            
             when (t.type) {
                 "income" -> {
                     totalIncome += t.amount
-                    if (t.date == today) {
+                    if (transactionDate == today) {
                         dailyIncome += t.amount
                     }
                 }
