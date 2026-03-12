@@ -10,7 +10,6 @@
         android:id="@+id/nestedScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true"
         android:paddingBottom="80dp">
 
         <LinearLayout
