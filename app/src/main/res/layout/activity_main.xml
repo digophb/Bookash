@@ -441,17 +441,25 @@
 
                         <!-- Barra de Progresso -->
                         <LinearLayout
+                            android:id="@+id/goalProgressContainer"
                             android:layout_width="match_parent"
                             android:layout_height="10dp"
                             android:layout_marginTop="12dp"
-                            android:background="@drawable/bg_progress_track">
+                            android:background="@drawable/bg_progress_track"
+                            android:orientation="horizontal">
 
                             <View
                                 android:id="@+id/goalProgressBar"
                                 android:layout_width="0dp"
                                 android:layout_height="match_parent"
-                                android:layout_weight="1"
+                                android:layout_weight="0"
                                 android:background="@drawable/bg_progress_income" />
+
+                            <View
+                                android:id="@+id/goalProgressSpace"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="100" />
 
                         </LinearLayout>
 

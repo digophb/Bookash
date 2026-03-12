@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goalProgressText: TextView
     private lateinit var goalTargetText: TextView
     private lateinit var goalProgressBar: View
+    private lateinit var goalProgressSpace: View
     private lateinit var goalPercentText: TextView
     
     private lateinit var transactionAdapter: TransactionAdapter
@@ -105,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         goalProgressText = findViewById(R.id.goalProgressText)
         goalTargetText = findViewById(R.id.goalTargetText)
         goalProgressBar = findViewById(R.id.goalProgressBar)
+        goalProgressSpace = findViewById(R.id.goalProgressSpace)
         goalPercentText = findViewById(R.id.goalPercentText)
     }
 
@@ -265,10 +267,13 @@ class MainActivity : AppCompatActivity() {
         }
         goalPercentText.text = "$percent% alcançado"
         
-        // Atualizar barra de progresso (View com weight)
-        val layoutParams = goalProgressBar.layoutParams as android.widget.LinearLayout.LayoutParams
-        layoutParams.weight = percent.toFloat()
-        goalProgressBar.layoutParams = layoutParams
+        // Atualizar barra de progresso (duas Views com weight)
+        val progressParams = goalProgressBar.layoutParams as android.widget.LinearLayout.LayoutParams
+        val spaceParams = goalProgressSpace.layoutParams as android.widget.LinearLayout.LayoutParams
+        progressParams.weight = percent.toFloat()
+        spaceParams.weight = (100 - percent).toFloat()
+        goalProgressBar.layoutParams = progressParams
+        goalProgressSpace.layoutParams = spaceParams
         
         // Mudar cor se passou da meta
         if (spent > goal.targetAmount) {
@@ -377,13 +382,16 @@ class MainActivity : AppCompatActivity() {
     private fun updateTotals() {
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
+        // Data de hoje no formato ISO
+        val isoDateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val today = isoDateFormat.format(java.util.Date())
+        
         var totalIncome = 0.0
         var totalExpense = 0.0
         var dailyIncome = 0.0
         
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(java.util.Date())
-        
-        transactions.forEach { t ->
+        // Usar todas as transações para cálculos
+        allTransactions.forEach { t ->
             when (t.type) {
                 "income" -> {
                     totalIncome += t.amount
@@ -394,35 +402,10 @@ class MainActivity : AppCompatActivity() {
                 "expense" -> {
                     totalExpense += t.amount
                 }
-                // transferência é ignorada pois não altera o saldo total
             }
         }
-        
-        // Usar todas as transações para ganhos do dia e metas
-        var dailyIncomeTotal = 0.0
-        var totalIncomeAll = 0.0
-        var totalExpenseAll = 0.0
-        
-        allTransactions.forEach { t ->
-            when (t.type) {
-                "income" -> {
-                    totalIncomeAll += t.amount
-                    if (t.date == today) {
-                        dailyIncomeTotal += t.amount
-                    }
-                }
-                "expense" -> {
-                    totalExpenseAll += t.amount
-                }
-            }
-        }
-        
-        dailyIncome = dailyIncomeTotal
-        totalIncome = totalIncomeAll
-        totalExpense = totalExpenseAll
         
         // Calculate balance from active accounts
-        // IMPORTANTE: Apenas contas com includeInBalance=true são somados ao total
         lifecycleScope.launch {
             val activeAccounts = SupabaseService.getAccounts(userId!!, archived = false)
             val accountsBalance = activeAccounts.filter { it.includeInBalance }.sumOf { it.balance }
@@ -433,6 +416,8 @@ class MainActivity : AppCompatActivity() {
             incomeValue.text = formatter.format(totalIncome)
             expenseValue.text = formatter.format(totalExpense)
             dailyIncomeValue.text = formatter.format(dailyIncome)
+            
+            android.util.Log.d("MainActivity", "Hoje: $today, Ganhos do dia: $dailyIncome, Total transações: ${allTransactions.size}")
         }
     }
 
