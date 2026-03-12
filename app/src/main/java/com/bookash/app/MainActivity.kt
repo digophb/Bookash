@@ -45,6 +45,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goalProgressSpace: View
     private lateinit var goalPercentText: TextView
     
+    // Dados das metas
+    private lateinit var goals: List<Goal>
+    private var currentGoalType: String = "monthly"
+    
     // Pendentes
     private lateinit var pendingIncomeCount: TextView
     private lateinit var pendingIncomeTotal: TextView
