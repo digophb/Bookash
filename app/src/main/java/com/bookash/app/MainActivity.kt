@@ -272,7 +272,6 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Selecionar Meta")
             .setSingleChoiceItems(goalNames as Array<CharSequence>, currentIndex) { dialog, which ->
                 currentGoalType = enabledGoals[which].type
-                GoalsActivity.setSelectedGoal(this, currentGoalType)
                 updateGoalsCard()
                 dialog.dismiss()
             }
@@ -287,10 +286,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
-        // Carregar meta selecionada ou a primeira disponível
-        var selectedGoalType: String? = GoalsActivity.getSelectedGoal(this)
-        if (selectedGoalType == null || enabledGoals.none { it.type == selectedGoalType }) {
-            selectedGoalType = enabledGoals.firstOrNull()?.type
+        // Usar currentGoalType se disponível, senão a primeira meta
+        var selectedGoalType = currentGoalType
+        if (selectedGoalType.isEmpty() || enabledGoals.none { it.type == selectedGoalType }) {
+            selectedGoalType = enabledGoals.firstOrNull()?.type ?: ""
         }
         
         val goal = enabledGoals.find { it.type == selectedGoalType }
