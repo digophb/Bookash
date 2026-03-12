@@ -38,11 +38,11 @@ class TransactionAdapter(
                 val fromAccount = transaction.fromAccountName ?: "Conta origem"
                 val toAccount = transaction.toAccountName ?: "Conta destino"
                 descriptionText.text = "$fromAccount → $toAccount"
+                categoryText.text = "Transferência"
             } else {
                 descriptionText.text = transaction.description
+                categoryText.text = transaction.categoryName.ifEmpty { "Sem categoria" }
             }
-            
-            categoryText.text = transaction.categoryName.ifEmpty { "Sem categoria" }
             
             val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             val formattedAmount = formatter.format(transaction.amount)
