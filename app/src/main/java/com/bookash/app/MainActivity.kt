@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var transactionAdapter: TransactionAdapter
     private val transactions = mutableListOf<Transaction>()
+    private var allTransactions: List<Transaction> = emptyList() // Todas para cálculos
     private var userId: String? = null
     
     // Meta atual selecionada
@@ -314,7 +315,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         // Filtrar transações do período (apenas RECEITAS/ganhos, não despesas)
-        return transactions.filter { it.type == "income" && it.date >= startDate }.sumOf { it.amount }
+        return allTransactions.filter { it.type == "income" && it.date >= startDate }.sumOf { it.amount }
     }
 
     private fun loadUserData() {
@@ -351,6 +352,7 @@ class MainActivity : AppCompatActivity() {
             }
             
             val loadedTransactions = SupabaseService.getTransactions(userId)
+            allTransactions = loadedTransactions // Salvar todas para cálculos
             transactions.clear()
             // Mostrar apenas os últimos 3 lançamentos no dashboard
             transactions.addAll(loadedTransactions.take(3))
@@ -395,6 +397,29 @@ class MainActivity : AppCompatActivity() {
                 // transferência é ignorada pois não altera o saldo total
             }
         }
+        
+        // Usar todas as transações para ganhos do dia e metas
+        var dailyIncomeTotal = 0.0
+        var totalIncomeAll = 0.0
+        var totalExpenseAll = 0.0
+        
+        allTransactions.forEach { t ->
+            when (t.type) {
+                "income" -> {
+                    totalIncomeAll += t.amount
+                    if (t.date == today) {
+                        dailyIncomeTotal += t.amount
+                    }
+                }
+                "expense" -> {
+                    totalExpenseAll += t.amount
+                }
+            }
+        }
+        
+        dailyIncome = dailyIncomeTotal
+        totalIncome = totalIncomeAll
+        totalExpense = totalExpenseAll
         
         // Calculate balance from active accounts
         // IMPORTANTE: Apenas contas com includeInBalance=true são somados ao total
