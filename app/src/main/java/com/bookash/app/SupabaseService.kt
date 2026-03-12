@@ -1057,13 +1057,15 @@ object SupabaseService {
                     null
                 }
             } else {
-                Log.w(TAG, "[TRANSACTIONS] CREATE - Falha: HTTP $responseCode (${duration}ms)")
-                null
+                val errorBody = conn.errorStream?.bufferedReader()?.readText()
+                val errorMsg = "HTTP $responseCode: $errorBody"
+                Log.w(TAG, "[TRANSACTIONS] CREATE - Falha: $errorMsg")
+                throw IOException(errorMsg)
             }
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            Log.e(TAG, "[TRANSACTIONS] CREATE - Erro ao criar transacao apos ${duration}ms", e)
-            null
+            Log.e(TAG, "[TRANSACTIONS] CREATE - Exceção após ${duration}ms", e)
+            throw e
         }
     }
     
