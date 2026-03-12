@@ -64,8 +64,15 @@ class AccountsActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             val loadedAccounts = SupabaseService.getAccounts(userId!!, archived = false)
+            
+            // Calcular saldo dinamicamente para cada conta baseado nas transações
+            val accountsWithCalculatedBalance = loadedAccounts.map { account ->
+                val calculatedBalance = SupabaseService.getAccountCalculatedBalance(account.id)
+                account.copy(balance = calculatedBalance)
+            }
+            
             accounts.clear()
-            accounts.addAll(loadedAccounts)
+            accounts.addAll(accountsWithCalculatedBalance)
             
             if (accounts.isEmpty()) {
                 emptyState.visibility = View.VISIBLE
@@ -127,12 +134,21 @@ class AccountsActivity : AppCompatActivity() {
                 return@launch
             }
             
-            val accountNames = archivedAccounts.map { it.name }.toTypedArray()
+            // Calcular saldo dinamicamente para cada conta arquivada
+            val accountsWithCalculatedBalance = archivedAccounts.map { account ->
+                val calculatedBalance = SupabaseService.getAccountCalculatedBalance(account.id)
+                account.copy(balance = calculatedBalance)
+            }
+            
+            val accountNames = accountsWithCalculatedBalance.map { 
+                val formatter = java.text.NumberFormat.getCurrencyInstance(java.util.Locale("pt", "BR"))
+                "${it.name} (${formatter.format(it.balance)})"
+            }.toTypedArray()
             
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this@AccountsActivity)
                 .setTitle("Contas Arquivadas")
                 .setItems(accountNames) { _, which ->
-                    showReactivateDialog(archivedAccounts[which])
+                    showReactivateDialog(accountsWithCalculatedBalance[which])
                 }
                 .setNegativeButton("Fechar", null)
                 .show()

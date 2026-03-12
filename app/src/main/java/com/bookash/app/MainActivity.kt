@@ -411,14 +411,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Calculate balance from active accounts
+        // Calculate balance from active accounts (saldo calculado dinamicamente)
         lifecycleScope.launch {
             val activeAccounts = SupabaseService.getAccounts(userId!!, archived = false)
-            val accountsBalance = activeAccounts.filter { it.includeInBalance }.sumOf { it.balance }
             
-            val balance = totalIncome - totalExpense + accountsBalance
+            // Calcular saldo de cada conta dinamicamente baseado nas transações
+            val accountsWithCalculatedBalance = activeAccounts.map { account ->
+                val calculatedBalance = SupabaseService.getAccountCalculatedBalance(account.id)
+                account.copy(balance = calculatedBalance)
+            }
             
-            balanceValue.text = formatter.format(balance)
+            val accountsBalance = accountsWithCalculatedBalance.filter { it.includeInBalance }.sumOf { it.balance }
+            
+            balanceValue.text = formatter.format(accountsBalance)
             incomeValue.text = formatter.format(totalIncome)
             expenseValue.text = formatter.format(totalExpense)
             dailyIncomeValue.text = formatter.format(dailyIncome)
