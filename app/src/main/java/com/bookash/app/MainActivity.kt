@@ -454,6 +454,7 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         
         if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK) {
+            ToastManager.showSuccess(this, "Transação salva com sucesso!")
             loadTransactions()
         }
     }

@@ -920,7 +920,6 @@ class AddTransactionActivity : AppCompatActivity() {
                             }
                         }
                         
-                        ToastManager.showSuccess(this@AddTransactionActivity, "Transferencia realizada!")
                         setResult(RESULT_OK)
                         finish()
                     } else {
@@ -967,7 +966,6 @@ class AddTransactionActivity : AppCompatActivity() {
                             }
                         }
                         
-                        ToastManager.showSuccess(this@AddTransactionActivity, "Transacao salva!")
                         setResult(RESULT_OK)
                         finish()
                     } else {
