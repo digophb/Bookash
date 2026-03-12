@@ -89,26 +89,42 @@ class GoalsActivity : AppCompatActivity() {
         // Switch listeners - habilitar/desabilitar campos e botões
         switchDaily.setOnCheckedChangeListener { _, isChecked ->
             inputLayoutDaily.isEnabled = isChecked
+            if (!isChecked) {
+                inputDaily.setText("")
+                // Salvar meta desativada
+                if (!isLoading) disableGoal("daily")
+            }
             btnSaveDaily.isEnabled = isChecked && inputDaily.text?.isNotEmpty() == true
-            if (!isChecked) inputDaily.setText("")
         }
 
         switchWeekly.setOnCheckedChangeListener { _, isChecked ->
             inputLayoutWeekly.isEnabled = isChecked
+            if (!isChecked) {
+                inputWeekly.setText("")
+                // Salvar meta desativada
+                if (!isLoading) disableGoal("weekly")
+            }
             btnSaveWeekly.isEnabled = isChecked && inputWeekly.text?.isNotEmpty() == true
-            if (!isChecked) inputWeekly.setText("")
         }
 
         switchMonthly.setOnCheckedChangeListener { _, isChecked ->
             inputLayoutMonthly.isEnabled = isChecked
+            if (!isChecked) {
+                inputMonthly.setText("")
+                // Salvar meta desativada
+                if (!isLoading) disableGoal("monthly")
+            }
             btnSaveMonthly.isEnabled = isChecked && inputMonthly.text?.isNotEmpty() == true
-            if (!isChecked) inputMonthly.setText("")
         }
 
         switchYearly.setOnCheckedChangeListener { _, isChecked ->
             inputLayoutYearly.isEnabled = isChecked
+            if (!isChecked) {
+                inputYearly.setText("")
+                // Salvar meta desativada
+                if (!isLoading) disableGoal("yearly")
+            }
             btnSaveYearly.isEnabled = isChecked && inputYearly.text?.isNotEmpty() == true
-            if (!isChecked) inputYearly.setText("")
         }
 
         // Input listeners - habilitar botão de salvar quando houver valor
@@ -195,6 +211,56 @@ class GoalsActivity : AppCompatActivity() {
                 ToastManager.showError(this@GoalsActivity, "Erro ao carregar metas")
             } finally {
                 isLoading = false
+            }
+        }
+    }
+
+    private fun disableGoal(type: String) {
+        val existingGoal = goals.find { it.type == type }
+        val now = java.time.LocalDateTime.now().toString()
+        
+        val goal = Goal(
+            id = existingGoal?.id ?: "",
+            userId = userId ?: "",
+            type = type,
+            targetAmount = existingGoal?.targetAmount ?: 0.0,
+            isEnabled = false,
+            createdAt = existingGoal?.createdAt ?: now,
+            updatedAt = now
+        )
+
+        lifecycleScope.launch {
+            try {
+                val success = withContext(Dispatchers.IO) {
+                    SupabaseService.saveGoal(goal)
+                }
+                
+                if (success) {
+                    // Atualizar lista local
+                    val index = goals.indexOfFirst { it.type == type }
+                    if (index >= 0) goals[index] = goal else goals.add(goal)
+                    Log.d(TAG, "Meta $type desativada com sucesso")
+                    ToastManager.showSuccess(this@GoalsActivity, "Meta ${goal.getDisplayName()} desativada")
+                } else {
+                    ToastManager.showError(this@GoalsActivity, "Erro ao desativar meta")
+                    // Reverter switch
+                    when (type) {
+                        "daily" -> switchDaily.isChecked = true
+                        "weekly" -> switchWeekly.isChecked = true
+                        "monthly" -> switchMonthly.isChecked = true
+                        "yearly" -> switchYearly.isChecked = true
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao desativar meta", e)
+                ToastManager.showError(this@GoalsActivity, "Erro ao desativar meta: ${e.message}")
+                // Reverter switch
+                when (type) {
+                    "daily" -> switchDaily.isChecked = true
+                    "weekly" -> switchWeekly.isChecked = true
+                    "monthly" -> switchMonthly.isChecked = true
+                    "yearly" -> switchYearly.isChecked = true
+                }
             }
         }
     }
