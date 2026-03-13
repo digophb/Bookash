@@ -76,10 +76,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pendingExpenseAdapter: TransactionAdapter
     private val pendingIncomeTransactions = mutableListOf<Transaction>()
     private val pendingExpenseTransactions = mutableListOf<Transaction>()
-    
-    // Getters públicos para acesso pelo fragment
-    fun getPendingIncomeTransactions(): List<Transaction> = pendingIncomeTransactions.toList()
-    fun getPendingExpenseTransactions(): List<Transaction> = pendingExpenseTransactions.toList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -695,3 +691,4 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_ADD_TRANSACTION = 1001
     }
+}
