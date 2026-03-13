@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -299,7 +300,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun updateGoalsCard() {
+    private fun updateGoalsCard(transactions: List<Transaction> = emptyList()) {
         val enabledGoals = goals.filter { it.isEnabled }
 
         if (enabledGoals.isEmpty()) {
@@ -326,8 +327,9 @@ class MainActivity : AppCompatActivity() {
         // Atualizar texto do tipo
         goalTypeText.text = goal.getDisplayName()
 
-        // Calcular gastos do período
-        val spent = calculateSpentForPeriod(goal.type)
+        // Calcular gastos do período (usar transações fornecidas ou todas)
+        val transactionsToUse = if (transactions.isNotEmpty()) transactions else allTransactions
+        val spent = calculateSpentForPeriod(goal.type, transactionsToUse)
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
 
         goalProgressText.text = formatter.format(spent)

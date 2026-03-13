@@ -1,5 +1,6 @@
 package com.bookash.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bookash.app.Transaction
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textview.MaterialTextView
 import java.text.NumberFormat
@@ -67,9 +69,9 @@ class PendingTransactionsFragment : Fragment() {
     
     private fun loadTransactions() {
         val activity = requireActivity() as? MainActivity
-        val transactions = when (type) {
-            "income" -> activity?.getPendingIncomeTransactions() ?: emptyList()
-            "expense" -> activity?.getPendingExpenseTransactions() ?: emptyList()
+        val transactions: List<Transaction> = when (type) {
+            "income" -> activity?.getPendingIncomeTransactions() as? List<Transaction> ?: emptyList()
+            "expense" -> activity?.getPendingExpenseTransactions() as? List<Transaction> ?: emptyList()
             else -> emptyList()
         }
         
