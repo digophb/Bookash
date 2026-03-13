@@ -682,15 +682,16 @@ class MainActivity : AppCompatActivity() {
         loadGoals()
         loadTransactions()
     }
+    
+    // Getters públicos para acesso pelo fragment
+    fun getPendingIncomeTransactions(): List<Transaction> {
+        return pendingIncomeTransactions.toList()
+    }
 
+    fun getPendingExpenseTransactions(): List<Transaction> {
+        return pendingExpenseTransactions.toList()
+    }
+    
     companion object {
-    private const val REQUEST_ADD_TRANSACTION = 1001
-
-        fun getPendingIncomeTransactions(): List<Transaction> {
-            return pendingIncomeTransactions
-        }
-
-        fun getPendingExpenseTransactions(): List<Transaction> {
-            return pendingExpenseTransactions
-        }
-}
+        private const val REQUEST_ADD_TRANSACTION = 1001
+    }
