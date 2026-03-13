@@ -1,6 +1,5 @@
 package com.bookash.app
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.widget.ViewPager2
@@ -15,6 +14,8 @@ class PendingTransactionsActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_TYPE = "type" // "income" ou "expense"
+        const val EXTRA_INCOME_LIST = "income_list"
+        const val EXTRA_EXPENSE_LIST = "expense_list"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,5 +44,14 @@ class PendingTransactionsActivity : AppCompatActivity() {
                 else -> "Outros"
             }
         }.attach()
+    }
+    
+    // Métodos para que o fragment acesse as listas
+    fun getPendingIncomeTransactions(): List<Transaction> {
+        return (intent.getSerializableExtra(EXTRA_INCOME_LIST) as? ArrayList<Transaction>)?.toList() ?: emptyList()
+    }
+    
+    fun getPendingExpenseTransactions(): List<Transaction> {
+        return (intent.getSerializableExtra(EXTRA_EXPENSE_LIST) as? ArrayList<Transaction>)?.toList() ?: emptyList()
     }
 }

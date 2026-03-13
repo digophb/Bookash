@@ -68,10 +68,10 @@ class PendingTransactionsFragment : Fragment() {
     }
     
     private fun loadTransactions() {
-        val activity = requireActivity() as? MainActivity
+        val activity = requireActivity() as? PendingTransactionsActivity
         val transactions: List<Transaction> = when (type) {
-            "income" -> activity?.getPendingIncomeTransactions() as? List<Transaction> ?: emptyList()
-            "expense" -> activity?.getPendingExpenseTransactions() as? List<Transaction> ?: emptyList()
+            "income" -> activity?.getPendingIncomeTransactions() ?: emptyList()
+            "expense" -> activity?.getPendingExpenseTransactions() ?: emptyList()
             else -> emptyList()
         }
         

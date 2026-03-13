@@ -592,13 +592,17 @@ class MainActivity : AppCompatActivity() {
     private fun setupPendingCardsClick() {
         pendingIncomeCard.setOnClickListener {
             val intent = Intent(this, PendingTransactionsActivity::class.java)
-            intent.putExtra("TYPE", "income")
+            intent.putExtra(PendingTransactionsActivity.EXTRA_TYPE, "income")
+            intent.putExtra(PendingTransactionsActivity.EXTRA_INCOME_LIST, ArrayList(pendingIncomeTransactions))
+            intent.putExtra(PendingTransactionsActivity.EXTRA_EXPENSE_LIST, ArrayList(pendingExpenseTransactions))
             startActivity(intent)
         }
 
         pendingExpenseCard.setOnClickListener {
             val intent = Intent(this, PendingTransactionsActivity::class.java)
-            intent.putExtra("TYPE", "expense")
+            intent.putExtra(PendingTransactionsActivity.EXTRA_TYPE, "expense")
+            intent.putExtra(PendingTransactionsActivity.EXTRA_INCOME_LIST, ArrayList(pendingIncomeTransactions))
+            intent.putExtra(PendingTransactionsActivity.EXTRA_EXPENSE_LIST, ArrayList(pendingExpenseTransactions))
             startActivity(intent)
         }
     }
