@@ -38,9 +38,11 @@ class PendingTransactionsActivity : AppCompatActivity() {
 
         // Conectar TabLayout com ViewPager2
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            // Determinar títulos baseado no tipo selecionado
+            val isIncomeFirst = typeFilter == "income"
             tab.text = when (position) {
-                0 -> "Receitas"
-                1 -> "Despesas"
+                0 -> if (isIncomeFirst) "Receitas" else "Despesas"
+                1 -> if (isIncomeFirst) "Despesas" else "Receitas"
                 else -> "Outros"
             }
         }.attach()

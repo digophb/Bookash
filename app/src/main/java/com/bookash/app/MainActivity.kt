@@ -480,34 +480,32 @@ class MainActivity : AppCompatActivity() {
 
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
 
-        // Atualizar receitas pendentes - apenas quantidade e total, sem lista
+        // Atualizar receitas pendentes - SEMPRE mostrar quantidade e total
+        pendingIncomeCount.visibility = View.VISIBLE
+        pendingIncomeTotal.visibility = View.VISIBLE
+        pendingIncomeRecycler.visibility = View.GONE // Sempre ocultar lista
+        
         if (pendingIncome.isEmpty()) {
-            findViewById<View>(R.id.pendingIncomeCount).visibility = View.GONE
-            findViewById<View>(R.id.pendingIncomeTotal).visibility = View.GONE
-            pendingIncomeRecycler.visibility = View.GONE
+            pendingIncomeCount.text = "0"
+            pendingIncomeTotal.text = "0 pendentes"
         } else {
-            findViewById<View>(R.id.pendingIncomeCount).visibility = View.VISIBLE
-            findViewById<View>(R.id.pendingIncomeTotal).visibility = View.VISIBLE
-            pendingIncomeRecycler.visibility = View.GONE // Ocultar lista
             pendingIncomeCount.text = pendingIncome.size.toString()
             val totalIncome = pendingIncome.sumOf { it.amount }
             pendingIncomeTotal.text = formatter.format(totalIncome)
-            // Não submeter lista - card será clicável para abrir tela de detalhes
         }
 
-        // Atualizar despesas pendentes - apenas quantidade e total, sem lista
+        // Atualizar despesas pendentes - SEMPRE mostrar quantidade e total
+        pendingExpenseCount.visibility = View.VISIBLE
+        pendingExpenseTotal.visibility = View.VISIBLE
+        pendingExpenseRecycler.visibility = View.GONE // Sempre ocultar lista
+        
         if (pendingExpense.isEmpty()) {
-            findViewById<View>(R.id.pendingExpenseCount).visibility = View.GONE
-            findViewById<View>(R.id.pendingExpenseTotal).visibility = View.GONE
-            pendingExpenseRecycler.visibility = View.GONE
+            pendingExpenseCount.text = "0"
+            pendingExpenseTotal.text = "0 pendentes"
         } else {
-            findViewById<View>(R.id.pendingExpenseCount).visibility = View.VISIBLE
-            findViewById<View>(R.id.pendingExpenseTotal).visibility = View.VISIBLE
-            pendingExpenseRecycler.visibility = View.GONE // Ocultar lista
             pendingExpenseCount.text = pendingExpense.size.toString()
             val totalExpense = pendingExpense.sumOf { it.amount }
             pendingExpenseTotal.text = formatter.format(totalExpense)
-            // Não submeter lista - card será clicável para abrir tela de detalhes
         }
     }
 
