@@ -76,6 +76,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pendingExpenseAdapter: TransactionAdapter
     private val pendingIncomeTransactions = mutableListOf<Transaction>()
     private val pendingExpenseTransactions = mutableListOf<Transaction>()
+    
+    // Getters públicos para acesso pelo fragment
+    fun getPendingIncomeTransactions(): List<Transaction> = pendingIncomeTransactions.toList()
+    fun getPendingExpenseTransactions(): List<Transaction> = pendingExpenseTransactions.toList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -471,6 +475,12 @@ class MainActivity : AppCompatActivity() {
         val pendingList = allTransactions.filter { it.status == "pending" }
         val pendingIncome = pendingList.filter { it.type == "income" }
         val pendingExpense = pendingList.filter { it.type == "expense" }
+        
+        // Atualizar listas para acesso externo (fragment)
+        pendingIncomeTransactions.clear()
+        pendingIncomeTransactions.addAll(pendingIncome)
+        pendingExpenseTransactions.clear()
+        pendingExpenseTransactions.addAll(pendingExpense)
 
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
 
@@ -674,6 +684,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val REQUEST_ADD_TRANSACTION = 1001
-    }
+    private const val REQUEST_ADD_TRANSACTION = 1001
+
+        fun getPendingIncomeTransactions(): List<Transaction> {
+            return pendingIncomeTransactions
+        }
+
+        fun getPendingExpenseTransactions(): List<Transaction> {
+            return pendingExpenseTransactions
+        }
 }
