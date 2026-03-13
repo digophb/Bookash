@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var avatarCard: MaterialCardView
     private lateinit var emptyState: View
     private lateinit var seeAllText: TextView
-    
+
     // Metas
     private lateinit var goalsCard: MaterialCardView
     private lateinit var goalSelector: View
@@ -44,11 +44,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goalProgressBar: View
     private lateinit var goalProgressSpace: View
     private lateinit var goalPercentText: TextView
-    
+
     // Dados das metas
     private lateinit var goals: List<Goal>
     private var currentGoalType: String = "monthly"
-    
+
     // Pendentes
     private lateinit var pendingIncomeCount: TextView
     private lateinit var pendingIncomeTotal: TextView
@@ -56,12 +56,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pendingExpenseCount: TextView
     private lateinit var pendingExpenseTotal: TextView
     private lateinit var pendingExpenseRecycler: RecyclerView
-    
+
+    private lateinit var pendingIncomeCard: MaterialCardView
+    private lateinit var pendingExpenseCard: MaterialCardView
+    private lateinit var monthSelector: LinearLayout
+
+    // Controle de mês
+    private var currentMonth: Int = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH)
+    private var currentYear: Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+
     private lateinit var transactionAdapter: TransactionAdapter
     private val transactions = mutableListOf<Transaction>()
     private var allTransactions: List<Transaction> = emptyList() // Todas para cálculos
     private var userId: String? = null
-    
+
     // Adaptadores para pendentes
     private lateinit var pendingIncomeAdapter: TransactionAdapter
     private lateinit var pendingExpenseAdapter: TransactionAdapter
@@ -70,19 +78,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Inicializar UserSession
         UserSession.init(this)
-        
+
         // Se não está logado, ir para Login
         if (!UserSession.isLoggedIn()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
         }
-        
+
         userId = UserSession.getUserId()
-        
+
         setContentView(R.layout.activity_main)
 
         initViews()
@@ -93,10 +101,12 @@ class MainActivity : AppCompatActivity() {
         setupScrollBehavior()
         setupSeeAllClick()
         setupGoalSelector()
+        setupPendingCardsClick()
+        setupMonthSelector()
         loadUserData()
         loadGoals()
         loadTransactions()
-        
+
         // Mostrar toast de boas-vindas se veio do login
         if (intent.getBooleanExtra("SHOW_WELCOME_TOAST", false)) {
             val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
@@ -129,7 +139,7 @@ class MainActivity : AppCompatActivity() {
         avatarCard = findViewById(R.id.avatarCard)
         emptyState = findViewById(R.id.emptyState)
         seeAllText = findViewById(R.id.seeAllText)
-        
+
         // Metas
         goalsCard = findViewById(R.id.goalsCard)
         goalSelector = findViewById(R.id.goalSelector)
@@ -139,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         goalProgressBar = findViewById(R.id.goalProgressBar)
         goalProgressSpace = findViewById(R.id.goalProgressSpace)
         goalPercentText = findViewById(R.id.goalPercentText)
-        
+
         // Pendentes
         pendingIncomeCount = findViewById(R.id.pendingIncomeCount)
         pendingIncomeTotal = findViewById(R.id.pendingIncomeTotal)
@@ -147,7 +157,14 @@ class MainActivity : AppCompatActivity() {
         pendingExpenseCount = findViewById(R.id.pendingExpenseCount)
         pendingExpenseTotal = findViewById(R.id.pendingExpenseTotal)
         pendingExpenseRecycler = findViewById(R.id.pendingExpenseRecycler)
-        
+
+        // Cards de pendentes
+        pendingIncomeCard = findViewById(R.id.pendingIncomeCard)
+        pendingExpenseCard = findViewById(R.id.pendingExpenseCard)
+
+        // Seletor de mês
+        monthSelector = findViewById(R.id.monthSelector)
+
         // Setup adapters pendentes
         pendingIncomeAdapter = TransactionAdapter { transaction ->
             val intent = Intent(this, TransactionDetailActivity::class.java)
@@ -157,7 +174,7 @@ class MainActivity : AppCompatActivity() {
         pendingIncomeRecycler.layoutManager = LinearLayoutManager(this)
         pendingIncomeRecycler.adapter = pendingIncomeAdapter
         pendingIncomeRecycler.isNestedScrollingEnabled = false
-        
+
         pendingExpenseAdapter = TransactionAdapter { transaction ->
             val intent = Intent(this, TransactionDetailActivity::class.java)
             intent.putExtra(TransactionDetailActivity.EXTRA_TRANSACTION, transaction)
@@ -186,7 +203,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun logout() {
         try {
             SettingsManager.clearCache()
@@ -226,7 +243,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showUserMenu() {
         val options = arrayOf("Meu Perfil", "Sair")
-        
+
         MaterialAlertDialogBuilder(this)
             .setTitle("Conta")
             .setItems(options) { dialog, which ->
@@ -255,23 +272,23 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, TransactionsActivity::class.java))
         }
     }
-    
+
     private fun setupGoalSelector() {
         goalSelector.setOnClickListener {
             showGoalSelector()
         }
     }
-    
+
     private fun showGoalSelector() {
         val enabledGoals = goals.filter { it.isEnabled }
         if (enabledGoals.isEmpty()) return
-        
+
         val goalNames = enabledGoals.map { goal ->
             goal.getDisplayName()
         }.toTypedArray()
-        
+
         val currentIndex = enabledGoals.indexOfFirst { it.type == currentGoalType }.takeIf { it >= 0 } ?: 0
-        
+
         MaterialAlertDialogBuilder(this)
             .setTitle("Selecionar Meta")
             .setSingleChoiceItems(goalNames as Array<CharSequence>, currentIndex) { dialog, which ->
@@ -281,41 +298,41 @@ class MainActivity : AppCompatActivity() {
             }
             .show()
     }
-    
+
     private fun updateGoalsCard() {
         val enabledGoals = goals.filter { it.isEnabled }
-        
+
         if (enabledGoals.isEmpty()) {
             goalsCard.visibility = View.GONE
             return
         }
-        
+
         // Usar currentGoalType se disponível, senão a primeira meta
         var selectedGoalType = currentGoalType
         if (selectedGoalType.isEmpty() || enabledGoals.none { it.type == selectedGoalType }) {
             selectedGoalType = enabledGoals.firstOrNull()?.type ?: ""
         }
-        
+
         val goal = enabledGoals.find { it.type == selectedGoalType }
-        
+
         if (goal == null || goal.targetAmount <= 0) {
             goalsCard.visibility = View.GONE
             return
         }
-        
+
         currentGoalType = goal.type
         goalsCard.visibility = View.VISIBLE
-        
+
         // Atualizar texto do tipo
         goalTypeText.text = goal.getDisplayName()
-        
+
         // Calcular gastos do período
         val spent = calculateSpentForPeriod(goal.type)
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-        
+
         goalProgressText.text = formatter.format(spent)
         goalTargetText.text = formatter.format(goal.targetAmount)
-        
+
         // Calcular percentual
         val percent = if (goal.targetAmount > 0.0) {
             ((spent / goal.targetAmount) * 100.0).toInt().coerceIn(0, 100)
@@ -323,7 +340,7 @@ class MainActivity : AppCompatActivity() {
             0
         }
         goalPercentText.text = "$percent% alcançado"
-        
+
         // Atualizar barra de progresso (duas Views com weight)
         val progressParams = goalProgressBar.layoutParams as android.widget.LinearLayout.LayoutParams
         val spaceParams = goalProgressSpace.layoutParams as android.widget.LinearLayout.LayoutParams
@@ -331,7 +348,7 @@ class MainActivity : AppCompatActivity() {
         spaceParams.weight = (100 - percent).toFloat()
         goalProgressBar.layoutParams = progressParams
         goalProgressSpace.layoutParams = spaceParams
-        
+
         // Mudar cor se passou da meta
         if (spent > goal.targetAmount) {
             goalProgressBar.setBackgroundResource(R.color.error)
@@ -341,7 +358,7 @@ class MainActivity : AppCompatActivity() {
             goalPercentText.setTextColor(getColor(R.color.text_secondary))
         }
     }
-    
+
     private fun loadGoals() {
         lifecycleScope.launch {
             try {
@@ -352,11 +369,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
-    private fun calculateSpentForPeriod(period: String): Double {
+
+    private fun calculateSpentForPeriod(period: String, transactions: List<Transaction>): Double {
         val calendar = java.util.Calendar.getInstance()
         val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        
+
         val startDate = when (period) {
             "daily" -> {
                 dateFormat.format(calendar.time)
@@ -375,18 +392,18 @@ class MainActivity : AppCompatActivity() {
             }
             else -> dateFormat.format(calendar.time)
         }
-        
+
         // Filtrar transações do período (apenas RECEITAS/ganhos, não despesas)
         // Extrair apenas a parte da data (YYYY-MM-DD) para comparação
-        return allTransactions.filter { 
-            it.type == "income" && it.date.substring(0, 10) >= startDate 
+        return transactions.filter {
+            it.type == "income" && it.date.substring(0, 10) >= startDate
         }.sumOf { it.amount }
     }
 
     private fun loadUserData() {
         val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
         val userName = prefs.getString("user_name", null)
-        
+
         val displayName = if (!userName.isNullOrEmpty()) {
             userName.split(" ").firstOrNull() ?: "Usuário"
         } else {
@@ -397,31 +414,35 @@ class MainActivity : AppCompatActivity() {
                 "Usuário"
             }
         }
-        
+
         welcomeText.text = "Olá, $displayName"
-        
+
         val currentMonth = java.text.SimpleDateFormat("MMMM 'de' yyyy", java.util.Locale("pt", "BR"))
             .format(java.util.Date())
         monthText.text = currentMonth.capitalize()
     }
-    
+
     private fun loadTransactions() {
         lifecycleScope.launch {
             val prefs = getSharedPreferences("bookash_prefs", MODE_PRIVATE)
             val userId = prefs.getString("user_id", "") ?: ""
-            
+
             if (userId.isEmpty()) {
                 emptyState.visibility = View.VISIBLE
                 transactionsRecycler.visibility = View.GONE
                 return@launch
             }
-            
+
             val loadedTransactions = SupabaseService.getTransactions(userId)
             allTransactions = loadedTransactions // Salvar todas para cálculos
+
+            // Filtrar transações completadas pelo mês selecionado
+            val filteredCompleted = filterTransactionsByMonth(loadedTransactions.filter { it.status == "completed" || it.status == null })
+
             transactions.clear()
             // Mostrar apenas os últimos 3 lançamentos no dashboard
-            transactions.addAll(loadedTransactions.take(3))
-            
+            transactions.addAll(filteredCompleted.take(3))
+
             if (transactions.isEmpty()) {
                 emptyState.visibility = View.VISIBLE
                 transactionsRecycler.visibility = View.GONE
@@ -430,26 +451,28 @@ class MainActivity : AppCompatActivity() {
                 transactionsRecycler.visibility = View.VISIBLE
                 transactionAdapter.submitList(transactions)
             }
-            
-            // Calcular totais
-            updateTotals()
-            
-            // Atualizar card de metas
-            updateGoalsCard()
-            
-            // Carregar transações pendentes
+
+            // Calcular totais (usar apenas transações filtradas do mês)
+            updateTotals(filteredCompleted)
+
+            // Atualizar card de metas (usar transações filtradas)
+            updateGoalsCard(filteredCompleted)
+
+            // Carregar transações pendentes (já filtra por mês dentro da função)
             loadPendingTransactions(loadedTransactions)
         }
     }
-    
+
     private fun loadPendingTransactions(allTransactions: List<Transaction>) {
+        // Pendentes: apenas status "pending"
+        // NÃO afetam saldo, então vamos apenas mostrar quantidade e total no card
         val pendingList = allTransactions.filter { it.status == "pending" }
         val pendingIncome = pendingList.filter { it.type == "income" }
         val pendingExpense = pendingList.filter { it.type == "expense" }
-        
+
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-        
-        // Atualizar receitas pendentes
+
+        // Atualizar receitas pendentes - apenas quantidade e total, sem lista
         if (pendingIncome.isEmpty()) {
             findViewById<View>(R.id.pendingIncomeCount).visibility = View.GONE
             findViewById<View>(R.id.pendingIncomeTotal).visibility = View.GONE
@@ -457,14 +480,14 @@ class MainActivity : AppCompatActivity() {
         } else {
             findViewById<View>(R.id.pendingIncomeCount).visibility = View.VISIBLE
             findViewById<View>(R.id.pendingIncomeTotal).visibility = View.VISIBLE
-            pendingIncomeRecycler.visibility = View.VISIBLE
+            pendingIncomeRecycler.visibility = View.GONE // Ocultar lista
             pendingIncomeCount.text = pendingIncome.size.toString()
             val totalIncome = pendingIncome.sumOf { it.amount }
             pendingIncomeTotal.text = formatter.format(totalIncome)
-            pendingIncomeAdapter.submitList(pendingIncome.take(5))
+            // Não submeter lista - card será clicável para abrir tela de detalhes
         }
-        
-        // Atualizar despesas pendentes
+
+        // Atualizar despesas pendentes - apenas quantidade e total, sem lista
         if (pendingExpense.isEmpty()) {
             findViewById<View>(R.id.pendingExpenseCount).visibility = View.GONE
             findViewById<View>(R.id.pendingExpenseTotal).visibility = View.GONE
@@ -472,15 +495,15 @@ class MainActivity : AppCompatActivity() {
         } else {
             findViewById<View>(R.id.pendingExpenseCount).visibility = View.VISIBLE
             findViewById<View>(R.id.pendingExpenseTotal).visibility = View.VISIBLE
-            pendingExpenseRecycler.visibility = View.VISIBLE
+            pendingExpenseRecycler.visibility = View.GONE // Ocultar lista
             pendingExpenseCount.text = pendingExpense.size.toString()
             val totalExpense = pendingExpense.sumOf { it.amount }
             pendingExpenseTotal.text = formatter.format(totalExpense)
-            pendingExpenseAdapter.submitList(pendingExpense.take(5))
+            // Não submeter lista - card será clicável para abrir tela de detalhes
         }
     }
-    
-    private fun updateTotals() {
+
+    private fun updateTotals(filteredTransactions: List<Transaction> = emptyList()) {
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
         // Data de hoje no formato ISO (apenas a parte da data)
@@ -491,8 +514,10 @@ class MainActivity : AppCompatActivity() {
         var totalExpense = 0.0
         var dailyIncome = 0.0
         
-        // Usar todas as transações para cálculos
-        allTransactions.forEach { t ->
+        // Usar transações filtradas se fornecidas, senão todas
+        val transactionsToUse = if (filteredTransactions.isNotEmpty()) filteredTransactions else allTransactions
+        
+        transactionsToUse.forEach { t ->
             // Extrair apenas a parte da data (YYYY-MM-DD) da string ISO completa
             val transactionDate = t.date.substring(0, 10)
             
@@ -526,20 +551,118 @@ class MainActivity : AppCompatActivity() {
             expenseValue.text = formatter.format(totalExpense)
             dailyIncomeValue.text = formatter.format(dailyIncome)
             
-            android.util.Log.d("MainActivity", "Hoje: $today, Ganhos do dia: $dailyIncome, Total transações: ${allTransactions.size}")
+            android.util.Log.d("MainActivity", "Hoje: $today, Ganhos do dia: $dailyIncome, Total transações filtradas: ${transactionsToUse.size}")
         }
+    }
+
+    // ====== NOVAS FUNÇÕES PARA DASHBOARD ======
+
+    /** Retorna o primeiro e último dia do mês/ano selecionado */
+    private fun getMonthDateRange(): Pair<String, String> {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(currentYear, currentMonth, 1) // Dia 1 do mês
+
+        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
+
+        // Último dia do mês
+        calendar.add(java.util.Calendar.MONTH, 1)
+        calendar.add(java.util.Calendar.DAY_OF_MONTH, -1)
+        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
+
+        return Pair(startDate, endDate)
+    }
+
+    /** Filtra transações por data (inclusive) */
+    private fun filterTransactionsByMonth(transactions: List<Transaction>): List<Transaction> {
+        val (startDate, endDate) = getMonthDateRange()
+        return transactions.filter { t ->
+            t.date >= startDate && t.date <= endDate
+        }
+    }
+
+    /** Configura clique nos cards de pendentes para abrir tela de detalhes */
+    private fun setupPendingCardsClick() {
+        pendingIncomeCard.setOnClickListener {
+            val intent = Intent(this, PendingTransactionsActivity::class.java)
+            intent.putExtra("TYPE", "income")
+            startActivity(intent)
+        }
+
+        pendingExpenseCard.setOnClickListener {
+            val intent = Intent(this, PendingTransactionsActivity::class.java)
+            intent.putExtra("TYPE", "expense")
+            startActivity(intent)
+        }
+    }
+
+    /** Configura seletor de mês */
+    private fun setupMonthSelector() {
+        monthSelector.setOnClickListener {
+            showMonthPicker()
+        }
+    }
+
+    /** Mostra diálogo para selecionar mês/ano */
+    private fun showMonthPicker() {
+        val months = arrayOf(
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        )
+
+        val currentMonthName = months[currentMonth]
+        val years = (2020..2030).toList().map { it.toString() }.toTypedArray()
+        val yearIdx = years.indexOf(currentYear.toString())
+
+        // Usar MaterialAlertDialogBuilder para picker de mês/ano
+        val builder = MaterialAlertDialogBuilder(this)
+        builder.setTitle("Selecionar mês")
+
+        // Criar vista personalizada com TextView atualizável e botões de navegação
+        // Para simplificar agora, vamos usar um SimpleListItem de mês e depois perguntar o ano
+        // Em uma próxima versão, podemos implementar um DatePickerDialog com modo mês/ano
+
+        builder.setSingleChoiceItems(months, currentMonth) { dialog, which ->
+            currentMonth = which
+            updateMonthText()
+            dialog.dismiss()
+        }
+
+        builder.setPositiveButton("Ano") { dialog, which ->
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Selecionar ano")
+                .setSingleChoiceItems(years, yearIdx) { d, yearWhich ->
+                    currentYear = years[yearWhich].toInt()
+                    updateMonthText()
+                    d.dismiss()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
+        builder.setNegativeButton("Cancelar", null)
+        builder.show()
+    }
+
+    /** Atualiza texto do seletor de mês */
+    private fun updateMonthText() {
+        val months = arrayOf(
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        )
+        monthText.text = "${months[currentMonth]} de $currentYear".capitalize()
+        loadTransactions() // Recarregar com novo filtro
     }
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        
+
         if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK) {
             ToastManager.showSuccess(this, "Transação salva com sucesso!")
             loadTransactions()
         }
     }
-    
+
     override fun onResume() {
         super.onResume()
         // Recarregar dados ao voltar para o dashboard
@@ -547,7 +670,7 @@ class MainActivity : AppCompatActivity() {
         loadGoals()
         loadTransactions()
     }
-    
+
     companion object {
         private const val REQUEST_ADD_TRANSACTION = 1001
     }

@@ -827,8 +827,8 @@ object SupabaseService {
             
             var balance = 0.0
             
-            // 1. Receitas: to_account_id = esta conta
-            val incomeEndpoint = "$BASE_URL/rest/v1/transactions?to_account_id=eq.$accountId&type=eq.income&select=amount"
+            // 1. Receitas: to_account_id = esta conta (excluindo pendentes)
+            val incomeEndpoint = "$BASE_URL/rest/v1/transactions?to_account_id=eq.$accountId&type=eq.income&status=neq.pending&select=amount"
             val incomeConn = URL(incomeEndpoint).openConnection() as HttpURLConnection
             incomeConn.requestMethod = "GET"
             incomeConn.setRequestProperty("apikey", API_KEY)
@@ -842,8 +842,8 @@ object SupabaseService {
                 }
             }
             
-            // 2. Despesas: from_account_id = esta conta
-            val expenseEndpoint = "$BASE_URL/rest/v1/transactions?from_account_id=eq.$accountId&type=eq.expense&select=amount"
+            // 2. Despesas: from_account_id = esta conta (excluindo pendentes)
+            val expenseEndpoint = "$BASE_URL/rest/v1/transactions?from_account_id=eq.$accountId&type=eq.expense&status=neq.pending&select=amount"
             val expenseConn = URL(expenseEndpoint).openConnection() as HttpURLConnection
             expenseConn.requestMethod = "GET"
             expenseConn.setRequestProperty("apikey", API_KEY)

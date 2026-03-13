@@ -59,6 +59,12 @@
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
         
+        <!-- Pendentes Activity -->
+        <activity
+            android:name=".PendingTransactionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
         <!-- Categorias -->
         <activity
             android:name=".CategoriesActivity"
