@@ -65,9 +65,12 @@ class AccountsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val loadedAccounts = SupabaseService.getAccounts(userId!!, archived = false)
             
-            // Calcular saldo dinamicamente para cada conta baseado nas transações
+            // Buscar saldos de todas as contas de uma vez (otimizado)
+            val balances = SupabaseService.getAllAccountBalances(userId!!)
+            
+            // Aplicar saldos calculados às contas
             val accountsWithCalculatedBalance = loadedAccounts.map { account ->
-                val calculatedBalance = SupabaseService.getAccountCalculatedBalance(account.id)
+                val calculatedBalance = balances[account.id] ?: 0.0
                 account.copy(balance = calculatedBalance)
             }
             
@@ -134,9 +137,12 @@ class AccountsActivity : AppCompatActivity() {
                 return@launch
             }
             
-            // Calcular saldo dinamicamente para cada conta arquivada
+            // Buscar saldos de todas as contas de uma vez (otimizado)
+            val balances = SupabaseService.getAllAccountBalances(userId)
+            
+            // Aplicar saldos calculados às contas arquivadas
             val accountsWithCalculatedBalance = archivedAccounts.map { account ->
-                val calculatedBalance = SupabaseService.getAccountCalculatedBalance(account.id)
+                val calculatedBalance = balances[account.id] ?: 0.0
                 account.copy(balance = calculatedBalance)
             }
             

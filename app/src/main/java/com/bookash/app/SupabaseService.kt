@@ -897,6 +897,82 @@ object SupabaseService {
         }
     }
     
+    /**
+     * Calcula os saldos de todas as contas de uma vez (otimizado)
+     * Retorna um mapa (accountId -> balance)
+     */
+    suspend fun getAllAccountBalances(userId: String): Map<String, Double> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[ACCOUNTS] BALANCES - Calculando saldos de todas as contas")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[ACCOUNTS] BALANCES - Erro: usuario nao autenticado")
+                return@withContext emptyMap()
+            }
+            
+            // Buscar todas as transações não pendentes do usuário de uma vez
+            val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&status=neq.pending&select=*"
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            
+            if (conn.responseCode != 200) {
+                Log.e(TAG, "[ACCOUNTS] BALANCES - Erro HTTP: ${conn.responseCode}")
+                return@withContext emptyMap()
+            }
+            
+            val response = conn.inputStream.bufferedReader().readText()
+            val transactionsArray = org.json.JSONArray(response)
+            
+            // Calcular saldos por conta
+            val balances = mutableMapOf<String, Double>()
+            
+            for (i in 0 until transactionsArray.length()) {
+                val transaction = transactionsArray.getJSONObject(i)
+                val type = transaction.optString("type")
+                val amount = transaction.optDouble("amount", 0.0)
+                val toAccountId = transaction.optString("to_account_id")
+                val fromAccountId = transaction.optString("from_account_id")
+                
+                when (type) {
+                    "income" -> {
+                        // Receita: adiciona à conta destino
+                        if (toAccountId.isNotEmpty()) {
+                            balances[toAccountId] = (balances[toAccountId] ?: 0.0) + amount
+                        }
+                    }
+                    "expense" -> {
+                        // Despesa: subtrai da conta origem
+                        if (fromAccountId.isNotEmpty()) {
+                            balances[fromAccountId] = (balances[fromAccountId] ?: 0.0) - amount
+                        }
+                    }
+                    "transfer" -> {
+                        // Transferência: subtrai da origem, adiciona ao destino
+                        if (fromAccountId.isNotEmpty()) {
+                            balances[fromAccountId] = (balances[fromAccountId] ?: 0.0) - amount
+                        }
+                        if (toAccountId.isNotEmpty()) {
+                            balances[toAccountId] = (balances[toAccountId] ?: 0.0) + amount
+                        }
+                    }
+                }
+            }
+            
+            val duration = System.currentTimeMillis() - startTime
+            Log.i(TAG, "[ACCOUNTS] BALANCES - Saldos calculados para ${balances.size} contas (${duration}ms)")
+            balances
+            
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[ACCOUNTS] BALANCES - Erro após ${duration}ms", e)
+            emptyMap()
+        }
+    }
+    
     private fun parseAccounts(jsonArray: JSONArray): List<Account> {
         val list = mutableListOf<Account>()
         for (i in 0 until jsonArray.length()) {
