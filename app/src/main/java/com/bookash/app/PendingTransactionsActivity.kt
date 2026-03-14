@@ -63,11 +63,10 @@ class PendingTransactionsActivity : AppCompatActivity() {
      */
     fun markAsCompleted(transactions: List<Transaction>, callback: (Boolean) -> Unit) {
         lifecycleScope.launch {
-            val service = SupabaseService.getInstance()
             var allSuccess = true
             
             for (transaction in transactions) {
-                val success = service.updateTransactionStatus(transaction.id, "completed")
+                val success = SupabaseService.updateTransactionStatus(transaction.id, "completed")
                 if (!success) {
                     allSuccess = false
                 }
