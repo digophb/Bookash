@@ -362,7 +362,7 @@ class TransactionsActivity : AppCompatActivity() {
     private fun calculateBalanceCards() {
         val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
         
-        // Calcular saldo atual (de todas as contas)
+        // Calcular saldo atual (de todas as contas) - usar lifecycleScope para chamar suspend functions
         lifecycleScope.launch {
             try {
                 val accounts = withContext(Dispatchers.IO) {
@@ -386,7 +386,7 @@ class TransactionsActivity : AppCompatActivity() {
             }
         }
         
-        // Calcular balanço mensal (receitas - despesas do mês)
+        // Calcular balanço mensal (receitas - despesas do mês) - pode ser feito sem coroutine
         val monthlyIncome = filteredTransactions.filter { it.type == "income" }.sumOf { it.amount }
         val monthlyExpense = filteredTransactions.filter { it.type == "expense" }.sumOf { it.amount }
         val monthlyBalance = monthlyIncome - monthlyExpense
