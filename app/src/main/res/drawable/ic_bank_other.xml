@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Fundo circular -->
+    <path
+        android:fillColor="@color/secondary"
+        android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0" />
+    
+    <!-- Ícone de banco genérico -->
+    <path
+        android:fillColor="@color/text_primary"
+        android:pathData="M24,8L6,16v4h36v-4L24,8zM10,22v12h4v-12h-4zM18,22v12h4v-12h-4zM26,22v12h4v-12h-4zM34,22v12h4v-12h-4zM6,36v4h36v-4H6z" />
+    
+</vector>
