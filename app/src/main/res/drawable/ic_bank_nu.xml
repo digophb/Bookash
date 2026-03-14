@@ -1,13 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
-    <!-- Nubank - Roxo -->
+    
     <path
-        android:fillColor="#8A05BE"
-        android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
+        android:pathData="M24,0C10.745,0 0,10.745 0,24s10.745,24 24,24 24,-10.745 24,-24S37.255,0 24,0z"
+        android:fillColor="#820AD1"/>
+    
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M24,12L16,36h4l1.5,-5h5l1.5,5h4L24,12zM24,27h-2l2,-6 2,6h-2z"/>
+        android:pathData="M34.538,20.538c0,-0.82 -0.669,-1.488 -1.489,-1.488H14.95c-0.82,0 -1.489,0.669 -1.489,1.488v6.925c0,0.82 0.669,1.489 1.489,1.489h18.1c0.82,0 1.489,-0.669 1.489,-1.489zM24,28.462c-2.194,0 -3.975,-1.781 -3.975,-3.975s1.781,-3.975 3.975,-3.975 3.975,1.781 3.975,3.975 -1.781,3.975 -3.975,3.975z"
+        android:fillColor="#FFFFFF"/>
+    
 </vector>
