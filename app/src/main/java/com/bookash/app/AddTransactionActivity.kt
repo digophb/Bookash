@@ -172,15 +172,18 @@ class AddTransactionActivity : AppCompatActivity() {
 
         // Verificar se é modo edição
         editingTransactionId = intent.getStringExtra(EXTRA_TRANSACTION_ID)
-        if (editingTransactionId != null) {
-            titleText.text = "Editar Transação"
-        }
 
         initViews()
         setupListeners()
+        
+        // Título modo edição (após initViews)
+        if (editingTransactionId != null) {
+            titleText.text = "Editar Transação"
+        }
+        
         loadData()
         
-        // Carregar transação para edição após carregar categorias/contas
+        // Carregar transação para edição
         if (editingTransactionId != null) {
             loadTransactionForEdit()
         }
