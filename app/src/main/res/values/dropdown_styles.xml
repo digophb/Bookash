@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Style para dropdowns com fundo escuro -->
+    <style name="DropdownDarkStyle" parent="Widget.Material3.AutoCompleteTextView.OutlinedBox">
+        <item name="android:background">@color/surface</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="android:popupBackground">@color/surface</item>
+    </style>
+    
+    <!-- Style para TextInputLayout com fundo escuro -->
+    <style name="TextInputDarkStyle" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxBackgroundColor">@color/surface</item>
+        <item name="boxStrokeColor">@color/secondary</item>
+        <item name="hintTextColor">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+    </style>
+</resources>

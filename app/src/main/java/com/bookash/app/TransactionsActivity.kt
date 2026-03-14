@@ -210,11 +210,21 @@ class TransactionsActivity : AppCompatActivity() {
     }
     
     private fun setupScrollBehavior() {
-        nestedScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, _ ->
-            if (scrollY > 0) {
+        nestedScroll.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+            if (scrollY > oldScrollY && scrollY > 50) {
+                // Rolando para baixo
                 fabAdd.hide()
-            } else {
+                bottomNavigation.animate()
+                    .translationY(bottomNavigation.height.toFloat())
+                    .setDuration(200)
+                    .start()
+            } else if (scrollY < oldScrollY) {
+                // Rolando para cima
                 fabAdd.show()
+                bottomNavigation.animate()
+                    .translationY(0f)
+                    .setDuration(200)
+                    .start()
             }
         })
     }
