@@ -117,18 +117,18 @@ class TransactionDetailActivity : AppCompatActivity() {
         
         if (transaction != null) {
             loadTransactionData()
+            // Abrir direto em modo edição se solicitado
+            if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) {
+                isEditMode = true
+            }
+            updateEditMode()
         } else if (transactionId != null) {
-            loadTransactionById()
+            loadTransactionById() // updateEditMode chamado após carregar
         } else {
             // Nova transação
             isEditMode = true
+            updateEditMode()
         }
-        
-        // Abrir direto em modo edição se solicitado
-        if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) {
-            isEditMode = true
-        }
-        updateEditMode()
     }
 
     private fun initViews() {
@@ -231,6 +231,7 @@ class TransactionDetailActivity : AppCompatActivity() {
     }
 
     private fun loadTransactionById() {
+        saveButton.isEnabled = false // Desabilitar até carregar
         lifecycleScope.launch {
             // Primeiro garantir que categorias e contas estejam carregadas
             if (categories.isEmpty() || accounts.isEmpty()) {
@@ -242,6 +243,13 @@ class TransactionDetailActivity : AppCompatActivity() {
             transaction = transactionId?.let { SupabaseService.getTransactionById(it) }
             if (transaction != null) {
                 loadTransactionData()
+                saveButton.isEnabled = true
+                // Aplicar modo edição se solicitado via Intent
+                if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) {
+                    isEditMode = true
+                }
+                updateEditMode()
+                Log.d(TAG, "Transação carregada: isRecurring=${transaction?.isRecurring}")
             } else {
                 ToastManager.showError(this@TransactionDetailActivity, "Transacao nao encontrada")
                 finish()
