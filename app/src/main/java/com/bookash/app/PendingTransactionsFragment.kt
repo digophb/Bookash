@@ -162,6 +162,7 @@ class PendingTransactionsFragment : Fragment() {
     private fun openTransactionDetail(transaction: Transaction) {
         val intent = Intent(requireContext(), TransactionDetailActivity::class.java)
         intent.putExtra(TransactionDetailActivity.EXTRA_TRANSACTION, transaction)
+        intent.putExtra(TransactionDetailActivity.EXTRA_EDIT_MODE, true)
         startActivity(intent)
     }
     

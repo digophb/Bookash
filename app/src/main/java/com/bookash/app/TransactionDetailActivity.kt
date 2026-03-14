@@ -33,6 +33,7 @@ class TransactionDetailActivity : AppCompatActivity() {
         private const val TAG = "TransactionDetail"
         const val EXTRA_TRANSACTION_ID = "transaction_id"
         const val EXTRA_TRANSACTION = "transaction"
+        const val EXTRA_EDIT_MODE = "edit_mode"
     }
 
     // Views
@@ -121,8 +122,13 @@ class TransactionDetailActivity : AppCompatActivity() {
         } else {
             // Nova transação
             isEditMode = true
-            updateEditMode()
         }
+        
+        // Abrir direto em modo edição se solicitado
+        if (intent.getBooleanExtra(EXTRA_EDIT_MODE, false)) {
+            isEditMode = true
+        }
+        updateEditMode()
     }
 
     private fun initViews() {
