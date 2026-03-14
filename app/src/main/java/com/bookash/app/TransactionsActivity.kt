@@ -40,8 +40,12 @@ class TransactionsActivity : AppCompatActivity() {
     private lateinit var monthText: TextView
     private lateinit var balanceCardsContainer: View
     private lateinit var currentBalanceCard: View
+    private lateinit var currentBalanceIcon: ImageView
+    private lateinit var currentBalanceLabel: TextView
     private lateinit var currentBalanceValue: TextView
     private lateinit var monthlyBalanceCard: View
+    private lateinit var monthlyBalanceIcon: ImageView
+    private lateinit var monthlyBalanceLabel: TextView
     private lateinit var monthlyBalanceValue: TextView
     private lateinit var totalContainer: View
     private lateinit var totalValue: TextView
@@ -98,8 +102,12 @@ class TransactionsActivity : AppCompatActivity() {
         monthText = findViewById(R.id.monthText)
         balanceCardsContainer = findViewById(R.id.balanceCardsContainer)
         currentBalanceCard = findViewById(R.id.currentBalanceCard)
+        currentBalanceIcon = findViewById(R.id.currentBalanceIcon)
+        currentBalanceLabel = findViewById(R.id.currentBalanceLabel)
         currentBalanceValue = findViewById(R.id.currentBalanceValue)
         monthlyBalanceCard = findViewById(R.id.monthlyBalanceCard)
+        monthlyBalanceIcon = findViewById(R.id.monthlyBalanceIcon)
+        monthlyBalanceLabel = findViewById(R.id.monthlyBalanceLabel)
         monthlyBalanceValue = findViewById(R.id.monthlyBalanceValue)
         totalContainer = findViewById(R.id.totalContainer)
         totalValue = findViewById(R.id.totalValue)
@@ -325,12 +333,29 @@ class TransactionsActivity : AppCompatActivity() {
         transactionsRecycler.visibility = View.VISIBLE
         emptyState.visibility = View.GONE
 
-        // Cards de saldo e balanço - visíveis apenas quando tipo = "Todas"
-        if (currentTypeFilter == "all") {
-            balanceCardsContainer.visibility = View.VISIBLE
-            calculateBalanceCards()
-        } else {
-            balanceCardsContainer.visibility = View.GONE
+        // Cards de saldo - comportamento baseado no tipo selecionado
+        when (currentTypeFilter) {
+            "all" -> {
+                // Todas: mostrar Saldo Atual e Balanço Mensal
+                balanceCardsContainer.visibility = View.VISIBLE
+                setupBalanceCardsAsDefault()
+                calculateBalanceCards()
+            }
+            "income" -> {
+                // Receitas: mostrar Total Pendente e Total Recebido
+                balanceCardsContainer.visibility = View.VISIBLE
+                setupBalanceCardsForIncome()
+                calculatePendingCompletedCards("income")
+            }
+            "expense" -> {
+                // Despesas: mostrar Total Pendente e Total Pago
+                balanceCardsContainer.visibility = View.VISIBLE
+                setupBalanceCardsForExpense()
+                calculatePendingCompletedCards("expense")
+            }
+            else -> {
+                balanceCardsContainer.visibility = View.GONE
+            }
         }
 
         // Transferências não alteram o saldo total, então escondemos o total
@@ -395,6 +420,41 @@ class TransactionsActivity : AppCompatActivity() {
         monthlyBalanceValue.setTextColor(
             if (monthlyBalance >= 0) getColor(R.color.primary) else getColor(R.color.error)
         )
+    }
+
+    private fun setupBalanceCardsAsDefault() {
+        currentBalanceIcon.setImageResource(R.drawable.ic_wallet)
+        currentBalanceLabel.text = "Saldo Atual"
+        monthlyBalanceIcon.setImageResource(R.drawable.ic_chart)
+        monthlyBalanceLabel.text = "Balanço Mensal"
+    }
+
+    private fun setupBalanceCardsForIncome() {
+        currentBalanceIcon.setImageResource(R.drawable.ic_pending)
+        currentBalanceLabel.text = "Total Pendente"
+        monthlyBalanceIcon.setImageResource(R.drawable.ic_completed)
+        monthlyBalanceLabel.text = "Total Recebido"
+    }
+
+    private fun setupBalanceCardsForExpense() {
+        currentBalanceIcon.setImageResource(R.drawable.ic_pending)
+        currentBalanceLabel.text = "Total Pendente"
+        monthlyBalanceIcon.setImageResource(R.drawable.ic_completed)
+        monthlyBalanceLabel.text = "Total Pago"
+    }
+
+    private fun calculatePendingCompletedCards(type: String) {
+        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+        val transactionsOfType = filteredTransactions.filter { it.type == type }
+
+        val pendingTotal = transactionsOfType.filter { it.status == "pending" }.sumOf { it.amount }
+        val completedTotal = transactionsOfType.filter { it.status == "completed" || it.status == null }.sumOf { it.amount }
+
+        currentBalanceValue.text = formatter.format(pendingTotal)
+        currentBalanceValue.setTextColor(getColor(R.color.text_secondary))
+
+        monthlyBalanceValue.text = formatter.format(completedTotal)
+        monthlyBalanceValue.setTextColor(getColor(R.color.primary))
     }
     
     private fun openSearchActivity() {
