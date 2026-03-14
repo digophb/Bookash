@@ -40,9 +40,14 @@ class TransactionDetailActivity : AppCompatActivity() {
     private lateinit var btnIncome: MaterialButton
     private lateinit var btnExpense: MaterialButton
     private lateinit var btnTransfer: MaterialButton
+    private lateinit var statusToggle: MaterialButtonToggleGroup
+    private lateinit var btnPending: MaterialButton
+    private lateinit var btnCompleted: MaterialButton
     private lateinit var titleText: TextView
+    private lateinit var statusBadge: TextView
     private lateinit var valueInput: TextInputEditText
     private lateinit var descriptionInput: TextInputEditText
+    private lateinit var notesInput: TextInputEditText
     private lateinit var categoryField: LinearLayout
     private lateinit var categoryIcon: ImageView
     private lateinit var categoryText: TextView
@@ -52,6 +57,10 @@ class TransactionDetailActivity : AppCompatActivity() {
     private lateinit var dateInput: TextInputEditText
     private lateinit var deleteButton: MaterialButton
     private lateinit var saveButton: MaterialButton
+    private lateinit var tagsChipGroup: com.google.android.material.chip.ChipGroup
+    private lateinit var addTagChip: com.google.android.material.chip.Chip
+    private lateinit var recurringSection: LinearLayout
+    private lateinit var recurringText: TextView
     
     // Modos
     private lateinit var normalModeLayout: LinearLayout
@@ -121,9 +130,14 @@ class TransactionDetailActivity : AppCompatActivity() {
         btnIncome = findViewById(R.id.btnIncome)
         btnExpense = findViewById(R.id.btnExpense)
         btnTransfer = findViewById(R.id.btnTransfer)
+        statusToggle = findViewById(R.id.statusToggle)
+        btnPending = findViewById(R.id.btnPending)
+        btnCompleted = findViewById(R.id.btnCompleted)
         titleText = findViewById(R.id.titleText)
+        statusBadge = findViewById(R.id.statusBadge)
         valueInput = findViewById(R.id.valueInput)
         descriptionInput = findViewById(R.id.descriptionInput)
+        notesInput = findViewById(R.id.notesInput)
         categoryField = findViewById(R.id.categoryField)
         categoryIcon = findViewById(R.id.categoryIcon)
         categoryText = findViewById(R.id.categoryText)
@@ -133,6 +147,10 @@ class TransactionDetailActivity : AppCompatActivity() {
         dateInput = findViewById(R.id.dateInput)
         deleteButton = findViewById(R.id.deleteButton)
         saveButton = findViewById(R.id.saveButton)
+        tagsChipGroup = findViewById(R.id.tagsChipGroup)
+        addTagChip = findViewById(R.id.addTagChip)
+        recurringSection = findViewById(R.id.recurringSection)
+        recurringText = findViewById(R.id.recurringText)
         
         normalModeLayout = findViewById(R.id.normalModeLayout)
         transferModeLayout = findViewById(R.id.transferModeLayout)
@@ -176,6 +194,23 @@ class TransactionDetailActivity : AppCompatActivity() {
         accountField.setOnClickListener { showAccountPicker() }
         fromAccountField.setOnClickListener { showFromAccountPicker() }
         toAccountField.setOnClickListener { showToAccountPicker() }
+
+        statusToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                when (checkedId) {
+                    R.id.btnPending -> {
+                        statusBadge.text = "Pendente"
+                        statusBadge.setBackgroundColor(getColor(R.color.warning))
+                        statusBadge.setTextColor(getColor(R.color.background))
+                    }
+                    R.id.btnCompleted -> {
+                        statusBadge.text = "Concluído"
+                        statusBadge.setBackgroundColor(getColor(R.color.primary))
+                        statusBadge.setTextColor(getColor(R.color.text_primary))
+                    }
+                }
+            }
+        }
 
         deleteButton.setOnClickListener { confirmDelete() }
         saveButton.setOnClickListener { saveTransaction() }
@@ -236,13 +271,28 @@ class TransactionDetailActivity : AppCompatActivity() {
             }
             updateModeVisibility()
             
+            // Status
+            when (t.status) {
+                "pending" -> {
+                    statusToggle.check(R.id.btnPending)
+                    statusBadge.text = "Pendente"
+                    statusBadge.setBackgroundColor(getColor(R.color.warning))
+                    statusBadge.setTextColor(getColor(R.color.background))
+                }
+                else -> {
+                    statusToggle.check(R.id.btnCompleted)
+                    statusBadge.text = "Concluído"
+                    statusBadge.setBackgroundColor(getColor(R.color.primary))
+                    statusBadge.setTextColor(getColor(R.color.text_primary))
+                }
+            }
+            
             // Valor
             val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             valueInput.setText(formatter.format(t.amount))
             
-            // Descricao (para transferências, usar descrição personalizada ou vazio)
+            // Descrição
             if (t.type == "transfer") {
-                // Manter descrição original se houver, senão usar nome das contas
                 val desc = t.description.ifEmpty {
                     val from = t.fromAccountName ?: "Conta origem"
                     val to = t.toAccountName ?: "Conta destino"
@@ -252,6 +302,9 @@ class TransactionDetailActivity : AppCompatActivity() {
             } else {
                 descriptionInput.setText(t.description)
             }
+            
+            // Observações
+            notesInput.setText(t.notes ?: "")
             
             // Data
             try {
@@ -270,9 +323,26 @@ class TransactionDetailActivity : AppCompatActivity() {
                 categoryIcon.visibility = View.VISIBLE
             }
             
+            // Tags
+            loadTags(t.tags)
+            
+            // Recorrência
+            if (t.isRecurring) {
+                recurringSection.visibility = View.VISIBLE
+                val recurringTypeName = when (t.recurringType) {
+                    "daily" -> "Diária"
+                    "weekly" -> "Semanal"
+                    "monthly" -> "Mensal"
+                    "yearly" -> "Anual"
+                    else -> "Recorrente"
+                }
+                recurringText.text = recurringTypeName
+            } else {
+                recurringSection.visibility = View.GONE
+            }
+            
             // Carregar contas para transferências
             if (t.type == "transfer") {
-                // Carregar conta de origem
                 t.fromAccountId?.let { fromId ->
                     fromAccount = accounts.find { it.id == fromId }
                     fromAccount?.let { acc ->
@@ -282,7 +352,6 @@ class TransactionDetailActivity : AppCompatActivity() {
                     }
                 }
                 
-                // Carregar conta de destino
                 t.toAccountId?.let { toId ->
                     toAccount = accounts.find { it.id == toId }
                     toAccount?.let { acc ->
@@ -292,7 +361,6 @@ class TransactionDetailActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                // Para receitas/despesas, carregar conta associada
                 t.accountId?.let { accId ->
                     selectedAccount = accounts.find { it.id == accId }
                     selectedAccount?.let { acc ->
@@ -302,6 +370,29 @@ class TransactionDetailActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun loadTags(tags: List<Tag>) {
+        // Remove chips de tags existentes (exceto o botão de adicionar)
+        val chipsToRemove = mutableListOf<View>()
+        for (i in 0 until tagsChipGroup.childCount) {
+            val child = tagsChipGroup.getChildAt(i)
+            if (child.id != R.id.addTagChip && child is com.google.android.material.chip.Chip) {
+                chipsToRemove.add(child)
+            }
+        }
+        chipsToRemove.forEach { tagsChipGroup.removeView(it) }
+        
+        // Adicionar chips das tags
+        tags.forEach { tag ->
+            val chip = com.google.android.material.chip.Chip(this)
+            chip.text = tag.name
+            chip.isClickable = false
+            chip.isCloseIconVisible = isEditMode
+            chip.setChipBackgroundColorResource(R.color.surface)
+            chip.setTextColor(getColor(R.color.text_primary))
+            tagsChipGroup.addView(chip, tagsChipGroup.childCount - 1)
         }
     }
     
@@ -478,6 +569,8 @@ class TransactionDetailActivity : AppCompatActivity() {
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                 val dateStr = isoDateFormat.format(selectedDate)
                 
+                val status = if (statusToggle.checkedButtonId == R.id.btnPending) "pending" else "completed"
+                
                 val newTransaction = Transaction(
                     id = transaction?.id ?: "",
                     userId = userId ?: "",
@@ -489,7 +582,9 @@ class TransactionDetailActivity : AppCompatActivity() {
                     date = dateStr,
                     accountId = if (transactionType != "transfer") selectedAccount?.id else null,
                     fromAccountId = if (transactionType == "transfer") fromAccount?.id else null,
-                    toAccountId = if (transactionType == "transfer") toAccount?.id else null
+                    toAccountId = if (transactionType == "transfer") toAccount?.id else null,
+                    status = status,
+                    notes = notesInput.text.toString().trim().ifEmpty { null }
                 )
 
                 val token = UserSession.getAccessToken() ?: ""

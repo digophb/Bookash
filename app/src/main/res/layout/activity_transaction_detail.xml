@@ -27,11 +27,24 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Detalhes da Transacao"
+            android:text="Detalhes da Transação"
             android:textColor="@color/text_primary"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginStart="16dp" />
+
+        <!-- Badge de Status -->
+        <TextView
+            android:id="@+id/statusBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Concluído"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_status_badge"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp" />
 
     </LinearLayout>
 
@@ -45,14 +58,66 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp">
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="20dp">
 
-            <!-- Toggle Tipo de Transacao -->
+            <!-- Card Valor (Destacado) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/divider">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Valor"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:alpha="0.7"
+                        android:layout_marginBottom="8dp" />
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/valueInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="R$ 0,00"
+                        android:inputType="numberDecimal"
+                        android:textSize="36sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"
+                        android:hintTextColor="@color/text_muted"
+                        android:background="@null" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Toggle Tipo de Transação -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tipo"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/typeToggle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="20dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:checkedButton="@id/btnIncome">
@@ -80,49 +145,50 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Transferencia"
+                    android:text="Transferência"
                     android:textColor="@color/toggle_button_text_color"
                     style="@style/Widget.Material3.Button.OutlinedButton" />
 
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
-            <!-- Valor (Destacado) -->
-            <androidx.cardview.widget.CardView
+            <!-- Status (Pendente/Concluído) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Situação"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/statusToggle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp">
+                android:layout_marginBottom="20dp"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:checkedButton="@id/btnCompleted">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPending"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    android:layout_weight="1"
+                    android:text="Pendente"
+                    android:textColor="@color/toggle_button_text_color"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Valor"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCompleted"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Concluído"
+                    android:textColor="@color/toggle_button_text_color"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/valueInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="R$ 0,00"
-                        android:inputType="numberDecimal"
-                        android:textSize="32sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:background="@null" />
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.button.MaterialButtonToggleGroup>
 
             <!-- Modo Normal (Receita/Despesa) -->
             <LinearLayout
@@ -131,24 +197,49 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Descricao -->
+                <!-- Descrição -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Descrição"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:hint="Descricao"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+                    app:boxStrokeColor="@color/text_secondary"
+                    app:boxBackgroundColor="@color/surface"
+                    app:hintTextColor="@color/text_primary"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/descriptionInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textCapSentences"
-                        android:maxLines="2" />
+                        android:maxLines="2"
+                        android:textColor="@color/text_primary"
+                        android:hintTextColor="@color/text_muted" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Categoria -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Categoria"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
                 <LinearLayout
                     android:id="@+id/categoryField"
                     android:layout_width="match_parent"
@@ -166,7 +257,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_category"
-                        android:tint="@color/text_secondary"
+                        android:tint="@color/primary"
                         android:visibility="gone" />
 
                     <TextView
@@ -174,8 +265,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Categoria"
-                        android:textColor="@color/text_secondary"
+                        android:text="Selecionar categoria"
+                        android:textColor="@color/text_muted"
                         android:textSize="16sp"
                         android:layout_marginStart="12dp" />
 
@@ -188,6 +279,15 @@
                 </LinearLayout>
 
                 <!-- Conta -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Conta"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
                 <LinearLayout
                     android:id="@+id/accountField"
                     android:layout_width="match_parent"
@@ -205,7 +305,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_bank_wallet"
-                        android:tint="@color/text_secondary"
+                        android:tint="@color/primary"
                         android:visibility="gone" />
 
                     <TextView
@@ -213,8 +313,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Conta"
-                        android:textColor="@color/text_secondary"
+                        android:text="Selecionar conta"
+                        android:textColor="@color/text_muted"
                         android:textSize="16sp"
                         android:layout_marginStart="12dp" />
 
@@ -228,7 +328,7 @@
 
             </LinearLayout>
 
-            <!-- Modo Transferencia -->
+            <!-- Modo Transferência -->
             <LinearLayout
                 android:id="@+id/transferModeLayout"
                 android:layout_width="match_parent"
@@ -237,6 +337,15 @@
                 android:visibility="gone">
 
                 <!-- Conta Origem -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Conta de Origem"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
                 <LinearLayout
                     android:id="@+id/fromAccountField"
                     android:layout_width="match_parent"
@@ -254,7 +363,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_bank_wallet"
-                        android:tint="@color/text_secondary"
+                        android:tint="@color/primary"
                         android:visibility="gone" />
 
                     <TextView
@@ -262,8 +371,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Conta de Origem"
-                        android:textColor="@color/text_secondary"
+                        android:text="Selecionar conta origem"
+                        android:textColor="@color/text_muted"
                         android:textSize="16sp"
                         android:layout_marginStart="12dp" />
 
@@ -276,6 +385,15 @@
                 </LinearLayout>
 
                 <!-- Conta Destino -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Conta de Destino"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
                 <LinearLayout
                     android:id="@+id/toAccountField"
                     android:layout_width="match_parent"
@@ -293,7 +411,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_bank_wallet"
-                        android:tint="@color/text_secondary"
+                        android:tint="@color/primary"
                         android:visibility="gone" />
 
                     <TextView
@@ -301,8 +419,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Conta de Destino"
-                        android:textColor="@color/text_secondary"
+                        android:text="Selecionar conta destino"
+                        android:textColor="@color/text_muted"
                         android:textSize="16sp"
                         android:layout_marginStart="12dp" />
 
@@ -317,12 +435,26 @@
             </LinearLayout>
 
             <!-- Data -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Data"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:hint="Data"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="16dp"
+                app:boxStrokeColor="@color/text_secondary"
+                app:boxBackgroundColor="@color/surface"
+                app:hintTextColor="@color/text_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/dateInput"
@@ -330,15 +462,123 @@
                     android:layout_height="wrap_content"
                     android:inputType="none"
                     android:clickable="true"
-                    android:focusable="true" />
+                    android:focusable="true"
+                    android:textColor="@color/text_primary"
+                    android:drawableEnd="@drawable/ic_calendar"
+                    android:drawableTint="@color/text_secondary" />
 
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Observações -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Observações"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:boxStrokeColor="@color/text_secondary"
+                app:boxBackgroundColor="@color/surface"
+                app:hintTextColor="@color/text_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/notesInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Adicionar observações..."
+                    android:inputType="textMultiLine"
+                    android:maxLines="4"
+                    android:textColor="@color/text_primary"
+                    android:hintTextColor="@color/text_muted" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Tags -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tags"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/tagsChipGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:singleLine="false">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/addTagChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+ Adicionar"
+                    android:textColor="@color/text_secondary"
+                    style="@style/Widget.Material3.Chip.Outlined" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- Recorrência (se aplicável) -->
+            <LinearLayout
+                android:id="@+id/recurringSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recorrência"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_dropdown_field"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_repeat"
+                        android:tint="@color/primary" />
+
+                    <TextView
+                        android:id="@+id/recurringText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mensal"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:layout_marginStart="12dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
 
     </ScrollView>
 
-    <!-- Botoes de Acao -->
+    <!-- Botões de Ação -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -354,6 +594,7 @@
             android:layout_marginEnd="8dp"
             android:text="Excluir"
             android:textColor="@color/error"
+            app:strokeColor="@color/error"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:visibility="gone" />
 
@@ -363,6 +604,8 @@
             android:layout_height="56dp"
             android:layout_weight="1"
             android:text="Salvar"
+            app:backgroundTint="@color/primary"
+            android:textColor="@color/text_primary"
             style="@style/Widget.Material3.Button" />
 
     </LinearLayout>
