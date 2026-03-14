@@ -117,7 +117,7 @@
                 android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="8dp">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -129,7 +129,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Saldo do mês"
+                        android:text="Saldo em contas"
                         android:textColor="@color/highlight_secondary"
                         android:textSize="14sp" />
 
@@ -335,7 +335,7 @@
                 android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="8dp"
+                app:cardElevation="0dp"
                 android:visibility="gone">
 
                 <LinearLayout
@@ -499,7 +499,7 @@
                         android:layout_height="wrap_content"
                         app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:focusable="true">
@@ -564,7 +564,7 @@
                         android:layout_height="wrap_content"
                         app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="16dp"
-                        app:cardElevation="4dp"
+                        app:cardElevation="0dp"
                         android:clickable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:focusable="true">

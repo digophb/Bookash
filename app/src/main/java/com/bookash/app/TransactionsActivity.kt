@@ -47,8 +47,6 @@ class TransactionsActivity : AppCompatActivity() {
     private lateinit var monthlyBalanceIcon: ImageView
     private lateinit var monthlyBalanceLabel: TextView
     private lateinit var monthlyBalanceValue: TextView
-    private lateinit var totalContainer: View
-    private lateinit var totalValue: TextView
     private lateinit var transactionsRecycler: androidx.recyclerview.widget.RecyclerView
     private lateinit var emptyState: View
     private lateinit var progressBar: ProgressBar
@@ -109,8 +107,6 @@ class TransactionsActivity : AppCompatActivity() {
         monthlyBalanceIcon = findViewById(R.id.monthlyBalanceIcon)
         monthlyBalanceLabel = findViewById(R.id.monthlyBalanceLabel)
         monthlyBalanceValue = findViewById(R.id.monthlyBalanceValue)
-        totalContainer = findViewById(R.id.totalContainer)
-        totalValue = findViewById(R.id.totalValue)
         transactionsRecycler = findViewById(R.id.transactionsRecycler)
         emptyState = findViewById(R.id.emptyState)
         progressBar = findViewById(R.id.progressBar)
@@ -326,7 +322,6 @@ class TransactionsActivity : AppCompatActivity() {
         if (filteredTransactions.isEmpty()) {
             transactionsRecycler.visibility = View.GONE
             emptyState.visibility = View.VISIBLE
-            totalContainer.visibility = View.GONE
             return
         }
 
@@ -356,28 +351,6 @@ class TransactionsActivity : AppCompatActivity() {
             else -> {
                 balanceCardsContainer.visibility = View.GONE
             }
-        }
-
-        // Transferências não alteram o saldo total, então escondemos o total
-        if (currentTypeFilter == "transfer") {
-            totalContainer.visibility = View.GONE
-        } else {
-            totalContainer.visibility = View.VISIBLE
-
-            // Calcular total (transferências são ignoradas pois não alteram o saldo)
-            val total = filteredTransactions.sumOf { transaction ->
-                when (transaction.type) {
-                    "income" -> transaction.amount
-                    "expense" -> -transaction.amount
-                    else -> 0.0
-                }
-            }
-
-            val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
-            totalValue.text = formatter.format(total)
-            totalValue.setTextColor(
-                if (total >= 0) getColor(R.color.primary) else getColor(R.color.error)
-            )
         }
 
         // Atualizar adapter
