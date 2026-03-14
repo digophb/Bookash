@@ -2,9 +2,11 @@ package com.bookash.app
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import kotlinx.coroutines.launch
 
 class PendingTransactionsActivity : AppCompatActivity() {
 
@@ -38,7 +40,6 @@ class PendingTransactionsActivity : AppCompatActivity() {
 
         // Conectar TabLayout com ViewPager2
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            // Determinar títulos baseado no tipo selecionado
             val isIncomeFirst = typeFilter == "income"
             tab.text = when (position) {
                 0 -> if (isIncomeFirst) "Receitas" else "Despesas"
@@ -55,5 +56,42 @@ class PendingTransactionsActivity : AppCompatActivity() {
     
     fun getPendingExpenseTransactions(): List<Transaction> {
         return (intent.getSerializableExtra(EXTRA_EXPENSE_LIST) as? ArrayList<Transaction>)?.toList() ?: emptyList()
+    }
+    
+    /**
+     * Marca transações como concluídas (pagas).
+     */
+    fun markAsCompleted(transactions: List<Transaction>, callback: (Boolean) -> Unit) {
+        lifecycleScope.launch {
+            val service = SupabaseService.getInstance()
+            var allSuccess = true
+            
+            for (transaction in transactions) {
+                val success = service.updateTransactionStatus(transaction.id, "completed")
+                if (!success) {
+                    allSuccess = false
+                }
+            }
+            
+            // Atualizar as listas locais para refletir a mudança
+            if (allSuccess) {
+                updateLocalLists(transactions)
+            }
+            
+            callback(allSuccess)
+        }
+    }
+    
+    /**
+     * Remove transações pagas das listas locais no Intent.
+     */
+    private fun updateLocalLists(paidTransactions: List<Transaction>) {
+        val paidIds = paidTransactions.map { it.id }.toSet()
+        
+        val incomeList = getPendingIncomeTransactions().filter { it.id !in paidIds }.toCollection(ArrayList())
+        val expenseList = getPendingExpenseTransactions().filter { it.id !in paidIds }.toCollection(ArrayList())
+        
+        intent.putExtra(EXTRA_INCOME_LIST, incomeList)
+        intent.putExtra(EXTRA_EXPENSE_LIST, expenseList)
     }
 }

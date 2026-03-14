@@ -1390,6 +1390,48 @@ object SupabaseService {
     }
     
     /**
+     * Atualiza o status de uma transação (ex: pending → completed).
+     */
+    suspend fun updateTransactionStatus(transactionId: String, status: String): Boolean = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTIONS] UPDATE_STATUS - Iniciando: id=$transactionId, status=$status")
+
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTIONS] UPDATE_STATUS - Erro: usuario nao autenticado")
+                return@withContext false
+            }
+
+            val conn = URL("$BASE_URL/rest/v1/transactions?id=eq.$transactionId").openConnection() as HttpURLConnection
+            conn.requestMethod = "PATCH"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=minimal")
+            conn.doOutput = true
+
+            val body = "{\"status\":\"$status\"}"
+            conn.outputStream.write(body.toByteArray())
+
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+
+            if (responseCode in 200..299) {
+                Log.i(TAG, "[TRANSACTIONS] UPDATE_STATUS - Sucesso: id=$transactionId → $status (${duration}ms)")
+                true
+            } else {
+                Log.w(TAG, "[TRANSACTIONS] UPDATE_STATUS - Falha: HTTP $responseCode (${duration}ms)")
+                false
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTIONS] UPDATE_STATUS - Erro após ${duration}ms", e)
+            false
+        }
+    }
+
+    /**
      * Exclui uma transacao.
      */
     suspend fun deleteTransaction(transactionId: String): Boolean = withContext(Dispatchers.IO) {
