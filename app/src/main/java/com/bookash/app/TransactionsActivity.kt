@@ -38,6 +38,11 @@ class TransactionsActivity : AppCompatActivity() {
     private lateinit var prevMonth: ImageView
     private lateinit var nextMonth: ImageView
     private lateinit var monthText: TextView
+    private lateinit var balanceCardsContainer: View
+    private lateinit var currentBalanceCard: View
+    private lateinit var currentBalanceValue: TextView
+    private lateinit var monthlyBalanceCard: View
+    private lateinit var monthlyBalanceValue: TextView
     private lateinit var totalContainer: View
     private lateinit var totalValue: TextView
     private lateinit var transactionsRecycler: androidx.recyclerview.widget.RecyclerView
@@ -91,6 +96,11 @@ class TransactionsActivity : AppCompatActivity() {
         prevMonth = findViewById(R.id.prevMonth)
         nextMonth = findViewById(R.id.nextMonth)
         monthText = findViewById(R.id.monthText)
+        balanceCardsContainer = findViewById(R.id.balanceCardsContainer)
+        currentBalanceCard = findViewById(R.id.currentBalanceCard)
+        currentBalanceValue = findViewById(R.id.currentBalanceValue)
+        monthlyBalanceCard = findViewById(R.id.monthlyBalanceCard)
+        monthlyBalanceValue = findViewById(R.id.monthlyBalanceValue)
         totalContainer = findViewById(R.id.totalContainer)
         totalValue = findViewById(R.id.totalValue)
         transactionsRecycler = findViewById(R.id.transactionsRecycler)
@@ -315,6 +325,14 @@ class TransactionsActivity : AppCompatActivity() {
         transactionsRecycler.visibility = View.VISIBLE
         emptyState.visibility = View.GONE
 
+        // Cards de saldo e balanço - visíveis apenas quando tipo = "Todas"
+        if (currentTypeFilter == "all") {
+            balanceCardsContainer.visibility = View.VISIBLE
+            calculateBalanceCards()
+        } else {
+            balanceCardsContainer.visibility = View.GONE
+        }
+
         // Transferências não alteram o saldo total, então escondemos o total
         if (currentTypeFilter == "transfer") {
             totalContainer.visibility = View.GONE
@@ -339,6 +357,44 @@ class TransactionsActivity : AppCompatActivity() {
 
         // Atualizar adapter
         transactionAdapter.submitList(filteredTransactions)
+    }
+    
+    private fun calculateBalanceCards() {
+        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+        
+        // Calcular saldo atual (de todas as contas)
+        lifecycleScope.launch {
+            try {
+                val accounts = withContext(Dispatchers.IO) {
+                    SupabaseService.getAccounts(userId ?: "")
+                }
+                val balances = withContext(Dispatchers.IO) {
+                    SupabaseService.getAllAccountBalances(userId ?: "")
+                }
+                
+                // Somar saldos de todas as contas (que estão incluídas no saldo)
+                val totalBalance = accounts.filter { it.includeInBalance }.sumOf { account ->
+                    balances[account.id] ?: 0.0
+                }
+                
+                currentBalanceValue.text = formatter.format(totalBalance)
+                currentBalanceValue.setTextColor(
+                    if (totalBalance >= 0) getColor(R.color.primary) else getColor(R.color.error)
+                )
+            } catch (e: Exception) {
+                currentBalanceValue.text = "Erro"
+            }
+        }
+        
+        // Calcular balanço mensal (receitas - despesas do mês)
+        val monthlyIncome = filteredTransactions.filter { it.type == "income" }.sumOf { it.amount }
+        val monthlyExpense = filteredTransactions.filter { it.type == "expense" }.sumOf { it.amount }
+        val monthlyBalance = monthlyIncome - monthlyExpense
+        
+        monthlyBalanceValue.text = formatter.format(monthlyBalance)
+        monthlyBalanceValue.setTextColor(
+            if (monthlyBalance >= 0) getColor(R.color.primary) else getColor(R.color.error)
+        )
     }
     
     private fun openSearchActivity() {
