@@ -71,6 +71,7 @@ class PendingTransactionAdapter(
         private val iconImage: ImageView = view.findViewById(R.id.categoryIcon)
         private val descriptionText: TextView = view.findViewById(R.id.transactionDescription)
         private val categoryText: TextView = view.findViewById(R.id.transactionCategory)
+        private val dateText: TextView = view.findViewById(R.id.transactionDate)
         private val amountText: TextView = view.findViewById(R.id.transactionAmount)
 
         fun bind(
@@ -90,6 +91,9 @@ class PendingTransactionAdapter(
                 descriptionText.text = transaction.description
                 categoryText.text = transaction.categoryName.ifEmpty { "Sem categoria" }
             }
+
+            // Formatar data (yyyy-MM-dd → dd/MM/yyyy)
+            dateText.text = formatDate(transaction.date)
 
             val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
             val formattedAmount = formatter.format(transaction.amount)
@@ -129,6 +133,20 @@ class PendingTransactionAdapter(
 
         override fun areContentsTheSame(oldItem: Transaction, newItem: Transaction): Boolean {
             return oldItem == newItem
+        }
+    }
+
+    companion object {
+        private val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        private val outputFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("pt", "BR"))
+
+        fun formatDate(dateStr: String): String {
+            return try {
+                val date = inputFormat.parse(dateStr)
+                if (date != null) outputFormat.format(date) else dateStr
+            } catch (e: Exception) {
+                dateStr
+            }
         }
     }
 }

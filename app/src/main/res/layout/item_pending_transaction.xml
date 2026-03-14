@@ -62,6 +62,15 @@
                 android:textSize="13sp"
                 android:layout_marginTop="2dp" />
 
+            <TextView
+                android:id="@+id/transactionDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="01/01/2026"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
+
         </LinearLayout>
 
         <!-- Valor -->
