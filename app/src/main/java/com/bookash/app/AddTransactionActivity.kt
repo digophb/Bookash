@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -1013,13 +1014,13 @@ class AddTransactionActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val token = UserSession.getAccessToken() ?: ""
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                val baseDateStr = isoDateFormat.format(selectedDate)
-                val status = if (receivedSwitch.isChecked) "completed" else "pending"
                 
                 // Modo edição: atualizar transação existente
                 if (editingTransactionId != null) {
+                    val token = UserSession.getAccessToken() ?: ""
+                    val baseDateStr = isoDateFormat.format(selectedDate)
+                    val status = if (receivedSwitch.isChecked) "completed" else "pending"
                     val updatedTx = if (transactionType == "transfer") {
                         editingTransaction!!.copy(
                             description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
