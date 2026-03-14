@@ -118,8 +118,8 @@
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:cardStrokeWidth="1dp"
-                app:cardStrokeColor="@color/text_secondary">
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/text_secondary">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -338,8 +338,8 @@
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:cardStrokeWidth="1dp"
-                app:cardStrokeColor="@color/text_secondary"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/text_secondary"
                 android:visibility="gone">
 
                 <LinearLayout
@@ -504,8 +504,8 @@
                         app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"
-                        app:cardStrokeWidth="1dp"
-                        app:cardStrokeColor="@color/text_secondary"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/text_secondary"
                         android:clickable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:focusable="true">
@@ -571,8 +571,8 @@
                         app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"
-                        app:cardStrokeWidth="1dp"
-                        app:cardStrokeColor="@color/text_secondary"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/text_secondary"
                         android:clickable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:focusable="true">
