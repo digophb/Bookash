@@ -36,9 +36,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Situação"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.chip.ChipGroup
@@ -47,6 +46,7 @@
                 android:layout_height="wrap_content"
                 app:singleSelection="true"
                 app:selectionRequired="true"
+                app:chipBackgroundColor="@color/filter_chip_background"
                 android:layout_marginBottom="24dp">
 
                 <com.google.android.material.chip.Chip
@@ -55,21 +55,30 @@
                     android:layout_height="wrap_content"
                     android:text="Todos"
                     android:checked="true"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.Material3.Chip.Filter"
+                    app:chipBackgroundColor="@color/filter_chip_background"
+                    android:textColor="@color/filter_chip_text"
+                    app:checkedIconVisible="false" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipStatusCompleted"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Efetuadas"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.Material3.Chip.Filter"
+                    app:chipBackgroundColor="@color/filter_chip_background"
+                    android:textColor="@color/filter_chip_text"
+                    app:checkedIconVisible="false" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipStatusPending"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Pendentes"
-                    style="@style/Widget.Material3.Chip.Filter" />
+                    style="@style/Widget.Material3.Chip.Filter"
+                    app:chipBackgroundColor="@color/filter_chip_background"
+                    android:textColor="@color/filter_chip_text"
+                    app:checkedIconVisible="false" />
 
             </com.google.android.material.chip.ChipGroup>
 
@@ -78,9 +87,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Categoria"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -94,8 +102,10 @@
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
-                app:boxStrokeColor="@color/primary"
-                app:hintTextColor="@color/text_secondary">
+                app:boxStrokeColor="@color/secondary"
+                app:boxBackgroundColor="@color/surface"
+                app:hintTextColor="@color/text_secondary"
+                android:textColorHint="@color/text_secondary">
 
                 <AutoCompleteTextView
                     android:id="@+id/categoryDropdown"
@@ -104,7 +114,8 @@
                     android:inputType="none"
                     android:text="Todas"
                     android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:background="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -113,9 +124,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Contas"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -129,8 +139,10 @@
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
-                app:boxStrokeColor="@color/primary"
-                app:hintTextColor="@color/text_secondary">
+                app:boxStrokeColor="@color/secondary"
+                app:boxBackgroundColor="@color/surface"
+                app:hintTextColor="@color/text_secondary"
+                android:textColorHint="@color/text_secondary">
 
                 <AutoCompleteTextView
                     android:id="@+id/accountDropdown"
@@ -139,7 +151,8 @@
                     android:inputType="none"
                     android:text="Todas"
                     android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:background="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -148,9 +161,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tags"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -164,8 +176,10 @@
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
-                app:boxStrokeColor="@color/primary"
-                app:hintTextColor="@color/text_secondary">
+                app:boxStrokeColor="@color/secondary"
+                app:boxBackgroundColor="@color/surface"
+                app:hintTextColor="@color/text_secondary"
+                android:textColorHint="@color/text_secondary">
 
                 <AutoCompleteTextView
                     android:id="@+id/tagDropdown"
@@ -174,9 +188,17 @@
                     android:inputType="none"
                     android:text="Todas"
                     android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:background="@color/surface" />
 
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Separador -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider"
+                android:layout_marginVertical="16dp" />
 
             <!-- Filtrar Período -->
             <LinearLayout
@@ -192,17 +214,18 @@
                     android:layout_weight="1"
                     android:text="Filtrar período"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textSize="16sp" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/periodSwitch"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/primary"
+                    app:trackTint="@color/divider" />
 
             </LinearLayout>
 
-            <!-- Período (inicialmente oculto) -->
+            <!-- Período (sempre visível, altura controlada por código) -->
             <LinearLayout
                 android:id="@+id/periodContainer"
                 android:layout_width="match_parent"
@@ -230,8 +253,10 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:boxStrokeColor="@color/primary"
+                    app:boxStrokeColor="@color/secondary"
+                    app:boxBackgroundColor="@color/surface"
                     app:startIconDrawable="@drawable/ic_calendar"
+                    app:startIconTint="@color/text_secondary"
                     app:hintTextColor="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -241,7 +266,8 @@
                         android:hint="Data inicial"
                         android:focusable="false"
                         android:clickable="true"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -263,8 +289,10 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
-                    app:boxStrokeColor="@color/primary"
+                    app:boxStrokeColor="@color/secondary"
+                    app:boxBackgroundColor="@color/surface"
                     app:startIconDrawable="@drawable/ic_calendar"
+                    app:startIconTint="@color/text_secondary"
                     app:hintTextColor="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -274,7 +302,8 @@
                         android:hint="Data final"
                         android:focusable="false"
                         android:clickable="true"
-                        android:textColor="@color/text_primary" />
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -285,7 +314,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="32dp">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/clearButton"
@@ -298,7 +328,8 @@
                     app:backgroundTint="@color/surface"
                     app:strokeColor="@color/primary"
                     app:strokeWidth="1dp"
-                    app:cornerRadius="16dp" />
+                    app:cornerRadius="16dp"
+                    android:textColor="@color/text_primary" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/applyButton"

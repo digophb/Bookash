@@ -200,39 +200,10 @@ class FilterTransactionsActivity : AppCompatActivity() {
     
     private fun showPeriodContainer() {
         periodContainer.visibility = View.VISIBLE
-        val animator = ObjectAnimator.ofFloat(periodContainer, "alpha", 0f, 1f)
-        animator.duration = 300
-        animator.start()
-        
-        // Animar altura
-        periodContainer.measure(
-            View.MeasureSpec.makeMeasureSpec(periodContainer.width, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-        val targetHeight = periodContainer.measuredHeight
-        periodContainer.layoutParams.height = 0
-        periodContainer.requestLayout()
-        
-        val heightAnimator = ObjectAnimator.ofInt(periodContainer, "layoutParams.height", 0, targetHeight)
-        heightAnimator.duration = 300
-        heightAnimator.addUpdateListener { periodContainer.requestLayout() }
-        heightAnimator.start()
     }
     
     private fun hidePeriodContainer() {
-        val animator = ObjectAnimator.ofFloat(periodContainer, "alpha", 1f, 0f)
-        animator.duration = 300
-        animator.start()
-        
-        val heightAnimator = ObjectAnimator.ofInt(periodContainer, "layoutParams.height", periodContainer.height, 0)
-        heightAnimator.duration = 300
-        heightAnimator.addUpdateListener { periodContainer.requestLayout() }
-        heightAnimator.addListener(object : android.animation.AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: android.animation.Animator) {
-                periodContainer.visibility = View.GONE
-            }
-        })
-        heightAnimator.start()
+        periodContainer.visibility = View.GONE
     }
     
     private fun setDefaultDates() {
