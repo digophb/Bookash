@@ -820,9 +820,18 @@ class AddTransactionActivity : AppCompatActivity() {
         // Tipo
         transactionType = tx.type
         when (tx.type) {
-            "income" -> typeToggle.check(R.id.btnIncome)
-            "expense" -> typeToggle.check(R.id.btnExpense)
-            "transfer" -> typeToggle.check(R.id.btnTransfer)
+            "income" -> {
+                typeToggle.check(R.id.btnIncome)
+                titleText.text = "Editar Receita"
+            }
+            "expense" -> {
+                typeToggle.check(R.id.btnExpense)
+                titleText.text = "Editar Despesa"
+            }
+            "transfer" -> {
+                typeToggle.check(R.id.btnTransfer)
+                titleText.text = "Editar Transferência"
+            }
         }
         updateModeVisibility()
         
@@ -904,6 +913,13 @@ class AddTransactionActivity : AppCompatActivity() {
         selectedTags.clear()
         selectedTags.addAll(tx.tags)
         updateSelectedTagsUI()
+        
+        // Expandir "Mais Detalhes" se houver campos preenchidos nessa seção
+        if (tx.isRecurring || !tx.notes.isNullOrEmpty()) {
+            moreDetailsLayout.visibility = View.VISIBLE
+            isMoreDetailsVisible = true
+            moreDetailsArrow.rotation = 180f
+        }
     }
 
     private fun loadCategories() {
