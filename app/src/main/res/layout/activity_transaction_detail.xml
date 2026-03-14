@@ -526,7 +526,7 @@
                     android:layout_height="wrap_content"
                     android:text="+ Adicionar"
                     android:textColor="@color/text_secondary"
-                    style="@style/Widget.Material3.Chip.Outlined" />
+                    style="@style/Widget.Bookash.Chip.Outlined" />
 
             </com.google.android.material.chip.ChipGroup>
 
