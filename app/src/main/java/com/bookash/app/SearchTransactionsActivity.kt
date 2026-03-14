@@ -198,6 +198,7 @@ class SearchTransactionsActivity : AppCompatActivity() {
         
         progressBar.visibility = View.VISIBLE
         
+        // Buscar em coroutine para usar funções suspend
         lifecycleScope.launch {
             try {
                 // Carregar categorias e contas para busca
