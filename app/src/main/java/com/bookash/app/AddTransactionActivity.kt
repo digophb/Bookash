@@ -48,6 +48,7 @@ class AddTransactionActivity : AppCompatActivity() {
         private const val TAG = "AddTransaction"
         private const val REQUEST_CAMERA_PERMISSION = 1001
         private const val REQUEST_STORAGE_PERMISSION = 1002
+        const val EXTRA_TRANSACTION_ID = "transaction_id"
     }
 
     // Views
@@ -139,6 +140,10 @@ class AddTransactionActivity : AppCompatActivity() {
     // User ID
     private var userId: String? = null
     
+    // Modo edição
+    private var editingTransactionId: String? = null
+    private var editingTransaction: Transaction? = null
+    
     // Camera URI temporária
     private var cameraImageUri: Uri? = null
     
@@ -164,9 +169,20 @@ class AddTransactionActivity : AppCompatActivity() {
         // Obter userId do UserSession
         userId = UserSession.getUserId()
 
+        // Verificar se é modo edição
+        editingTransactionId = intent.getStringExtra(EXTRA_TRANSACTION_ID)
+        if (editingTransactionId != null) {
+            titleText.text = "Editar Transação"
+        }
+
         initViews()
         setupListeners()
         loadData()
+        
+        // Carregar transação para edição após carregar categorias/contas
+        if (editingTransactionId != null) {
+            loadTransactionForEdit()
+        }
     }
 
     private fun initViews() {
@@ -778,6 +794,117 @@ class AddTransactionActivity : AppCompatActivity() {
         loadTags()
     }
 
+    private fun loadTransactionForEdit() {
+        saveButton.isEnabled = false
+        lifecycleScope.launch {
+            // Aguardar categorias e contas carregarem
+            while (categories.isEmpty() || accounts.isEmpty()) {
+                kotlinx.coroutines.delay(100)
+            }
+            
+            val tx = editingTransactionId?.let { SupabaseService.getTransactionById(it) }
+            if (tx != null) {
+                editingTransaction = tx
+                populateForm(tx)
+                saveButton.isEnabled = true
+                Log.d(TAG, "Transação carregada para edição: ${tx.id}")
+            } else {
+                ToastManager.showError(this@AddTransactionActivity, "Transação não encontrada")
+                finish()
+            }
+        }
+    }
+
+    private fun populateForm(tx: Transaction) {
+        // Tipo
+        transactionType = tx.type
+        when (tx.type) {
+            "income" -> typeToggle.check(R.id.btnIncome)
+            "expense" -> typeToggle.check(R.id.btnExpense)
+            "transfer" -> typeToggle.check(R.id.btnTransfer)
+        }
+        updateModeVisibility()
+        
+        // Valor
+        val formatter = NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+        valueInput.setText(formatter.format(tx.amount))
+        
+        // Descrição
+        descriptionInput.setText(tx.description)
+        
+        // Observações
+        notesInput.setText(tx.notes ?: "")
+        
+        // Data
+        try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val date = sdf.parse(tx.date) ?: Date()
+            selectedDate = date
+            val displaySdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+            dateInput.setText(displaySdf.format(date))
+            if (tx.type == "transfer") {
+                transferDateInput.setText(displaySdf.format(date))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao parsear data", e)
+        }
+        
+        // Status
+        receivedSwitch.isChecked = tx.status == "completed"
+        
+        // Categoria
+        selectedCategory = categories.find { it.id == tx.categoryId }
+        selectedCategory?.let { cat ->
+            categoryText.text = cat.name
+            categoryText.setTextColor(getColor(R.color.text_primary))
+            categoryIcon.visibility = View.VISIBLE
+        }
+        
+        // Conta (income/expense)
+        if (tx.type != "transfer") {
+            selectedAccount = accounts.find { it.id == tx.accountId }
+            selectedAccount?.let { acc ->
+                accountText.text = acc.name
+                accountText.setTextColor(getColor(R.color.text_primary))
+                accountIcon.visibility = View.VISIBLE
+            }
+        } else {
+            // Transferência
+            fromAccount = accounts.find { it.id == tx.fromAccountId }
+            fromAccount?.let { acc ->
+                fromAccountText.text = acc.name
+                fromAccountText.setTextColor(getColor(R.color.text_primary))
+                fromAccountIcon.visibility = View.VISIBLE
+            }
+            toAccount = accounts.find { it.id == tx.toAccountId }
+            toAccount?.let { acc ->
+                toAccountText.text = acc.name
+                toAccountText.setTextColor(getColor(R.color.text_primary))
+                toAccountIcon.visibility = View.VISIBLE
+            }
+            transferObservationInput.setText(tx.description)
+        }
+        
+        // Recorrência
+        if (tx.isRecurring) {
+            repeatSwitch.isChecked = true
+            repeatFrequencyLayout.visibility = View.VISIBLE
+            frequencyText.text = when (tx.recurringType) {
+                "daily" -> "Diario"
+                "weekly" -> "Semanal"
+                "monthly" -> "Mensal"
+                "yearly" -> "Anual"
+                else -> "Mensal"
+            }
+            tx.recurringCount?.let { frequencyCountInput.setText(it.toString()) }
+        }
+        
+        // Tags
+        selectedTags.clear()
+        selectedTags.addAll(tx.tags)
+        updateSelectedTagsUI()
+    }
+
     private fun loadCategories() {
         lifecycleScope.launch {
             categories = userId?.let { SupabaseService.getCategories(it) } ?: emptyList()
@@ -886,11 +1013,62 @@ class AddTransactionActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
+                val token = UserSession.getAccessToken() ?: ""
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val baseDateStr = isoDateFormat.format(selectedDate)
+                val status = if (receivedSwitch.isChecked) "completed" else "pending"
+                
+                // Modo edição: atualizar transação existente
+                if (editingTransactionId != null) {
+                    val updatedTx = if (transactionType == "transfer") {
+                        editingTransaction!!.copy(
+                            description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
+                            amount = value,
+                            type = "transfer",
+                            date = baseDateStr,
+                            fromAccountId = fromAccount?.id,
+                            toAccountId = toAccount?.id,
+                            fromAccountName = fromAccount?.name,
+                            toAccountName = toAccount?.name,
+                            status = status
+                        )
+                    } else {
+                        editingTransaction!!.copy(
+                            description = descriptionInput.text.toString().trim(),
+                            categoryId = selectedCategory?.id ?: "",
+                            categoryName = selectedCategory?.name ?: "",
+                            amount = value,
+                            type = transactionType,
+                            date = baseDateStr,
+                            accountId = selectedAccount?.id,
+                            status = status,
+                            notes = notesInput.text.toString().trim().ifEmpty { null }
+                        )
+                    }
+                    
+                    val success = withContext(Dispatchers.IO) {
+                        SupabaseService.updateTransaction(updatedTx, token)
+                    }
+                    
+                    if (success) {
+                        // Atualizar tags
+                        val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
+                        withContext(Dispatchers.IO) {
+                            SupabaseService.saveTransactionTags(editingTransactionId!!, tagsToSave.map { it.id })
+                        }
+                        ToastManager.showSuccess(this@AddTransactionActivity, "Transação atualizada!")
+                        setResult(RESULT_OK)
+                        finish()
+                    } else {
+                        ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transação")
+                    }
+                    saveButton.isEnabled = true
+                    return@launch
+                }
+                
+                // Modo criação: criar nova(s) transação(ões)
                 val baseDate = selectedDate
                 val baseDateStr = isoDateFormat.format(baseDate)
-                
-                // Status baseado no switch "recebido"
                 val baseStatus = if (receivedSwitch.isChecked) "completed" else "pending"
                 
                 // Verificar se é recorrente
