@@ -121,9 +121,13 @@ class TransactionsActivity : AppCompatActivity() {
             finish()
         }
         
-        // Menu do toolbar (filtro)
+        // Menu do toolbar (pesquisa e filtro)
         toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.action_search -> {
+                    openSearchActivity()
+                    true
+                }
                 R.id.action_filter -> {
                     openFilterActivity()
                     true
@@ -337,6 +341,11 @@ class TransactionsActivity : AppCompatActivity() {
         transactionAdapter.submitList(filteredTransactions)
     }
     
+    private fun openSearchActivity() {
+        val intent = Intent(this, SearchTransactionsActivity::class.java)
+        startActivity(intent)
+    }
+
     private fun openFilterActivity() {
         val intent = Intent(this, FilterTransactionsActivity::class.java)
         intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_STATUS, filterStatus)

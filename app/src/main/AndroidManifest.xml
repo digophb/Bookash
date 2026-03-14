@@ -119,6 +119,12 @@
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
         
+        <!-- Search Transactions Activity -->
+        <activity
+            android:name=".SearchTransactionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
         <!-- Goals Activity -->
         <activity
             android:name=".GoalsActivity"
