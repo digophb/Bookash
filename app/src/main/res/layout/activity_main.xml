@@ -117,7 +117,9 @@
                 android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="0dp">
+                app:cardElevation="0dp"
+                app:cardStrokeWidth="1dp"
+                app:cardStrokeColor="@color/text_secondary">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -189,7 +191,7 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="@color/divider"
+                        android:background="@color/text_secondary"
                         android:layout_marginVertical="20dp" />
 
                     <!-- Receitas e Despesas -->
@@ -336,6 +338,8 @@
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
+                app:cardStrokeWidth="1dp"
+                app:cardStrokeColor="@color/text_secondary"
                 android:visibility="gone">
 
                 <LinearLayout
@@ -500,6 +504,8 @@
                         app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"
+                        app:cardStrokeWidth="1dp"
+                        app:cardStrokeColor="@color/text_secondary"
                         android:clickable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:focusable="true">
@@ -565,6 +571,8 @@
                         app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"
+                        app:cardStrokeWidth="1dp"
+                        app:cardStrokeColor="@color/text_secondary"
                         android:clickable="true"
                         android:foreground="?attr/selectableItemBackground"
                         android:focusable="true">
