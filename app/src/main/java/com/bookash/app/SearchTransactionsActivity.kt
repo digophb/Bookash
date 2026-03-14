@@ -196,28 +196,46 @@ class SearchTransactionsActivity : AppCompatActivity() {
     private fun performSearch() {
         val query = searchInput.text?.toString()?.trim()?.lowercase() ?: ""
         
-        var result = allTransactions
+        progressBar.visibility = View.VISIBLE
         
-        // Filtro por período
-        result = filterByPeriod(result)
-        
-        // Filtro por texto (busca em descrição, categoria, conta, tags)
-        if (query.isNotEmpty()) {
-            result = result.filter { transaction ->
-                // Buscar nome da categoria
-                val categoryName = getCategoryName(transaction.categoryId).lowercase()
-                // Buscar nome da conta
-                val accountName = getAccountName(transaction.toAccountId, transaction.fromAccountId).lowercase()
+        lifecycleScope.launch {
+            try {
+                // Carregar categorias e contas para busca
+                val categories = withContext(Dispatchers.IO) {
+                    SupabaseService.getCategories(userId ?: "")
+                }
+                val accounts = withContext(Dispatchers.IO) {
+                    SupabaseService.getAccounts(userId ?: "")
+                }
                 
-                transaction.description?.lowercase()?.contains(query) == true ||
-                categoryName.contains(query) ||
-                accountName.contains(query) ||
-                transaction.amount.toString().contains(query)
+                var result = allTransactions
+                
+                // Filtro por período
+                result = filterByPeriod(result)
+                
+                // Filtro por texto (busca em descrição, categoria, conta, valor)
+                if (query.isNotEmpty()) {
+                    result = result.filter { transaction ->
+                        // Buscar nome da categoria
+                        val categoryName = categories.find { it.id == transaction.categoryId }?.name?.lowercase() ?: ""
+                        // Buscar nome da conta
+                        val accountName = accounts.find { it.id == transaction.toAccountId || it.id == transaction.fromAccountId }?.name?.lowercase() ?: ""
+                        
+                        transaction.description?.lowercase()?.contains(query) == true ||
+                        categoryName.contains(query) ||
+                        accountName.contains(query) ||
+                        transaction.amount.toString().contains(query)
+                    }
+                }
+                
+                filteredTransactions = result
+                updateUI()
+                progressBar.visibility = View.GONE
+            } catch (e: Exception) {
+                progressBar.visibility = View.GONE
+                ToastManager.showError(this@SearchTransactionsActivity, "Erro ao buscar transações")
             }
         }
-        
-        filteredTransactions = result
-        updateUI()
     }
     
     private fun filterByPeriod(transactions: List<Transaction>): List<Transaction> {
@@ -262,28 +280,6 @@ class SearchTransactionsActivity : AppCompatActivity() {
                 } else transactions
             }
             else -> transactions
-        }
-    }
-    
-    private fun getCategoryName(categoryId: String?): String {
-        if (categoryId.isNullOrEmpty()) return ""
-        // Buscar nome da categoria no SupabaseService
-        return try {
-            val categories = SupabaseService.getCategories(userId ?: "")
-            categories.find { it.id == categoryId }?.name ?: ""
-        } catch (e: Exception) {
-            ""
-        }
-    }
-    
-    private fun getAccountName(toAccountId: String?, fromAccountId: String?): String {
-        val accountId = toAccountId ?: fromAccountId ?: ""
-        if (accountId.isEmpty()) return ""
-        return try {
-            val accounts = SupabaseService.getAccounts(userId ?: "")
-            accounts.find { it.id == accountId }?.name ?: ""
-        } catch (e: Exception) {
-            ""
         }
     }
     
