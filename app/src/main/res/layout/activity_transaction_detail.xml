@@ -96,7 +96,7 @@
                         android:textSize="36sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary"
-                        android:hintTextColor="@color/text_muted"
+                        android:textColorHint="@color/text_muted"
                         android:background="@null" />
 
                 </LinearLayout>
@@ -226,7 +226,7 @@
                         android:inputType="textCapSentences"
                         android:maxLines="2"
                         android:textColor="@color/text_primary"
-                        android:hintTextColor="@color/text_muted" />
+                        android:textColorHint="@color/text_muted" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -499,7 +499,7 @@
                     android:inputType="textMultiLine"
                     android:maxLines="4"
                     android:textColor="@color/text_primary"
-                    android:hintTextColor="@color/text_muted" />
+                    android:textColorHint="@color/text_muted" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
