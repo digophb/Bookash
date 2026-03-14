@@ -798,10 +798,14 @@ class AddTransactionActivity : AppCompatActivity() {
     private fun loadTransactionForEdit() {
         saveButton.isEnabled = false
         lifecycleScope.launch {
-            // Aguardar categorias e contas carregarem
-            while (categories.isEmpty() || accounts.isEmpty()) {
-                kotlinx.coroutines.delay(100)
+            // Carregar categorias e contas se ainda não carregadas
+            if (categories.isEmpty()) {
+                categories = userId?.let { SupabaseService.getCategories(it) } ?: emptyList()
             }
+            if (accounts.isEmpty()) {
+                accounts = userId?.let { SupabaseService.getAccounts(it) } ?: emptyList()
+            }
+            Log.d(TAG, "Dados para edição: ${categories.size} categorias, ${accounts.size} contas")
             
             val tx = editingTransactionId?.let { SupabaseService.getTransactionById(it) }
             if (tx != null) {
