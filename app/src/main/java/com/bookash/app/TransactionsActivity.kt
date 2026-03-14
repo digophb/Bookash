@@ -6,7 +6,9 @@ import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.ImageView
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class TransactionsActivity : AppCompatActivity() {
@@ -30,8 +34,12 @@ class TransactionsActivity : AppCompatActivity() {
     // Views
     private lateinit var toolbar: com.google.android.material.appbar.MaterialToolbar
     private lateinit var typeDropdown: AutoCompleteTextView
+    private lateinit var monthSelector: View
+    private lateinit var prevMonth: ImageView
+    private lateinit var nextMonth: ImageView
+    private lateinit var monthText: TextView
     private lateinit var totalContainer: View
-    private lateinit var totalValue: android.widget.TextView
+    private lateinit var totalValue: TextView
     private lateinit var transactionsRecycler: androidx.recyclerview.widget.RecyclerView
     private lateinit var emptyState: View
     private lateinit var progressBar: ProgressBar
@@ -53,6 +61,14 @@ class TransactionsActivity : AppCompatActivity() {
     private var filterStartDate: String = ""
     private var filterEndDate: String = ""
     private var filterPeriodEnabled: Boolean = false
+    
+    // Controle de mês
+    private var currentMonth: Int = Calendar.getInstance().get(Calendar.MONTH)
+    private var currentYear: Int = Calendar.getInstance().get(Calendar.YEAR)
+    private val months = arrayOf(
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    )
 
     // User
     private var userId: String? = null
@@ -64,12 +80,17 @@ class TransactionsActivity : AppCompatActivity() {
         userId = UserSession.getUserId()
         initViews()
         setupListeners()
+        updateMonthText()
         loadTransactions()
     }
 
     private fun initViews() {
         toolbar = findViewById(R.id.toolbar)
         typeDropdown = findViewById(R.id.typeDropdown)
+        monthSelector = findViewById(R.id.monthSelector)
+        prevMonth = findViewById(R.id.prevMonth)
+        nextMonth = findViewById(R.id.nextMonth)
+        monthText = findViewById(R.id.monthText)
         totalContainer = findViewById(R.id.totalContainer)
         totalValue = findViewById(R.id.totalValue)
         transactionsRecycler = findViewById(R.id.transactionsRecycler)
@@ -123,6 +144,27 @@ class TransactionsActivity : AppCompatActivity() {
             applyFilters()
         }
         
+        // Seletor mensal
+        prevMonth.setOnClickListener {
+            currentMonth--
+            if (currentMonth < 0) {
+                currentMonth = 11
+                currentYear--
+            }
+            updateMonthText()
+            applyFilters()
+        }
+        
+        nextMonth.setOnClickListener {
+            currentMonth++
+            if (currentMonth > 11) {
+                currentMonth = 0
+                currentYear++
+            }
+            updateMonthText()
+            applyFilters()
+        }
+        
         fabAdd.setOnClickListener {
             val intent = Intent(this, AddTransactionActivity::class.java)
             startActivityForResult(intent, REQUEST_ADD_TRANSACTION)
@@ -130,6 +172,22 @@ class TransactionsActivity : AppCompatActivity() {
         
         setupBottomNavigation()
         setupScrollBehavior()
+    }
+    
+    private fun updateMonthText() {
+        monthText.text = "${months[currentMonth]} de $currentYear"
+    }
+    
+    private fun getMonthDateRange(): Pair<String, String> {
+        val calendar = Calendar.getInstance()
+        calendar.set(currentYear, currentMonth, 1)
+        val startDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
+        
+        calendar.add(Calendar.MONTH, 1)
+        calendar.add(Calendar.DAY_OF_MONTH, -1)
+        val endDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.time)
+        
+        return Pair(startDate, endDate)
     }
     
     private fun setupBottomNavigation() {
@@ -188,6 +246,13 @@ class TransactionsActivity : AppCompatActivity() {
     private fun applyFilters() {
         var result = allTransactions
         
+        // Filtro por mês selecionado (sempre aplicado)
+        val (monthStart, monthEnd) = getMonthDateRange()
+        result = result.filter { transaction ->
+            val transactionDate = transaction.date.substring(0, 10)
+            transactionDate >= monthStart && transactionDate <= monthEnd
+        }
+        
         // Filtro por tipo
         result = when (currentTypeFilter) {
             "income" -> result.filter { it.type == "income" }
@@ -213,7 +278,7 @@ class TransactionsActivity : AppCompatActivity() {
             result = result.filter { it.toAccountId == filterAccountId || it.fromAccountId == filterAccountId }
         }
         
-        // Filtro por período
+        // Filtro por período adicional (se ativado)
         if (filterPeriodEnabled && filterStartDate.isNotEmpty() && filterEndDate.isNotEmpty()) {
             result = result.filter { transaction ->
                 val transactionDate = transaction.date.substring(0, 10)

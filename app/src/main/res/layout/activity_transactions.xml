@@ -27,17 +27,15 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingBottom="12dp"
-            android:gravity="center_vertical">
+            android:paddingBottom="12dp">
 
             <!-- Dropdown de tipo de transação -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/typeDropdownLayout"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:hint="Tipo"
                 app:boxCornerRadiusTopStart="12dp"
@@ -45,7 +43,8 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusBottomEnd="12dp"
                 app:boxStrokeColor="@color/primary"
-                app:hintTextColor="@color/text_secondary">
+                app:hintTextColor="@color/text_secondary"
+                android:layout_marginBottom="12dp">
 
                 <AutoCompleteTextView
                     android:id="@+id/typeDropdown"
@@ -57,6 +56,50 @@
                     android:textSize="14sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Seletor Mensal -->
+            <LinearLayout
+                android:id="@+id/monthSelector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_month_selector"
+                android:padding="8dp">
+
+                <!-- Seta Esquerda -->
+                <ImageView
+                    android:id="@+id/prevMonth"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_chevron_left"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Mês anterior" />
+
+                <!-- Mês Central -->
+                <TextView
+                    android:id="@+id/monthText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Março de 2026"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+
+                <!-- Seta Direita -->
+                <ImageView
+                    android:id="@+id/nextMonth"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Próximo mês" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
