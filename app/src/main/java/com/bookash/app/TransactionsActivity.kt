@@ -4,13 +4,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.chip.Chip
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,15 +24,12 @@ class TransactionsActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TransactionsActivity"
         private const val REQUEST_ADD_TRANSACTION = 1001
+        private const val REQUEST_FILTER = 1002
     }
 
     // Views
     private lateinit var toolbar: com.google.android.material.appbar.MaterialToolbar
-    private lateinit var filterChipGroup: com.google.android.material.chip.ChipGroup
-    private lateinit var chipAll: Chip
-    private lateinit var chipIncome: Chip
-    private lateinit var chipExpense: Chip
-    private lateinit var chipTransfer: Chip
+    private lateinit var typeDropdown: AutoCompleteTextView
     private lateinit var totalContainer: View
     private lateinit var totalValue: android.widget.TextView
     private lateinit var transactionsRecycler: androidx.recyclerview.widget.RecyclerView
@@ -45,7 +43,16 @@ class TransactionsActivity : AppCompatActivity() {
     // Data
     private var allTransactions: List<Transaction> = emptyList()
     private var filteredTransactions: List<Transaction> = emptyList()
-    private var currentFilter: String = "all"
+    private var currentTypeFilter: String = "all"
+    
+    // Filtros avançados
+    private var filterStatus: String = "all"
+    private var filterCategoryId: String = ""
+    private var filterAccountId: String = ""
+    private var filterTagId: String = ""
+    private var filterStartDate: String = ""
+    private var filterEndDate: String = ""
+    private var filterPeriodEnabled: Boolean = false
 
     // User
     private var userId: String? = null
@@ -62,11 +69,7 @@ class TransactionsActivity : AppCompatActivity() {
 
     private fun initViews() {
         toolbar = findViewById(R.id.toolbar)
-        filterChipGroup = findViewById(R.id.filterChipGroup)
-        chipAll = findViewById(R.id.chipAll)
-        chipIncome = findViewById(R.id.chipIncome)
-        chipExpense = findViewById(R.id.chipExpense)
-        chipTransfer = findViewById(R.id.chipTransfer)
+        typeDropdown = findViewById(R.id.typeDropdown)
         totalContainer = findViewById(R.id.totalContainer)
         totalValue = findViewById(R.id.totalValue)
         transactionsRecycler = findViewById(R.id.transactionsRecycler)
@@ -84,17 +87,41 @@ class TransactionsActivity : AppCompatActivity() {
         
         // Marcar item de transações como selecionado
         bottomNavigation.selectedItemId = R.id.nav_transactions
+        
+        // Configurar dropdown de tipo
+        val typeOptions = listOf("Todas", "Receitas", "Despesas", "Transferências")
+        val typeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, typeOptions)
+        typeDropdown.setAdapter(typeAdapter)
+        typeDropdown.setText("Todas", false)
     }
 
     private fun setupListeners() {
         toolbar.setNavigationOnClickListener {
             finish()
         }
+        
+        // Menu do toolbar (filtro)
+        toolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_filter -> {
+                    openFilterActivity()
+                    true
+                }
+                else -> false
+            }
+        }
 
-        chipAll.setOnClickListener { currentFilter = "all"; applyFilter() }
-        chipIncome.setOnClickListener { currentFilter = "income"; applyFilter() }
-        chipExpense.setOnClickListener { currentFilter = "expense"; applyFilter() }
-        chipTransfer.setOnClickListener { currentFilter = "transfer"; applyFilter() }
+        // Dropdown de tipo
+        typeDropdown.setOnItemClickListener { _, _, position, _ ->
+            currentTypeFilter = when (position) {
+                0 -> "all"
+                1 -> "income"
+                2 -> "expense"
+                3 -> "transfer"
+                else -> "all"
+            }
+            applyFilters()
+        }
         
         fabAdd.setOnClickListener {
             val intent = Intent(this, AddTransactionActivity::class.java)
@@ -147,7 +174,7 @@ class TransactionsActivity : AppCompatActivity() {
                 } ?: emptyList()
 
                 allTransactions = transactions
-                applyFilter()
+                applyFilters()
                 progressBar.visibility = View.GONE
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao carregar transacoes", e)
@@ -158,14 +185,43 @@ class TransactionsActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyFilter() {
-        filteredTransactions = when (currentFilter) {
-            "income" -> allTransactions.filter { it.type == "income" }
-            "expense" -> allTransactions.filter { it.type == "expense" }
-            "transfer" -> allTransactions.filter { it.type == "transfer" }
-            else -> allTransactions
+    private fun applyFilters() {
+        var result = allTransactions
+        
+        // Filtro por tipo
+        result = when (currentTypeFilter) {
+            "income" -> result.filter { it.type == "income" }
+            "expense" -> result.filter { it.type == "expense" }
+            "transfer" -> result.filter { it.type == "transfer" }
+            else -> result
+        }
+        
+        // Filtro por situação
+        result = when (filterStatus) {
+            "completed" -> result.filter { it.status == "completed" || it.status == null }
+            "pending" -> result.filter { it.status == "pending" }
+            else -> result
+        }
+        
+        // Filtro por categoria
+        if (filterCategoryId.isNotEmpty()) {
+            result = result.filter { it.categoryId == filterCategoryId }
+        }
+        
+        // Filtro por conta
+        if (filterAccountId.isNotEmpty()) {
+            result = result.filter { it.toAccountId == filterAccountId || it.fromAccountId == filterAccountId }
+        }
+        
+        // Filtro por período
+        if (filterPeriodEnabled && filterStartDate.isNotEmpty() && filterEndDate.isNotEmpty()) {
+            result = result.filter { transaction ->
+                val transactionDate = transaction.date.substring(0, 10)
+                transactionDate >= filterStartDate && transactionDate <= filterEndDate
+            }
         }
 
+        filteredTransactions = result
         updateUI()
     }
 
@@ -181,7 +237,7 @@ class TransactionsActivity : AppCompatActivity() {
         emptyState.visibility = View.GONE
 
         // Transferências não alteram o saldo total, então escondemos o total
-        if (currentFilter == "transfer") {
+        if (currentTypeFilter == "transfer") {
             totalContainer.visibility = View.GONE
         } else {
             totalContainer.visibility = View.VISIBLE
@@ -205,6 +261,18 @@ class TransactionsActivity : AppCompatActivity() {
         // Atualizar adapter
         transactionAdapter.submitList(filteredTransactions)
     }
+    
+    private fun openFilterActivity() {
+        val intent = Intent(this, FilterTransactionsActivity::class.java)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_STATUS, filterStatus)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_CATEGORY, filterCategoryId)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_ACCOUNT, filterAccountId)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_TAG, filterTagId)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_START_DATE, filterStartDate)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_END_DATE, filterEndDate)
+        intent.putExtra(FilterTransactionsActivity.EXTRA_FILTER_PERIOD_ENABLED, filterPeriodEnabled)
+        startActivityForResult(intent, REQUEST_FILTER)
+    }
 
     private fun openTransactionDetail(transaction: Transaction) {
         val intent = Intent(this, TransactionDetailActivity::class.java)
@@ -216,8 +284,27 @@ class TransactionsActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         
-        if (requestCode == REQUEST_ADD_TRANSACTION && resultCode == RESULT_OK) {
-            loadTransactions()
+        when (requestCode) {
+            REQUEST_ADD_TRANSACTION -> {
+                if (resultCode == RESULT_OK) {
+                    loadTransactions()
+                }
+            }
+            REQUEST_FILTER -> {
+                if (resultCode == RESULT_OK) {
+                    data?.let {
+                        filterStatus = it.getStringExtra(FilterTransactionsActivity.RESULT_FILTER_STATUS) ?: "all"
+                        filterCategoryId = it.getStringExtra(FilterTransactionsActivity.RESULT_FILTER_CATEGORY) ?: ""
+                        filterAccountId = it.getStringExtra(FilterTransactionsActivity.RESULT_FILTER_ACCOUNT) ?: ""
+                        filterTagId = it.getStringExtra(FilterTransactionsActivity.RESULT_FILTER_TAG) ?: ""
+                        filterStartDate = it.getStringExtra(FilterTransactionsActivity.RESULT_FILTER_START_DATE) ?: ""
+                        filterEndDate = it.getStringExtra(FilterTransactionsActivity.RESULT_FILTER_END_DATE) ?: ""
+                        filterPeriodEnabled = it.getBooleanExtra("filter_period_enabled", false)
+                        
+                        applyFilters()
+                    }
+                }
+            }
         }
     }
 

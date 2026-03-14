@@ -20,7 +20,8 @@
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_back"
             app:title="Transações"
-            app:titleTextColor="@color/text_primary" />
+            app:titleTextColor="@color/text_primary"
+            app:menu="@menu/transactions_menu" />
 
         <!-- Filtros -->
         <LinearLayout
@@ -28,58 +29,34 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="12dp"
+            android:gravity="center_vertical">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/filterChipGroup"
-                android:layout_width="wrap_content"
+            <!-- Dropdown de tipo de transação -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/typeDropdownLayout"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:chipSpacing="8dp"
-                app:selectionRequired="true">
+                android:layout_weight="1"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:hint="Tipo"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/text_secondary">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipAll"
-                    android:layout_width="wrap_content"
+                <AutoCompleteTextView
+                    android:id="@+id/typeDropdown"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="none"
                     android:text="Todas"
-                    android:checked="true"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    app:chipBackgroundColor="@color/filter_chip_background"
-                    android:textColor="@color/filter_chip_text"
-                    app:checkedIconVisible="false" />
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipIncome"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Receitas"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    app:chipBackgroundColor="@color/filter_chip_background"
-                    android:textColor="@color/filter_chip_text"
-                    app:checkedIconVisible="false" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipExpense"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Despesas"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    app:chipBackgroundColor="@color/filter_chip_background"
-                    android:textColor="@color/filter_chip_text"
-                    app:checkedIconVisible="false" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipTransfer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Transferências"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    app:chipBackgroundColor="@color/filter_chip_background"
-                    android:textColor="@color/filter_chip_text"
-                    app:checkedIconVisible="false" />
-
-            </com.google.android.material.chip.ChipGroup>
+            </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
 

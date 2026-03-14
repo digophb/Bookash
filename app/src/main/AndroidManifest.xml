@@ -113,6 +113,12 @@
             android:exported="false"
             android:theme="@style/Theme.Bookash" />
         
+        <!-- Filter Transactions Activity -->
+        <activity
+            android:name=".FilterTransactionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bookash" />
+        
         <!-- Goals Activity -->
         <activity
             android:name=".GoalsActivity"
