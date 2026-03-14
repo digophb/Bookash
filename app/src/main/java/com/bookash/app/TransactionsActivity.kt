@@ -373,7 +373,7 @@ class TransactionsActivity : AppCompatActivity() {
                 }
                 
                 // Somar saldos de todas as contas (que estão incluídas no saldo)
-                val totalBalance = accounts.filter { it.includeInBalance }.sumOf { account ->
+                val totalBalance = accounts.filter { it.includeInTotal }.sumOf { account ->
                     balances[account.id] ?: 0.0
                 }
                 
