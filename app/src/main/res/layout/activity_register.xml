@@ -8,6 +8,14 @@
     android:padding="32dp"
     android:background="@color/background">
 
+    <!-- Logo -->
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@mipmap/ic_launcher_foreground"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Logo Bookash" />
+
     <!-- Título -->
     <TextView
         android:layout_width="wrap_content"
