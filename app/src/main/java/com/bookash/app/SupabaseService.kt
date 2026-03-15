@@ -1284,7 +1284,7 @@ object SupabaseService {
                         toAccountName = toAccountId?.let { accountMap[it]?.name },
                         creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
                         notes = json.optString("notes").takeIf { it.isNotEmpty() },
-                        isRecurring = json.optBoolean("is_recurring", false),
+                        isRecurring = jsonBoolean(json, "is_recurring"),
                         recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
                         recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
                         isDeleted = json.optBoolean("is_deleted", false),
@@ -1314,6 +1314,18 @@ object SupabaseService {
     /**
      * Atualiza uma transacao existente.
      */
+    /**
+     * Escapa strings para uso seguro em JSON.
+     */
+    private fun jsonEscape(value: String): String {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+    }
+
     suspend fun updateTransaction(transaction: Transaction, token: String): Boolean = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         Log.d(TAG, "[TRANSACTIONS] UPDATE - Iniciando: id=${transaction.id}, type=${transaction.type}")
@@ -1331,7 +1343,7 @@ object SupabaseService {
                 append("{")
                 append("\"type\":\"${transaction.type}\",")
                 append("\"amount\":${transaction.amount},")
-                append("\"description\":\"${transaction.description}\",")
+                append("\"description\":\"${jsonEscape(transaction.description)}\",")
                 append("\"date\":\"${transaction.date}\"")
                 if (transaction.categoryId.isNotEmpty()) {
                     append(",\"category_id\":\"${transaction.categoryId}\"")
@@ -1349,7 +1361,7 @@ object SupabaseService {
                     append(",\"status\":\"${transaction.status}\"")
                 }
                 if (!transaction.notes.isNullOrEmpty()) {
-                    append(",\"notes\":\"${transaction.notes}\"")
+                    append(",\"notes\":\"${jsonEscape(transaction.notes!!)}\"")
                 }
                 if (transaction.creditCardId != null) {
                     append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
@@ -1370,6 +1382,8 @@ object SupabaseService {
                 }
                 append("}")
             }
+            
+            Log.d(TAG, "[TRANSACTIONS] UPDATE - Body: $body")
             conn.outputStream.write(body.toByteArray())
             
             val responseCode = conn.responseCode
@@ -1379,7 +1393,9 @@ object SupabaseService {
                 Log.i(TAG, "[TRANSACTIONS] UPDATE - Sucesso: '${transaction.description}' (${duration}ms)")
                 true
             } else {
-                Log.w(TAG, "[TRANSACTIONS] UPDATE - Falha: HTTP $responseCode (${duration}ms)")
+                // Ler resposta de erro para debug
+                val errorBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (e: Exception) { "N/A" }
+                Log.w(TAG, "[TRANSACTIONS] UPDATE - Falha: HTTP $responseCode (${duration}ms) - Erro: $errorBody")
                 false
             }
         } catch (e: Exception) {
@@ -1428,6 +1444,18 @@ object SupabaseService {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] UPDATE_STATUS - Erro após ${duration}ms", e)
             false
+        }
+    }
+
+    /**
+     * Lê um campo booleano do JSON que pode vir como boolean ou string ("true"/"false").
+     */
+    private fun jsonBoolean(json: org.json.JSONObject, key: String, default: Boolean = false): Boolean {
+        val value = json.opt(key)
+        return when (value) {
+            is Boolean -> value
+            is String -> value.equals("true", ignoreCase = true)
+            else -> default
         }
     }
 
@@ -1486,7 +1514,7 @@ object SupabaseService {
             toAccountName = null,
             creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
             notes = json.optString("notes").takeIf { it.isNotEmpty() },
-            isRecurring = json.optBoolean("is_recurring", false),
+            isRecurring = jsonBoolean(json, "is_recurring"),
             recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
             recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
             recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
@@ -1531,7 +1559,7 @@ object SupabaseService {
                 toAccountName = toAccountId?.let { accountMap[it]?.name },
                 creditCardId = json.optString("credit_card_id").takeIf { it.isNotEmpty() },
                 notes = json.optString("notes").takeIf { it.isNotEmpty() },
-                isRecurring = json.optBoolean("is_recurring", false),
+                isRecurring = jsonBoolean(json, "is_recurring"),
                 recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
                 recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
                 recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
@@ -2110,7 +2138,7 @@ object SupabaseService {
             description = json.optString("description").takeIf { it.isNotEmpty() },
             amount = json.optDouble("amount").takeIf { !it.isNaN() },
             reminderDate = json.optString("reminder_date"),
-            isRecurring = json.optBoolean("is_recurring", false),
+            isRecurring = jsonBoolean(json, "is_recurring"),
             recurrenceType = json.optString("recurrence_type").takeIf { it.isNotEmpty() },
             recurrenceInterval = json.optInt("recurrence_interval", 1),
             isActive = json.optBoolean("is_active", true),
