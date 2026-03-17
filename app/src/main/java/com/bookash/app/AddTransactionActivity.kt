@@ -1213,139 +1213,140 @@ class AddTransactionActivity : AppCompatActivity() {
         }
         
         // Modo criação: criar nova(s) transação(ões)
-                val baseDate = selectedDate
-                val baseDateStr = isoDateFormat.format(baseDate)
-                val baseStatus = if (receivedSwitch.isChecked) "completed" else "pending"
-                
-                // Verificar se é recorrente
-                val isRecurring = repeatSwitch.isChecked
-                val frequency = if (isRecurring) frequencyText.text.toString() else null
-                val recurringType = when (frequency) {
-                    "Diario" -> "daily"
-                    "Semanal" -> "weekly"
-                    "Mensal" -> "monthly"
-                    "Anual" -> "yearly"
-                    else -> null
+        try {
+            val baseDate = selectedDate
+            val baseDateStr = isoDateFormat.format(baseDate)
+            val baseStatus = if (receivedSwitch.isChecked) "completed" else "pending"
+            
+            // Verificar se é recorrente
+            val isRecurring = repeatSwitch.isChecked
+            val frequency = if (isRecurring) frequencyText.text.toString() else null
+            val recurringType = when (frequency) {
+                "Diario" -> "daily"
+                "Semanal" -> "weekly"
+                "Mensal" -> "monthly"
+                "Anual" -> "yearly"
+                else -> null
+            }
+            val count = if (isRecurring) {
+                frequencyCountInput.text.toString().toIntOrNull()?.coerceAtLeast(1) ?: 1
+            } else {
+                1
+            }
+            
+            // Lista de transações a serem salvas
+            val transactionsToSave = mutableListOf<Transaction>()
+            
+            // Gerar recurringId único para a série (se recorrente)
+            val seriesRecurringId = if (isRecurring) java.util.UUID.randomUUID().toString() else null
+            
+            for (i in 0 until count) {
+                // Calcular data desta ocorrência
+                val occurrenceDate = if (i == 0) baseDate else {
+                    val cal = Calendar.getInstance().apply { time = baseDate }
+                    when (recurringType) {
+                        "daily" -> cal.add(Calendar.DAY_OF_MONTH, i)
+                        "weekly" -> cal.add(Calendar.WEEK_OF_YEAR, i)
+                        "monthly" -> cal.add(Calendar.MONTH, i)
+                        "yearly" -> cal.add(Calendar.YEAR, i)
+                        else -> cal
+                    }
+                    cal.time
                 }
-                val count = if (isRecurring) {
-                    frequencyCountInput.text.toString().toIntOrNull()?.coerceAtLeast(1) ?: 1
+                val dateStr = isoDateFormat.format(occurrenceDate)
+                
+                // Apenas a primeira transação tem isRecurring=true e campos de recorrência preenchidos
+                val thisIsRecurring = isRecurring && i == 0
+                val thisRecurringType = if (thisIsRecurring) recurringType else null
+                val thisRecurringCount = if (thisIsRecurring) count else null
+                // Calcular recurringUntil (data da última ocorrência) apenas para a primeira
+                val thisRecurringUntil = if (thisIsRecurring) {
+                    val lastCal = Calendar.getInstance().apply { time = baseDate }
+                    when (recurringType) {
+                        "daily" -> lastCal.add(Calendar.DAY_OF_MONTH, count - 1)
+                        "weekly" -> lastCal.add(Calendar.WEEK_OF_YEAR, count - 1)
+                        "monthly" -> lastCal.add(Calendar.MONTH, count - 1)
+                        "yearly" -> lastCal.add(Calendar.YEAR, count - 1)
+                        else -> lastCal
+                    }
+                    isoDateFormat.format(lastCal.time)
                 } else {
-                    1
+                    null
                 }
                 
-                // Lista de transações a serem salvas
-                val transactionsToSave = mutableListOf<Transaction>()
-                
-                // Gerar recurringId único para a série (se recorrente)
-                val seriesRecurringId = if (isRecurring) java.util.UUID.randomUUID().toString() else null
-                
-                for (i in 0 until count) {
-                    // Calcular data desta ocorrência
-                    val occurrenceDate = if (i == 0) baseDate else {
-                        val cal = Calendar.getInstance().apply { time = baseDate }
-                        when (recurringType) {
-                            "daily" -> cal.add(Calendar.DAY_OF_MONTH, i)
-                            "weekly" -> cal.add(Calendar.WEEK_OF_YEAR, i)
-                            "monthly" -> cal.add(Calendar.MONTH, i)
-                            "yearly" -> cal.add(Calendar.YEAR, i)
-                            else -> cal
-                        }
-                        cal.time
-                    }
-                    val dateStr = isoDateFormat.format(occurrenceDate)
-                    
-                    // Apenas a primeira transação tem isRecurring=true e campos de recorrência preenchidos
-                    val thisIsRecurring = isRecurring && i == 0
-                    val thisRecurringType = if (thisIsRecurring) recurringType else null
-                    val thisRecurringCount = if (thisIsRecurring) count else null
-                    // Calcular recurringUntil (data da última ocorrência) apenas para a primeira
-                    val thisRecurringUntil = if (thisIsRecurring) {
-                        val lastCal = Calendar.getInstance().apply { time = baseDate }
-                        when (recurringType) {
-                            "daily" -> lastCal.add(Calendar.DAY_OF_MONTH, count - 1)
-                            "weekly" -> lastCal.add(Calendar.WEEK_OF_YEAR, count - 1)
-                            "monthly" -> lastCal.add(Calendar.MONTH, count - 1)
-                            "yearly" -> lastCal.add(Calendar.YEAR, count - 1)
-                            else -> lastCal
-                        }
-                        isoDateFormat.format(lastCal.time)
-                    } else {
-                        null
-                    }
-                    
-                    // Construir transação
-                    val transaction = if (transactionType == "transfer") {
-                        Transaction(
-                            userId = userId ?: "",
-                            description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
-                            categoryId = "",
-                            categoryName = "Transferencia",
-                            amount = value,
-                            type = "transfer",
-                            date = dateStr,
-                            fromAccountId = fromAccount?.id,
-                            toAccountId = toAccount?.id,
-                            status = baseStatus,
-                            isRecurring = thisIsRecurring,
-                            recurringType = thisRecurringType,
-                            recurringCount = thisRecurringCount,
-                            recurringUntil = thisRecurringUntil,
-                            recurringId = seriesRecurringId
-                        )
-                    } else {
-                        val description = descriptionInput.text.toString().trim()
-                        Transaction(
-                            userId = userId ?: "",
-                            description = description,
-                            categoryId = selectedCategory?.id ?: "",
-                            categoryName = selectedCategory?.name ?: "",
-                            amount = value,
-                            type = transactionType,
-                            date = dateStr,
-                            accountId = selectedAccount?.id,
-                            fromAccountId = if (transactionType == "expense") selectedAccount?.id else null,
-                            toAccountId = if (transactionType == "income") selectedAccount?.id else null,
-                            status = baseStatus,
-                            isRecurring = thisIsRecurring,
-                            recurringType = thisRecurringType,
-                            recurringCount = thisRecurringCount,
-                            recurringUntil = thisRecurringUntil,
-                            recurringId = seriesRecurringId
-                        )
-                    }
-                    transactionsToSave.add(transaction)
-                }
-                
-                // Salvar todas as transações
-                val token = UserSession.getAccessToken() ?: ""
-                var firstTransactionId: String? = null
-                
-                transactionsToSave.forEachIndexed { index, trans ->
-                    val transactionId = withContext(Dispatchers.IO) {
-                        SupabaseService.saveTransaction(trans, token)
-                    }
-                    
-                    if (transactionId != null && index == 0) {
-                        firstTransactionId = transactionId
-                        // Salvar tags apenas para a primeira transação
-                        val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
-                        if (tagsToSave.isNotEmpty()) {
-                            val tagIds = tagsToSave.map { it.id }
-                            withContext(Dispatchers.IO) {
-                                SupabaseService.saveTransactionTags(transactionId, tagIds)
-                            }
-                        }
-                    }
-                }
-                
-                if (firstTransactionId != null) {
-                    val msg = if (count > 1) "Transações criadas com sucesso!" else "Transação criada!"
-                    ToastManager.showSuccess(this@AddTransactionActivity, msg)
-                    setResult(RESULT_OK)
-                    finish()
+                // Construir transação
+                val transaction = if (transactionType == "transfer") {
+                    Transaction(
+                        userId = userId ?: "",
+                        description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
+                        categoryId = "",
+                        categoryName = "Transferencia",
+                        amount = value,
+                        type = "transfer",
+                        date = dateStr,
+                        fromAccountId = fromAccount?.id,
+                        toAccountId = toAccount?.id,
+                        status = baseStatus,
+                        isRecurring = thisIsRecurring,
+                        recurringType = thisRecurringType,
+                        recurringCount = thisRecurringCount,
+                        recurringUntil = thisRecurringUntil,
+                        recurringId = seriesRecurringId
+                    )
                 } else {
-                    ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
+                    val description = descriptionInput.text.toString().trim()
+                    Transaction(
+                        userId = userId ?: "",
+                        description = description,
+                        categoryId = selectedCategory?.id ?: "",
+                        categoryName = selectedCategory?.name ?: "",
+                        amount = value,
+                        type = transactionType,
+                        date = dateStr,
+                        accountId = selectedAccount?.id,
+                        fromAccountId = if (transactionType == "expense") selectedAccount?.id else null,
+                        toAccountId = if (transactionType == "income") selectedAccount?.id else null,
+                        status = baseStatus,
+                        isRecurring = thisIsRecurring,
+                        recurringType = thisRecurringType,
+                        recurringCount = thisRecurringCount,
+                        recurringUntil = thisRecurringUntil,
+                        recurringId = seriesRecurringId
+                    )
                 }
+                transactionsToSave.add(transaction)
+            }
+            
+            // Salvar todas as transações
+            val token = UserSession.getAccessToken() ?: ""
+            var firstTransactionId: String? = null
+            
+            transactionsToSave.forEachIndexed { index, trans ->
+                val transactionId = withContext(Dispatchers.IO) {
+                    SupabaseService.saveTransaction(trans, token)
+                }
+                
+                if (transactionId != null && index == 0) {
+                    firstTransactionId = transactionId
+                    // Salvar tags apenas para a primeira transação
+                    val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
+                    if (tagsToSave.isNotEmpty()) {
+                        val tagIds = tagsToSave.map { it.id }
+                        withContext(Dispatchers.IO) {
+                            SupabaseService.saveTransactionTags(transactionId, tagIds)
+                        }
+                    }
+                }
+            }
+            
+            if (firstTransactionId != null) {
+                val msg = if (count > 1) "Transações criadas com sucesso!" else "Transação criada!"
+                ToastManager.showSuccess(this@AddTransactionActivity, msg)
+                setResult(RESULT_OK)
+                finish()
+            } else {
+                ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
+            }
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao salvar", e)
                 ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
