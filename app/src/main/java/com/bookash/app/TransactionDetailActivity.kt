@@ -684,7 +684,11 @@ class TransactionDetailActivity : AppCompatActivity() {
                     toAccountId = if (transactionType == "transfer") toAccount?.id else null,
                     status = status,
                     notes = notesInput.text.toString().trim().ifEmpty { null },
-                    recurringId = transaction?.recurringId // Preservar recurringId
+                    recurringId = transaction?.recurringId,
+                    isRecurring = transaction?.isRecurring ?: false,
+                    recurringType = transaction?.recurringType,
+                    recurringCount = transaction?.recurringCount,
+                    recurringUntil = transaction?.recurringUntil
                 )
 
                 val token = UserSession.getAccessToken() ?: ""
