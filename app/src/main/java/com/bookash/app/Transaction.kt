@@ -24,6 +24,7 @@ data class Transaction(
     val recurringType: String? = null, // daily, weekly, monthly, yearly
     val recurringCount: Int? = null, // Quantidade de repetições (null = infinito)
     val recurringUntil: String? = null,
+    val recurringId: String? = null, // UUID que agrupa todas as ocorrências da mesma série
     val status: String? = "completed", // pending, completed
     val isDeleted: Boolean = false,
     val tags: List<Tag> = emptyList(), // Tags associadas (do modelo Tag.kt)

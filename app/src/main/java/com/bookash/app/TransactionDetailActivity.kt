@@ -578,6 +578,91 @@ class TransactionDetailActivity : AppCompatActivity() {
 
         saveButton.isEnabled = false
 
+        // Verificar se é transação recorrente e mostrar diálogo de escopo
+        if (transaction?.recurringId != null) {
+            showEditScopeDialog(value)
+            return
+        }
+
+        performSave(value)
+    }
+
+    private fun showEditScopeDialog(value: Double) {
+        val options = arrayOf("Apenas esta ocorrência", "Esta e futuras ocorrências")
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Editar transação recorrente")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> performSave(value)
+                    1 -> editThisAndFutureTransactions(value)
+                }
+            }
+            .setOnCancelListener {
+                saveButton.isEnabled = true
+            }
+            .show()
+    }
+
+    private fun editThisAndFutureTransactions(value: Double) {
+        val recurringId = transaction?.recurringId ?: return
+        
+        lifecycleScope.launch {
+            try {
+                val token = UserSession.getAccessToken() ?: return@launch
+                val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val dateStr = isoDateFormat.format(selectedDate)
+                val status = if (statusToggle.checkedButtonId == R.id.btnPending) "pending" else "completed"
+                
+                // Buscar todas as transações da série
+                val allRecurring = withContext(Dispatchers.IO) {
+                    SupabaseService.getTransactionsByRecurringId(recurringId)
+                }
+                
+                // Filtrar apenas as futuras (incluindo a atual)
+                val currentTransactionDate = transaction?.date ?: ""
+                val futureTransactions = allRecurring.filter { it.date >= currentTransactionDate }
+                
+                Log.d(TAG, "Editando ${futureTransactions.size} transações futuras da série $recurringId")
+                
+                var successCount = 0
+                for (tx in futureTransactions) {
+                    val updatedTx = tx.copy(
+                        description = descriptionInput.text.toString().trim(),
+                        categoryId = selectedCategory?.id ?: "",
+                        categoryName = selectedCategory?.name ?: "",
+                        amount = value,
+                        type = transactionType,
+                        accountId = if (transactionType != "transfer") selectedAccount?.id else null,
+                        fromAccountId = if (transactionType == "transfer") fromAccount?.id else null,
+                        toAccountId = if (transactionType == "transfer") toAccount?.id else null,
+                        status = status,
+                        notes = notesInput.text.toString().trim().ifEmpty { null }
+                    )
+                    
+                    val success = withContext(Dispatchers.IO) {
+                        SupabaseService.updateTransaction(updatedTx, token)
+                    }
+                    if (success) successCount++
+                }
+                
+                if (successCount > 0) {
+                    ToastManager.showSuccess(this@TransactionDetailActivity, "$successCount transações atualizadas!")
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    ToastManager.showError(this@TransactionDetailActivity, "Erro ao atualizar transações")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao editar série", e)
+                ToastManager.showError(this@TransactionDetailActivity, "Erro: ${e.message}")
+            } finally {
+                saveButton.isEnabled = true
+            }
+        }
+    }
+
+    private fun performSave(value: Double) {
         lifecycleScope.launch {
             try {
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -598,7 +683,8 @@ class TransactionDetailActivity : AppCompatActivity() {
                     fromAccountId = if (transactionType == "transfer") fromAccount?.id else null,
                     toAccountId = if (transactionType == "transfer") toAccount?.id else null,
                     status = status,
-                    notes = notesInput.text.toString().trim().ifEmpty { null }
+                    notes = notesInput.text.toString().trim().ifEmpty { null },
+                    recurringId = transaction?.recurringId // Preservar recurringId
                 )
 
                 val token = UserSession.getAccessToken() ?: ""
@@ -634,12 +720,70 @@ class TransactionDetailActivity : AppCompatActivity() {
     }
 
     private fun confirmDelete() {
+        // Verificar se é transação recorrente
+        if (transaction?.recurringId != null) {
+            showDeleteScopeDialog()
+        } else {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Excluir Transacao")
+                .setMessage("Tem certeza que deseja excluir esta transacao?")
+                .setPositiveButton("Excluir") { _, _ -> deleteTransaction() }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+    }
+
+    private fun showDeleteScopeDialog() {
+        val options = arrayOf("Apenas esta ocorrência", "Esta e futuras ocorrências")
+        
         MaterialAlertDialogBuilder(this)
-            .setTitle("Excluir Transacao")
-            .setMessage("Tem certeza que deseja excluir esta transacao?")
-            .setPositiveButton("Excluir") { _, _ -> deleteTransaction() }
+            .setTitle("Excluir transação recorrente")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> deleteTransaction()
+                    1 -> deleteThisAndFutureTransactions()
+                }
+            }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun deleteThisAndFutureTransactions() {
+        val recurringId = transaction?.recurringId ?: return
+        
+        lifecycleScope.launch {
+            try {
+                // Buscar todas as transações da série
+                val allRecurring = withContext(Dispatchers.IO) {
+                    SupabaseService.getTransactionsByRecurringId(recurringId)
+                }
+                
+                // Filtrar apenas as futuras (incluindo a atual)
+                val currentTransactionDate = transaction?.date ?: ""
+                val futureTransactions = allRecurring.filter { it.date >= currentTransactionDate }
+                
+                Log.d(TAG, "Excluindo ${futureTransactions.size} transações futuras da série $recurringId")
+                
+                var successCount = 0
+                for (tx in futureTransactions) {
+                    val success = withContext(Dispatchers.IO) {
+                        SupabaseService.deleteTransaction(tx.id)
+                    }
+                    if (success) successCount++
+                }
+                
+                if (successCount > 0) {
+                    ToastManager.showSuccess(this@TransactionDetailActivity, "$successCount transações excluídas")
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    ToastManager.showError(this@TransactionDetailActivity, "Erro ao excluir transações")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao excluir série", e)
+                ToastManager.showError(this@TransactionDetailActivity, "Erro: ${e.message}")
+            }
+        }
     }
 
     private fun deleteTransaction() {

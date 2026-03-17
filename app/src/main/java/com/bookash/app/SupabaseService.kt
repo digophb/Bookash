@@ -1103,6 +1103,10 @@ object SupabaseService {
                         append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
                     }
                 }
+                // Recurring ID (para todas as transações da série)
+                if (transaction.recurringId != null) {
+                    append(",\"recurring_id\":\"${transaction.recurringId}\"")
+                }
                 append("}")
             }
             conn.outputStream.write(body.toByteArray())
@@ -1286,7 +1290,9 @@ object SupabaseService {
                         notes = json.optString("notes").takeIf { it.isNotEmpty() },
                         isRecurring = jsonBoolean(json, "is_recurring"),
                         recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
+                        recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
                         recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+                        recurringId = json.optString("recurring_id").takeIf { it.isNotEmpty() },
                         isDeleted = json.optBoolean("is_deleted", false),
                         iconRes = when (type) {
                             "income" -> R.drawable.ic_arrow_up
@@ -1379,6 +1385,10 @@ object SupabaseService {
                     }
                 } else {
                     append(",\"is_recurring\":false")
+                }
+                // Recurring ID (preservar ou atualizar)
+                if (transaction.recurringId != null) {
+                    append(",\"recurring_id\":\"${transaction.recurringId}\"")
                 }
                 append("}")
             }
@@ -1495,6 +1505,51 @@ object SupabaseService {
             false
         }
     }
+
+    /**
+     * Busca todas as transacoes de uma serie recorrente pelo recurringId.
+     */
+    suspend fun getTransactionsByRecurringId(recurringId: String): List<Transaction> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTIONS] GET BY RECURRING ID - Iniciando: recurringId=$recurringId")
+        
+        try {
+            val token = UserSession.getAccessToken()
+            if (token == null) {
+                Log.e(TAG, "[TRANSACTIONS] GET BY RECURRING ID - Erro: usuario nao autenticado")
+                return@withContext emptyList()
+            }
+            
+            val conn = URL("$BASE_URL/rest/v1/transactions?recurring_id=eq.$recurringId&select=*&order=date.asc").openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+            
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val jsonArray = org.json.JSONArray(response)
+                val transactions = mutableListOf<Transaction>()
+                
+                for (i in 0 until jsonArray.length()) {
+                    val json = jsonArray.getJSONObject(i)
+                    transactions.add(parseTransaction(json))
+                }
+                
+                Log.i(TAG, "[TRANSACTIONS] GET BY RECURRING ID - Sucesso: ${transactions.size} transacoes (${duration}ms)")
+                transactions
+            } else {
+                Log.w(TAG, "[TRANSACTIONS] GET BY RECURRING ID - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTIONS] GET BY RECURRING ID - Erro apos ${duration}ms", e)
+            emptyList()
+        }
+    }
     
     private fun parseTransaction(json: org.json.JSONObject): Transaction {
         val type = json.optString("type")
@@ -1518,6 +1573,7 @@ object SupabaseService {
             recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
             recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
             recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+            recurringId = json.optString("recurring_id").takeIf { it.isNotEmpty() },
             status = json.optString("status").takeIf { it.isNotEmpty() },
             isDeleted = json.optBoolean("is_deleted", false),
             iconRes = when (type) {
@@ -1563,6 +1619,7 @@ object SupabaseService {
                 recurringType = json.optString("recurring_type").takeIf { it.isNotEmpty() },
                 recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
                 recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
+                recurringId = json.optString("recurring_id").takeIf { it.isNotEmpty() },
                 status = json.optString("status").takeIf { it.isNotEmpty() },
                 isDeleted = json.optBoolean("is_deleted", false),
                 iconRes = getCategoryIconResource(category?.icon, type)

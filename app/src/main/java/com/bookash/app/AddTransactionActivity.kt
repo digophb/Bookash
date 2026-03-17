@@ -27,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -904,6 +905,7 @@ class AddTransactionActivity : AppCompatActivity() {
         
         // Recorrência
         if (tx.isRecurring) {
+            // Primeira transação da série - mostra campos de recorrência
             repeatSwitch.isChecked = true
             repeatFrequencyLayout.visibility = View.VISIBLE
             frequencyText.text = when (tx.recurringType) {
@@ -914,6 +916,10 @@ class AddTransactionActivity : AppCompatActivity() {
                 else -> "Mensal"
             }
             tx.recurringCount?.let { frequencyCountInput.setText(it.toString()) }
+        } else if (tx.recurringId != null) {
+            // Ocorrência subsequente de uma série - mostrar indicador visual
+            // O switch fica desmarcado mas mostramos que faz parte de uma série
+            repeatSwitch.isChecked = false
         }
         
         // Tags
@@ -1035,21 +1041,81 @@ class AddTransactionActivity : AppCompatActivity() {
 
         saveButton.isEnabled = false
 
+        // Verificar se é transação recorrente e mostrar diálogo de escopo
+        if (editingTransactionId != null && editingTransaction?.recurringId != null) {
+            showEditScopeDialog(value)
+            return
+        }
+
         lifecycleScope.launch {
             try {
+                performSave(value)
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao salvar", e)
+                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+            } finally {
+                saveButton.isEnabled = true
+            }
+        }
+    }
+
+    private fun showEditScopeDialog(value: Double) {
+        val options = arrayOf("Apenas esta ocorrência", "Esta e futuras ocorrências")
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Editar transação recorrente")
+            .setItems(options) { dialog, which ->
+                when (which) {
+                    0 -> editSingleTransaction(value)
+                    1 -> editThisAndFutureTransactions(value)
+                }
+            }
+            .setOnCancelListener {
+                saveButton.isEnabled = true
+            }
+            .show()
+    }
+
+    private fun editSingleTransaction(value: Double) {
+        lifecycleScope.launch {
+            try {
+                performSave(value)
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao editar", e)
+                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+            } finally {
+                saveButton.isEnabled = true
+            }
+        }
+    }
+
+    private fun editThisAndFutureTransactions(value: Double) {
+        lifecycleScope.launch {
+            try {
+                val recurringId = editingTransaction?.recurringId ?: return@launch
+                val token = UserSession.getAccessToken() ?: return@launch
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val baseDateStr = isoDateFormat.format(selectedDate)
+                val status = if (receivedSwitch.isChecked) "completed" else "pending"
                 
-                // Modo edição: atualizar transação existente
-                if (editingTransactionId != null) {
-                    val token = UserSession.getAccessToken() ?: ""
-                    val baseDateStr = isoDateFormat.format(selectedDate)
-                    val status = if (receivedSwitch.isChecked) "completed" else "pending"
+                // Buscar todas as transações da série com data >= data atual
+                val allRecurring = withContext(Dispatchers.IO) {
+                    SupabaseService.getTransactionsByRecurringId(recurringId)
+                }
+                
+                // Filtrar apenas as futuras (incluindo a atual)
+                val currentTransactionDate = editingTransaction?.date ?: baseDateStr
+                val futureTransactions = allRecurring.filter { it.date >= currentTransactionDate }
+                
+                Log.d(TAG, "Editando ${futureTransactions.size} transações futuras da série $recurringId")
+                
+                var successCount = 0
+                for (tx in futureTransactions) {
                     val updatedTx = if (transactionType == "transfer") {
-                        editingTransaction!!.copy(
+                        tx.copy(
                             description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
                             amount = value,
                             type = "transfer",
-                            date = baseDateStr,
                             fromAccountId = fromAccount?.id,
                             toAccountId = toAccount?.id,
                             fromAccountName = fromAccount?.name,
@@ -1057,13 +1123,12 @@ class AddTransactionActivity : AppCompatActivity() {
                             status = status
                         )
                     } else {
-                        editingTransaction!!.copy(
+                        tx.copy(
                             description = descriptionInput.text.toString().trim(),
                             categoryId = selectedCategory?.id ?: "",
                             categoryName = selectedCategory?.name ?: "",
                             amount = value,
                             type = transactionType,
-                            date = baseDateStr,
                             accountId = selectedAccount?.id,
                             status = status,
                             notes = notesInput.text.toString().trim().ifEmpty { null }
@@ -1073,24 +1138,81 @@ class AddTransactionActivity : AppCompatActivity() {
                     val success = withContext(Dispatchers.IO) {
                         SupabaseService.updateTransaction(updatedTx, token)
                     }
-                    
-                    if (success) {
-                        // Atualizar tags
-                        val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
-                        withContext(Dispatchers.IO) {
-                            SupabaseService.saveTransactionTags(editingTransactionId!!, tagsToSave.map { it.id })
-                        }
-                        ToastManager.showSuccess(this@AddTransactionActivity, "Transação atualizada!")
-                        setResult(RESULT_OK)
-                        finish()
-                    } else {
-                        ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transação")
-                    }
-                    saveButton.isEnabled = true
-                    return@launch
+                    if (success) successCount++
                 }
                 
-                // Modo criação: criar nova(s) transação(ões)
+                if (successCount > 0) {
+                    ToastManager.showSuccess(this@AddTransactionActivity, "$successCount transações atualizadas!")
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transações")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao editar série", e)
+                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+            } finally {
+                saveButton.isEnabled = true
+            }
+        }
+    }
+
+    private suspend fun performSave(value: Double) {
+        val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        
+        // Modo edição: atualizar transação existente
+        if (editingTransactionId != null) {
+            val token = UserSession.getAccessToken() ?: ""
+            val baseDateStr = isoDateFormat.format(selectedDate)
+            val status = if (receivedSwitch.isChecked) "completed" else "pending"
+            val updatedTx = if (transactionType == "transfer") {
+                editingTransaction!!.copy(
+                    description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
+                    amount = value,
+                    type = "transfer",
+                    date = baseDateStr,
+                    fromAccountId = fromAccount?.id,
+                    toAccountId = toAccount?.id,
+                    fromAccountName = fromAccount?.name,
+                    toAccountName = toAccount?.name,
+                    status = status,
+                    recurringId = editingTransaction!!.recurringId // Preservar recurringId
+                )
+            } else {
+                editingTransaction!!.copy(
+                    description = descriptionInput.text.toString().trim(),
+                    categoryId = selectedCategory?.id ?: "",
+                    categoryName = selectedCategory?.name ?: "",
+                    amount = value,
+                    type = transactionType,
+                    date = baseDateStr,
+                    accountId = selectedAccount?.id,
+                    status = status,
+                    notes = notesInput.text.toString().trim().ifEmpty { null },
+                    recurringId = editingTransaction!!.recurringId // Preservar recurringId
+                )
+            }
+            
+            val success = withContext(Dispatchers.IO) {
+                SupabaseService.updateTransaction(updatedTx, token)
+            }
+            
+            if (success) {
+                // Atualizar tags
+                val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
+                withContext(Dispatchers.IO) {
+                    SupabaseService.saveTransactionTags(editingTransactionId!!, tagsToSave.map { it.id })
+                }
+                ToastManager.showSuccess(this@AddTransactionActivity, "Transação atualizada!")
+                setResult(RESULT_OK)
+                finish()
+            } else {
+                ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transação")
+            }
+            return
+        }
+        
+        // Modo criação: criar nova(s) transação(ões)
                 val baseDate = selectedDate
                 val baseDateStr = isoDateFormat.format(baseDate)
                 val baseStatus = if (receivedSwitch.isChecked) "completed" else "pending"
@@ -1113,6 +1235,9 @@ class AddTransactionActivity : AppCompatActivity() {
                 
                 // Lista de transações a serem salvas
                 val transactionsToSave = mutableListOf<Transaction>()
+                
+                // Gerar recurringId único para a série (se recorrente)
+                val seriesRecurringId = if (isRecurring) java.util.UUID.randomUUID().toString() else null
                 
                 for (i in 0 until count) {
                     // Calcular data desta ocorrência
@@ -1164,7 +1289,8 @@ class AddTransactionActivity : AppCompatActivity() {
                             isRecurring = thisIsRecurring,
                             recurringType = thisRecurringType,
                             recurringCount = thisRecurringCount,
-                            recurringUntil = thisRecurringUntil
+                            recurringUntil = thisRecurringUntil,
+                            recurringId = seriesRecurringId
                         )
                     } else {
                         val description = descriptionInput.text.toString().trim()
@@ -1183,7 +1309,8 @@ class AddTransactionActivity : AppCompatActivity() {
                             isRecurring = thisIsRecurring,
                             recurringType = thisRecurringType,
                             recurringCount = thisRecurringCount,
-                            recurringUntil = thisRecurringUntil
+                            recurringUntil = thisRecurringUntil,
+                            recurringId = seriesRecurringId
                         )
                     }
                     transactionsToSave.add(transaction)
