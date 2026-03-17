@@ -1337,6 +1337,7 @@ class AddTransactionActivity : AppCompatActivity() {
                         }
                     }
                 }
+            }
             
             if (firstTransactionId != null) {
                 val msg = if (count > 1) "Transações criadas com sucesso!" else "Transação criada!"
