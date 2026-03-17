@@ -1347,11 +1347,10 @@ class AddTransactionActivity : AppCompatActivity() {
                 ToastManager.showError(this@AddTransactionActivity, "Erro ao salvar transação")
             }
         } catch (e: Exception) {
-                Log.e(TAG, "Erro ao salvar", e)
-                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
-            } finally {
-                saveButton.isEnabled = true
-            }
+            Log.e(TAG, "Erro ao salvar", e)
+            ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+        } finally {
+            saveButton.isEnabled = true
         }
     }
 
