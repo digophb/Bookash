@@ -937,9 +937,21 @@ class AddTransactionActivity : AppCompatActivity() {
             }
             tx.recurringCount?.let { frequencyCountInput.setText(it.toString()) }
         } else if (tx.recurringId != null) {
-            // Ocorrência subsequente de uma série - mostrar indicador visual
-            // O switch fica desmarcado mas mostramos que faz parte de uma série
+            // Ocorrência subsequente de uma série - desabilitar repeatSwitch para evitar loops
             repeatSwitch.isChecked = false
+            repeatFrequencyLayout.visibility = View.VISIBLE
+            repeatFrequencyLayout.alpha = 0.5f
+            frequencyCountInput.isEnabled = false
+            frequencyDropdown.isClickable = false
+            frequencyDropdown.isFocusable = false
+            frequencyText.text = "Parte de série recorrente"
+            frequencyText.setTextColor(getColor(R.color.text_secondary))
+        }
+        
+        // Desabilitar repeatSwitch para transações recorrentes (evitar loops)
+        if (tx.recurringId != null) {
+            repeatSwitch.isEnabled = false
+            repeatSwitch.alpha = 0.5f
         }
         
         // Tags
@@ -1114,14 +1126,14 @@ class AddTransactionActivity : AppCompatActivity() {
             try {
                 val recurringId = editingTransaction?.recurringId
                 if (recurringId == null) {
-                    ToastManager.showError(this@AddTransactionActivity, "Erro: ID de recorrência não encontrado")
+                    ToastManager.showError(this@AddTransactionActivity, "ID de recorrência não encontrado")
                     saveButton.isEnabled = true
                     return@launch
                 }
                 
                 val token = UserSession.getAccessToken()
                 if (token.isNullOrEmpty()) {
-                    ToastManager.showError(this@AddTransactionActivity, "Erro: usuário não autenticado")
+                    ToastManager.showError(this@AddTransactionActivity, "Usuário não autenticado")
                     saveButton.isEnabled = true
                     return@launch
                 }
@@ -1176,11 +1188,15 @@ class AddTransactionActivity : AppCompatActivity() {
                 
                 Log.d(TAG, "[EDIT_SERIES] Transações futuras a atualizar: ${futureTransactions.size} (data >= $currentTransactionDate)")
                 
+                // Tags selecionadas para aplicar
+                val tagsToApply = if (transactionType == "transfer") transferSelectedTags else selectedTags
+                
                 var successCount = 0
                 var failedCount = 0
                 for ((index, tx) in futureTransactions.withIndex()) {
                     Log.d(TAG, "[EDIT_SERIES] Atualizando transação ${index + 1}/${futureTransactions.size}: id=${tx.id}, date=${tx.date}")
                     
+                    // COMBINADO: Preservar campos de recorrência E detectar campos alterados
                     val updatedTx = if (transactionType == "transfer") {
                         tx.copy(
                             // Preservar descrição original se não foi alterada
@@ -1192,7 +1208,13 @@ class AddTransactionActivity : AppCompatActivity() {
                             toAccountId = if (toAccountChanged) toAccount?.id else tx.toAccountId,
                             fromAccountName = if (fromAccountChanged) fromAccount?.name else tx.fromAccountName,
                             toAccountName = if (toAccountChanged) toAccount?.name else tx.toAccountName,
-                            status = status
+                            status = status,
+                            // Preservar campos de recorrência originais
+                            isRecurring = tx.isRecurring,
+                            recurringType = tx.recurringType,
+                            recurringCount = tx.recurringCount,
+                            recurringUntil = tx.recurringUntil,
+                            recurringId = tx.recurringId
                         )
                     } else {
                         tx.copy(
@@ -1207,12 +1229,23 @@ class AddTransactionActivity : AppCompatActivity() {
                             accountId = if (accountChanged) selectedAccount?.id ?: tx.accountId else tx.accountId,
                             status = status,
                             // Preservar notes se não foi alterado
-                            notes = if (notesChanged) notesInput.text.toString().trim().ifEmpty { null } else tx.notes
+                            notes = if (notesChanged) notesInput.text.toString().trim().ifEmpty { null } else tx.notes,
+                            // Preservar campos de recorrência originais
+                            isRecurring = tx.isRecurring,
+                            recurringType = tx.recurringType,
+                            recurringCount = tx.recurringCount,
+                            recurringUntil = tx.recurringUntil,
+                            recurringId = tx.recurringId
                         )
                     }
                     
                     val success = withContext(Dispatchers.IO) {
-                        SupabaseService.updateTransaction(updatedTx, token)
+                        val updated = SupabaseService.updateTransaction(updatedTx, token)
+                        // Atualizar tags apenas na transação atual (a que está sendo editada)
+                        if (updated && tx.id == editingTransaction?.id && tagsToApply.isNotEmpty()) {
+                            SupabaseService.saveTransactionTags(tx.id, tagsToApply.map { it.id })
+                        }
+                        updated
                     }
                     
                     if (success) {
@@ -1257,14 +1290,14 @@ class AddTransactionActivity : AppCompatActivity() {
         if (editingTransactionId != null) {
             val token = UserSession.getAccessToken()
             if (token.isNullOrEmpty()) {
-                ToastManager.showError(this@AddTransactionActivity, "Erro: usuário não autenticado")
+                ToastManager.showError(this@AddTransactionActivity, "Usuário não autenticado")
                 saveButton.isEnabled = true
                 return
             }
             
             val editingTx = editingTransaction
             if (editingTx == null) {
-                ToastManager.showError(this@AddTransactionActivity, "Erro: transação não encontrada")
+                ToastManager.showError(this@AddTransactionActivity, "Transação não encontrada")
                 saveButton.isEnabled = true
                 return
             }
@@ -1288,6 +1321,7 @@ class AddTransactionActivity : AppCompatActivity() {
             
             Log.d(TAG, "[EDIT_SINGLE] Campos alterados: desc=$descriptionChanged, cat=$categoryChanged, acc=$accountChanged, status=$statusChanged")
             
+            // COMBINADO: Preservar campos de recorrência E detectar campos alterados
             val updatedTx = if (transactionType == "transfer") {
                 editingTx.copy(
                     // Preservar descrição original se não foi alterada
@@ -1301,6 +1335,11 @@ class AddTransactionActivity : AppCompatActivity() {
                     fromAccountName = if (fromAccountChanged) fromAccount?.name else editingTx.fromAccountName,
                     toAccountName = if (toAccountChanged) toAccount?.name else editingTx.toAccountName,
                     status = status,
+                    // Preservar campos de recorrência
+                    isRecurring = editingTx.isRecurring,
+                    recurringType = editingTx.recurringType,
+                    recurringCount = editingTx.recurringCount,
+                    recurringUntil = editingTx.recurringUntil,
                     recurringId = editingTx.recurringId
                 )
             } else {
@@ -1318,6 +1357,11 @@ class AddTransactionActivity : AppCompatActivity() {
                     status = status,
                     // Preservar notes se não foi alterado
                     notes = if (notesChanged) notesInput.text.toString().trim().ifEmpty { null } else editingTx.notes,
+                    // Preservar campos de recorrência
+                    isRecurring = editingTx.isRecurring,
+                    recurringType = editingTx.recurringType,
+                    recurringCount = editingTx.recurringCount,
+                    recurringUntil = editingTx.recurringUntil,
                     recurringId = editingTx.recurringId
                 )
             }

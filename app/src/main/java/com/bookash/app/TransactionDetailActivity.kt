@@ -351,6 +351,10 @@ class TransactionDetailActivity : AppCompatActivity() {
                     else -> "Recorrente"
                 }
                 recurringText.text = recurringTypeName
+            } else if (t.recurringId != null) {
+                // Parte de uma série recorrente
+                recurringSection.visibility = View.VISIBLE
+                recurringText.text = "Parte de série recorrente"
             } else {
                 recurringSection.visibility = View.GONE
             }
@@ -605,11 +609,22 @@ class TransactionDetailActivity : AppCompatActivity() {
     }
 
     private fun editThisAndFutureTransactions(value: Double) {
-        val recurringId = transaction?.recurringId ?: return
+        val recurringId = transaction?.recurringId
+        if (recurringId == null) {
+            ToastManager.showError(this, "ID de recorrência não encontrado")
+            saveButton.isEnabled = true
+            return
+        }
         
         lifecycleScope.launch {
             try {
-                val token = UserSession.getAccessToken() ?: return@launch
+                val token = UserSession.getAccessToken()
+                if (token == null) {
+                    ToastManager.showError(this@TransactionDetailActivity, "Usuário não autenticado")
+                    saveButton.isEnabled = true
+                    return@launch
+                }
+                
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                 val dateStr = isoDateFormat.format(selectedDate)
                 val status = if (statusToggle.checkedButtonId == R.id.btnPending) "pending" else "completed"
@@ -617,6 +632,12 @@ class TransactionDetailActivity : AppCompatActivity() {
                 // Buscar todas as transações da série
                 val allRecurring = withContext(Dispatchers.IO) {
                     SupabaseService.getTransactionsByRecurringId(recurringId)
+                }
+                
+                if (allRecurring.isEmpty()) {
+                    ToastManager.showWarning(this@TransactionDetailActivity, "Nenhuma transação encontrada na série")
+                    saveButton.isEnabled = true
+                    return@launch
                 }
                 
                 // Filtrar apenas as futuras (incluindo a atual)
@@ -627,6 +648,7 @@ class TransactionDetailActivity : AppCompatActivity() {
                 
                 var successCount = 0
                 for (tx in futureTransactions) {
+                    // COMBINADO: Preservar campos de recorrência originais
                     val updatedTx = tx.copy(
                         description = descriptionInput.text.toString().trim(),
                         categoryId = selectedCategory?.id ?: "",
@@ -636,8 +658,16 @@ class TransactionDetailActivity : AppCompatActivity() {
                         accountId = if (transactionType != "transfer") selectedAccount?.id else null,
                         fromAccountId = if (transactionType == "transfer") fromAccount?.id else null,
                         toAccountId = if (transactionType == "transfer") toAccount?.id else null,
+                        fromAccountName = if (transactionType == "transfer") fromAccount?.name else null,
+                        toAccountName = if (transactionType == "transfer") toAccount?.name else null,
                         status = status,
-                        notes = notesInput.text.toString().trim().ifEmpty { null }
+                        notes = notesInput.text.toString().trim().ifEmpty { null },
+                        // Preservar campos de recorrência originais
+                        isRecurring = tx.isRecurring,
+                        recurringType = tx.recurringType,
+                        recurringCount = tx.recurringCount,
+                        recurringUntil = tx.recurringUntil,
+                        recurringId = tx.recurringId
                     )
                     
                     val success = withContext(Dispatchers.IO) {
@@ -670,8 +700,10 @@ class TransactionDetailActivity : AppCompatActivity() {
                 
                 val status = if (statusToggle.checkedButtonId == R.id.btnPending) "pending" else "completed"
                 
+                // COMBINADO: Preservar todos os campos de recorrência da transação original
+                val originalTx = transaction
                 val newTransaction = Transaction(
-                    id = transaction?.id ?: "",
+                    id = originalTx?.id ?: "",
                     userId = userId ?: "",
                     description = descriptionInput.text.toString().trim(),
                     categoryId = selectedCategory?.id ?: "",
@@ -682,13 +714,16 @@ class TransactionDetailActivity : AppCompatActivity() {
                     accountId = if (transactionType != "transfer") selectedAccount?.id else null,
                     fromAccountId = if (transactionType == "transfer") fromAccount?.id else null,
                     toAccountId = if (transactionType == "transfer") toAccount?.id else null,
+                    fromAccountName = if (transactionType == "transfer") fromAccount?.name else null,
+                    toAccountName = if (transactionType == "transfer") toAccount?.name else null,
                     status = status,
                     notes = notesInput.text.toString().trim().ifEmpty { null },
-                    recurringId = transaction?.recurringId,
-                    isRecurring = transaction?.isRecurring ?: false,
-                    recurringType = transaction?.recurringType,
-                    recurringCount = transaction?.recurringCount,
-                    recurringUntil = transaction?.recurringUntil
+                    // Preservar campos de recorrência da transação original
+                    isRecurring = originalTx?.isRecurring ?: false,
+                    recurringType = originalTx?.recurringType,
+                    recurringCount = originalTx?.recurringCount,
+                    recurringUntil = originalTx?.recurringUntil,
+                    recurringId = originalTx?.recurringId
                 )
 
                 val token = UserSession.getAccessToken() ?: ""
