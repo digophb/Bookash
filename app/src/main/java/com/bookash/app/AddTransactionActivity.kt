@@ -1098,19 +1098,32 @@ class AddTransactionActivity : AppCompatActivity() {
                 val baseDateStr = isoDateFormat.format(selectedDate)
                 val status = if (receivedSwitch.isChecked) "completed" else "pending"
                 
-                // Buscar todas as transações da série com data >= data atual
+                Log.d(TAG, "[EDIT_SERIES] Iniciando edição em série: recurringId=$recurringId")
+                
+                // Buscar todas as transações da série
                 val allRecurring = withContext(Dispatchers.IO) {
                     SupabaseService.getTransactionsByRecurringId(recurringId)
+                }
+                
+                Log.d(TAG, "[EDIT_SERIES] Transações encontradas: ${allRecurring.size}")
+                
+                if (allRecurring.isEmpty()) {
+                    ToastManager.showError(this@AddTransactionActivity, "Nenhuma transação encontrada na série")
+                    saveButton.isEnabled = true
+                    return@launch
                 }
                 
                 // Filtrar apenas as futuras (incluindo a atual)
                 val currentTransactionDate = editingTransaction?.date ?: baseDateStr
                 val futureTransactions = allRecurring.filter { it.date >= currentTransactionDate }
                 
-                Log.d(TAG, "Editando ${futureTransactions.size} transações futuras da série $recurringId")
+                Log.d(TAG, "[EDIT_SERIES] Transações futuras a atualizar: ${futureTransactions.size} (data >= $currentTransactionDate)")
                 
                 var successCount = 0
-                for (tx in futureTransactions) {
+                var failedCount = 0
+                for ((index, tx) in futureTransactions.withIndex()) {
+                    Log.d(TAG, "[EDIT_SERIES] Atualizando transação ${index + 1}/${futureTransactions.size}: id=${tx.id}, date=${tx.date}")
+                    
                     val updatedTx = if (transactionType == "transfer") {
                         tx.copy(
                             description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
@@ -1138,15 +1151,32 @@ class AddTransactionActivity : AppCompatActivity() {
                     val success = withContext(Dispatchers.IO) {
                         SupabaseService.updateTransaction(updatedTx, token)
                     }
-                    if (success) successCount++
+                    
+                    if (success) {
+                        successCount++
+                        Log.d(TAG, "[EDIT_SERIES] ✓ Transação ${tx.id} atualizada com sucesso")
+                    } else {
+                        failedCount++
+                        Log.w(TAG, "[EDIT_SERIES] ✗ Falha ao atualizar transação ${tx.id}")
+                    }
                 }
                 
-                if (successCount > 0) {
-                    ToastManager.showSuccess(this@AddTransactionActivity, "$successCount transações atualizadas!")
-                    setResult(RESULT_OK)
-                    finish()
-                } else {
-                    ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transações")
+                Log.d(TAG, "[EDIT_SERIES] Resultado: $successCount sucessos, $failedCount falhas")
+                
+                when {
+                    successCount == futureTransactions.size -> {
+                        ToastManager.showSuccess(this@AddTransactionActivity, "$successCount transações atualizadas!")
+                        setResult(RESULT_OK)
+                        finish()
+                    }
+                    successCount > 0 -> {
+                        ToastManager.showWarning(this@AddTransactionActivity, "$successCount de ${futureTransactions.size} transações atualizadas")
+                        setResult(RESULT_OK)
+                        finish()
+                    }
+                    else -> {
+                        ToastManager.showError(this@AddTransactionActivity, "Falha ao atualizar todas as transações. Verifique os logs.")
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao editar série", e)
@@ -1193,11 +1223,14 @@ class AddTransactionActivity : AppCompatActivity() {
                 )
             }
             
+            Log.d(TAG, "[EDIT_SINGLE] Atualizando transação: id=${updatedTx.id}, type=${updatedTx.type}, amount=${updatedTx.amount}")
+            
             val success = withContext(Dispatchers.IO) {
                 SupabaseService.updateTransaction(updatedTx, token)
             }
             
             if (success) {
+                Log.d(TAG, "[EDIT_SINGLE] ✓ Transação atualizada com sucesso")
                 // Atualizar tags
                 val tagsToSave = if (transactionType == "transfer") transferSelectedTags else selectedTags
                 withContext(Dispatchers.IO) {
@@ -1207,7 +1240,8 @@ class AddTransactionActivity : AppCompatActivity() {
                 setResult(RESULT_OK)
                 finish()
             } else {
-                ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transação")
+                Log.w(TAG, "[EDIT_SINGLE] ✗ Falha ao atualizar transação - verifique logs do SupabaseService")
+                ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transação. Verifique o Logcat para detalhes.")
             }
             return
         }
