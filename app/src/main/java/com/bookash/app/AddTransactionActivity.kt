@@ -1129,22 +1129,22 @@ class AddTransactionActivity : AppCompatActivity() {
                             description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
                             amount = value,
                             type = "transfer",
-                            fromAccountId = fromAccount?.id,
-                            toAccountId = toAccount?.id,
-                            fromAccountName = fromAccount?.name,
-                            toAccountName = toAccount?.name,
+                            fromAccountId = fromAccount?.id ?: tx.fromAccountId,
+                            toAccountId = toAccount?.id ?: tx.toAccountId,
+                            fromAccountName = fromAccount?.name ?: tx.fromAccountName,
+                            toAccountName = toAccount?.name ?: tx.toAccountName,
                             status = status
                         )
                     } else {
                         tx.copy(
                             description = descriptionInput.text.toString().trim(),
-                            categoryId = selectedCategory?.id ?: "",
-                            categoryName = selectedCategory?.name ?: "",
+                            categoryId = selectedCategory?.id ?: tx.categoryId,
+                            categoryName = selectedCategory?.name ?: tx.categoryName,
                             amount = value,
                             type = transactionType,
-                            accountId = selectedAccount?.id,
+                            accountId = selectedAccount?.id ?: tx.accountId,
                             status = status,
-                            notes = notesInput.text.toString().trim().ifEmpty { null }
+                            notes = notesInput.text.toString().trim().ifEmpty { tx.notes }
                         )
                     }
                     
@@ -1201,25 +1201,25 @@ class AddTransactionActivity : AppCompatActivity() {
                     amount = value,
                     type = "transfer",
                     date = baseDateStr,
-                    fromAccountId = fromAccount?.id,
-                    toAccountId = toAccount?.id,
-                    fromAccountName = fromAccount?.name,
-                    toAccountName = toAccount?.name,
+                    fromAccountId = fromAccount?.id ?: editingTransaction!!.fromAccountId,
+                    toAccountId = toAccount?.id ?: editingTransaction!!.toAccountId,
+                    fromAccountName = fromAccount?.name ?: editingTransaction!!.fromAccountName,
+                    toAccountName = toAccount?.name ?: editingTransaction!!.toAccountName,
                     status = status,
-                    recurringId = editingTransaction!!.recurringId // Preservar recurringId
+                    recurringId = editingTransaction!!.recurringId
                 )
             } else {
                 editingTransaction!!.copy(
                     description = descriptionInput.text.toString().trim(),
-                    categoryId = selectedCategory?.id ?: "",
-                    categoryName = selectedCategory?.name ?: "",
+                    categoryId = selectedCategory?.id ?: editingTransaction!!.categoryId,
+                    categoryName = selectedCategory?.name ?: editingTransaction!!.categoryName,
                     amount = value,
                     type = transactionType,
                     date = baseDateStr,
-                    accountId = selectedAccount?.id,
+                    accountId = selectedAccount?.id ?: editingTransaction!!.accountId,
                     status = status,
-                    notes = notesInput.text.toString().trim().ifEmpty { null },
-                    recurringId = editingTransaction!!.recurringId // Preservar recurringId
+                    notes = notesInput.text.toString().trim().ifEmpty { editingTransaction!!.notes },
+                    recurringId = editingTransaction!!.recurringId
                 )
             }
             
