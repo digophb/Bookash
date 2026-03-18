@@ -146,6 +146,16 @@ class AddTransactionActivity : AppCompatActivity() {
     private var editingTransactionId: String? = null
     private var editingTransaction: Transaction? = null
     
+    // Valores originais para detectar alterações
+    private var originalDescription: String? = null
+    private var originalValue: Double? = null
+    private var originalCategoryId: String? = null
+    private var originalAccountId: String? = null
+    private var originalFromAccountId: String? = null
+    private var originalToAccountId: String? = null
+    private var originalNotes: String? = null
+    private var originalStatus: String? = null
+    
     // Camera URI temporária
     private var cameraImageUri: Uri? = null
     
@@ -825,6 +835,16 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun populateForm(tx: Transaction) {
+        // Armazenar valores originais para detectar alterações
+        originalDescription = tx.description
+        originalValue = tx.amount
+        originalCategoryId = tx.categoryId
+        originalAccountId = tx.accountId
+        originalFromAccountId = tx.fromAccountId
+        originalToAccountId = tx.toAccountId
+        originalNotes = tx.notes
+        originalStatus = tx.status
+        
         // Tipo
         transactionType = tx.type
         when (tx.type) {
@@ -1092,13 +1112,50 @@ class AddTransactionActivity : AppCompatActivity() {
     private fun editThisAndFutureTransactions(value: Double) {
         lifecycleScope.launch {
             try {
-                val recurringId = editingTransaction?.recurringId ?: return@launch
-                val token = UserSession.getAccessToken() ?: return@launch
+                val recurringId = editingTransaction?.recurringId
+                if (recurringId == null) {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro: ID de recorrência não encontrado")
+                    saveButton.isEnabled = true
+                    return@launch
+                }
+                
+                val token = UserSession.getAccessToken()
+                if (token.isNullOrEmpty()) {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro: usuário não autenticado")
+                    saveButton.isEnabled = true
+                    return@launch
+                }
+                
+                // Validar descrição para receitas/despesas
+                if (transactionType != "transfer") {
+                    val description = descriptionInput.text.toString().trim()
+                    if (description.isEmpty()) {
+                        ToastManager.showWarning(this@AddTransactionActivity, "Digite uma descrição")
+                        saveButton.isEnabled = true
+                        return@launch
+                    }
+                }
+                
                 val isoDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                 val baseDateStr = isoDateFormat.format(selectedDate)
                 val status = if (receivedSwitch.isChecked) "completed" else "pending"
                 
+                // Detectar quais campos foram alterados pelo usuário
+                val currentDescription = if (transactionType == "transfer") {
+                    transferObservationInput.text.toString().trim()
+                } else {
+                    descriptionInput.text.toString().trim()
+                }
+                val descriptionChanged = currentDescription != originalDescription
+                val categoryChanged = selectedCategory?.id != null && selectedCategory?.id != originalCategoryId
+                val accountChanged = selectedAccount?.id != null && selectedAccount?.id != originalAccountId
+                val fromAccountChanged = fromAccount?.id != null && fromAccount?.id != originalFromAccountId
+                val toAccountChanged = toAccount?.id != null && toAccount?.id != originalToAccountId
+                val statusChanged = status != originalStatus
+                val notesChanged = notesInput.text.toString().trim() != (originalNotes ?: "")
+                
                 Log.d(TAG, "[EDIT_SERIES] Iniciando edição em série: recurringId=$recurringId")
+                Log.d(TAG, "[EDIT_SERIES] Campos alterados: desc=$descriptionChanged, cat=$categoryChanged, acc=$accountChanged, status=$statusChanged")
                 
                 // Buscar todas as transações da série
                 val allRecurring = withContext(Dispatchers.IO) {
@@ -1126,25 +1183,31 @@ class AddTransactionActivity : AppCompatActivity() {
                     
                     val updatedTx = if (transactionType == "transfer") {
                         tx.copy(
-                            description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
+                            // Preservar descrição original se não foi alterada
+                            description = if (descriptionChanged) currentDescription.ifEmpty { "Transferencia" } else tx.description,
                             amount = value,
                             type = "transfer",
-                            fromAccountId = fromAccount?.id ?: tx.fromAccountId,
-                            toAccountId = toAccount?.id ?: tx.toAccountId,
-                            fromAccountName = fromAccount?.name ?: tx.fromAccountName,
-                            toAccountName = toAccount?.name ?: tx.toAccountName,
+                            // Só atualizar contas se foram alteradas
+                            fromAccountId = if (fromAccountChanged) fromAccount?.id else tx.fromAccountId,
+                            toAccountId = if (toAccountChanged) toAccount?.id else tx.toAccountId,
+                            fromAccountName = if (fromAccountChanged) fromAccount?.name else tx.fromAccountName,
+                            toAccountName = if (toAccountChanged) toAccount?.name else tx.toAccountName,
                             status = status
                         )
                     } else {
                         tx.copy(
-                            description = descriptionInput.text.toString().trim(),
-                            categoryId = selectedCategory?.id ?: tx.categoryId,
-                            categoryName = selectedCategory?.name ?: tx.categoryName,
+                            // Preservar descrição original se não foi alterada
+                            description = if (descriptionChanged) currentDescription else tx.description,
+                            // Só atualizar categoria se foi alterada
+                            categoryId = if (categoryChanged) selectedCategory?.id ?: tx.categoryId else tx.categoryId,
+                            categoryName = if (categoryChanged) selectedCategory?.name ?: tx.categoryName else tx.categoryName,
                             amount = value,
                             type = transactionType,
-                            accountId = selectedAccount?.id ?: tx.accountId,
+                            // Só atualizar conta se foi alterada
+                            accountId = if (accountChanged) selectedAccount?.id ?: tx.accountId else tx.accountId,
                             status = status,
-                            notes = notesInput.text.toString().trim().ifEmpty { tx.notes }
+                            // Preservar notes se não foi alterado
+                            notes = if (notesChanged) notesInput.text.toString().trim().ifEmpty { null } else tx.notes
                         )
                     }
                     
@@ -1192,34 +1255,70 @@ class AddTransactionActivity : AppCompatActivity() {
         
         // Modo edição: atualizar transação existente
         if (editingTransactionId != null) {
-            val token = UserSession.getAccessToken() ?: ""
+            val token = UserSession.getAccessToken()
+            if (token.isNullOrEmpty()) {
+                ToastManager.showError(this@AddTransactionActivity, "Erro: usuário não autenticado")
+                saveButton.isEnabled = true
+                return
+            }
+            
+            val editingTx = editingTransaction
+            if (editingTx == null) {
+                ToastManager.showError(this@AddTransactionActivity, "Erro: transação não encontrada")
+                saveButton.isEnabled = true
+                return
+            }
+            
             val baseDateStr = isoDateFormat.format(selectedDate)
             val status = if (receivedSwitch.isChecked) "completed" else "pending"
+            
+            // Detectar quais campos foram alterados pelo usuário
+            val currentDescription = if (transactionType == "transfer") {
+                transferObservationInput.text.toString().trim()
+            } else {
+                descriptionInput.text.toString().trim()
+            }
+            val descriptionChanged = currentDescription != originalDescription
+            val categoryChanged = selectedCategory?.id != null && selectedCategory?.id != originalCategoryId
+            val accountChanged = selectedAccount?.id != null && selectedAccount?.id != originalAccountId
+            val fromAccountChanged = fromAccount?.id != null && fromAccount?.id != originalFromAccountId
+            val toAccountChanged = toAccount?.id != null && toAccount?.id != originalToAccountId
+            val statusChanged = status != originalStatus
+            val notesChanged = notesInput.text.toString().trim() != (originalNotes ?: "")
+            
+            Log.d(TAG, "[EDIT_SINGLE] Campos alterados: desc=$descriptionChanged, cat=$categoryChanged, acc=$accountChanged, status=$statusChanged")
+            
             val updatedTx = if (transactionType == "transfer") {
-                editingTransaction!!.copy(
-                    description = transferObservationInput.text.toString().trim().ifEmpty { "Transferencia" },
+                editingTx.copy(
+                    // Preservar descrição original se não foi alterada
+                    description = if (descriptionChanged) currentDescription.ifEmpty { "Transferencia" } else editingTx.description,
                     amount = value,
                     type = "transfer",
                     date = baseDateStr,
-                    fromAccountId = fromAccount?.id ?: editingTransaction!!.fromAccountId,
-                    toAccountId = toAccount?.id ?: editingTransaction!!.toAccountId,
-                    fromAccountName = fromAccount?.name ?: editingTransaction!!.fromAccountName,
-                    toAccountName = toAccount?.name ?: editingTransaction!!.toAccountName,
+                    // Só atualizar contas se foram alteradas
+                    fromAccountId = if (fromAccountChanged) fromAccount?.id else editingTx.fromAccountId,
+                    toAccountId = if (toAccountChanged) toAccount?.id else editingTx.toAccountId,
+                    fromAccountName = if (fromAccountChanged) fromAccount?.name else editingTx.fromAccountName,
+                    toAccountName = if (toAccountChanged) toAccount?.name else editingTx.toAccountName,
                     status = status,
-                    recurringId = editingTransaction!!.recurringId
+                    recurringId = editingTx.recurringId
                 )
             } else {
-                editingTransaction!!.copy(
-                    description = descriptionInput.text.toString().trim(),
-                    categoryId = selectedCategory?.id ?: editingTransaction!!.categoryId,
-                    categoryName = selectedCategory?.name ?: editingTransaction!!.categoryName,
+                editingTx.copy(
+                    // Preservar descrição original se não foi alterada
+                    description = if (descriptionChanged) currentDescription else editingTx.description,
+                    // Só atualizar categoria se foi alterada
+                    categoryId = if (categoryChanged) selectedCategory?.id ?: editingTx.categoryId else editingTx.categoryId,
+                    categoryName = if (categoryChanged) selectedCategory?.name ?: editingTx.categoryName else editingTx.categoryName,
                     amount = value,
                     type = transactionType,
                     date = baseDateStr,
-                    accountId = selectedAccount?.id ?: editingTransaction!!.accountId,
+                    // Só atualizar conta se foi alterada
+                    accountId = if (accountChanged) selectedAccount?.id ?: editingTx.accountId else editingTx.accountId,
                     status = status,
-                    notes = notesInput.text.toString().trim().ifEmpty { editingTransaction!!.notes },
-                    recurringId = editingTransaction!!.recurringId
+                    // Preservar notes se não foi alterado
+                    notes = if (notesChanged) notesInput.text.toString().trim().ifEmpty { null } else editingTx.notes,
+                    recurringId = editingTx.recurringId
                 )
             }
             
