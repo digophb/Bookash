@@ -1293,6 +1293,7 @@ object SupabaseService {
                         recurringCount = json.optInt("recurring_count", 0).takeIf { it > 0 },
                         recurringUntil = json.optString("recurring_until").takeIf { it.isNotEmpty() },
                         recurringId = json.optString("recurring_id").takeIf { it.isNotEmpty() },
+                        status = json.optString("status").takeIf { it.isNotEmpty() } ?: "completed",
                         isDeleted = json.optBoolean("is_deleted", false),
                         iconRes = when (type) {
                             "income" -> R.drawable.ic_arrow_up
@@ -1300,7 +1301,7 @@ object SupabaseService {
                             else -> R.drawable.ic_transfer
                         }
                     )
-                    Log.i(TAG, "[TRANSACTIONS] GET_BY_ID - Sucesso: '${transaction.description}' (${duration}ms)")
+                    Log.i(TAG, "[TRANSACTIONS] GET_BY_ID - Sucesso: '${transaction.description}' (status=${transaction.status}) (${duration}ms)")
                     transaction
                 } else {
                     Log.w(TAG, "[TRANSACTIONS] GET_BY_ID - Nao encontrada (${duration}ms)")

@@ -1366,7 +1366,7 @@ class AddTransactionActivity : AppCompatActivity() {
                 )
             }
             
-            Log.d(TAG, "[EDIT_SINGLE] Atualizando transação: id=${updatedTx.id}, type=${updatedTx.type}, amount=${updatedTx.amount}")
+            Log.d(TAG, "[EDIT_SINGLE] Atualizando transação: id=${updatedTx.id}, type=${updatedTx.type}, amount=${updatedTx.amount}, categoryId=${updatedTx.categoryId}, accountId=${updatedTx.accountId}, status=${updatedTx.status}")
             
             val success = withContext(Dispatchers.IO) {
                 SupabaseService.updateTransaction(updatedTx, token)
