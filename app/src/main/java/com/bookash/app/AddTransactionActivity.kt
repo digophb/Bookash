@@ -1383,8 +1383,9 @@ class AddTransactionActivity : AppCompatActivity() {
                 setResult(RESULT_OK)
                 finish()
             } else {
-                Log.w(TAG, "[EDIT_SINGLE] ✗ Falha ao atualizar transação - verifique logs do SupabaseService")
-                ToastManager.showError(this@AddTransactionActivity, "Erro ao atualizar transação. Verifique o Logcat para detalhes.")
+                val errorMsg = SupabaseService.lastUpdateError ?: "Erro desconhecido"
+                Log.w(TAG, "[EDIT_SINGLE] ✗ Falha ao atualizar: $errorMsg")
+                ToastManager.showError(this@AddTransactionActivity, "Erro: $errorMsg")
             }
             return
         }

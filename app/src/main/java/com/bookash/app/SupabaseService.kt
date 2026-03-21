@@ -22,6 +22,10 @@ object SupabaseService {
     
     private const val TAG = "BookashAPI"
     
+    // Último erro de updateTransaction (para debug sem Logcat)
+    var lastUpdateError: String? = null
+        private set
+    
     private const val BASE_URL = "https://gqbxasjoxxslpaxjqfeg.supabase.co"
     private const val API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxYnhhc2pveHhzbHBheGpxZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzA4MTcsImV4cCI6MjA4NzYwNjgxN30.8arAkeAFEsUSTdyJpmafsp8T2yYgWEaZm9fCGnckaWs"
     
@@ -1402,16 +1406,19 @@ object SupabaseService {
             
             if (responseCode in 200..299) {
                 Log.i(TAG, "[TRANSACTIONS] UPDATE - Sucesso: '${transaction.description}' (${duration}ms)")
+                lastUpdateError = null
                 true
             } else {
                 // Ler resposta de erro para debug
                 val errorBody = try { conn.errorStream?.bufferedReader()?.readText() } catch (e: Exception) { "N/A" }
                 Log.w(TAG, "[TRANSACTIONS] UPDATE - Falha: HTTP $responseCode (${duration}ms) - Erro: $errorBody")
+                lastUpdateError = "HTTP $responseCode: $errorBody"
                 false
             }
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             Log.e(TAG, "[TRANSACTIONS] UPDATE - Erro ao atualizar transacao apos ${duration}ms", e)
+            lastUpdateError = "Exceção: ${e.message}"
             false
         }
     }
