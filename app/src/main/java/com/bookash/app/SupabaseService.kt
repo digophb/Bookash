@@ -1513,7 +1513,7 @@ object SupabaseService {
 
             if (responseCode == 200) {
                 val response = conn.inputStream.bufferedReader().readText()
-                val transactions = parseTransactions(response)
+                val transactions = parseTransactions(org.json.JSONArray(response))
                 Log.i(TAG, "[TRANSACTIONS] GET_PENDING - Sucesso: ${transactions.size} transações (${duration}ms)")
                 transactions
             } else {
