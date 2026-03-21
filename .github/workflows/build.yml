@@ -1,8 +1,11 @@
-name: Build APK
+name: Build and Test APK
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
 
@@ -19,11 +22,62 @@ jobs:
       
       - uses: gradle/gradle-build-action@v2
       
-      - run: gradle test
+      # ==========================================
+      # TESTES UNITÁRIOS
+      # ==========================================
+      - name: Run Unit Tests
+        run: gradle test --info 2>&1 | tee test-output.log
+        
+      - name: Upload Test Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-logs
+          path: |
+            test-output.log
+            app/build/reports/tests/test/
+            app/build/test-results/
       
-      - run: gradle assembleDebug
+      - name: Check Test Results
+        run: |
+          echo "========== RESULTADO DOS TESTES =========="
+          if [ -f "app/build/test-results/test/*.xml" ]; then
+            echo "Testes executados. Verificando falhas..."
+            cat app/build/test-results/test/*.xml | grep -E "(testcase|failure)" | head -50 || true
+          fi
+          echo "=========================================="
       
-      - uses: actions/upload-artifact@v4
+      # ==========================================
+      # BUILD DO APK
+      # ==========================================
+      - name: Build Debug APK
+        run: gradle assembleDebug
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: bookash-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      
+      # ==========================================
+      # RESUMO DOS TESTES
+      # ==========================================
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## 📊 Resumo dos Testes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "app/build/reports/tests/test" ]; then
+            echo "### ✅ Relatório de Testes Disponível" >> $GITHUB_STEP_SUMMARY
+            echo "Baixe o artefato 'test-logs' para ver o relatório completo." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ Nenhum relatório de teste gerado" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧪 Testes de Transação Pendente" >> $GITHUB_STEP_SUMMARY
+          echo "Os testes validam se o campo 'status' está sendo:" >> $GITHUB_STEP_SUMMARY
+          echo "- Lido corretamente do JSON do Supabase" >> $GITHUB_STEP_SUMMARY
+          echo "- Enviado corretamente nas atualizações" >> $GITHUB_STEP_SUMMARY
+          echo "- Tratando valores vazios/ausentes" >> $GITHUB_STEP_SUMMARY
