@@ -1495,7 +1495,7 @@ object SupabaseService {
 
         try {
             val token = UserSession.getAccessToken()
-            val userId = UserSession.getCurrentUserId()
+            val userId = UserSession.getUserId()
 
             if (token == null || userId == null) {
                 Log.e(TAG, "[TRANSACTIONS] GET_PENDING - Erro: usuário não autenticado")
