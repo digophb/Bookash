@@ -1063,52 +1063,61 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=representation")
             conn.doOutput = true
             
+            // Helper: verifica se string é UUID válido (não nulo, não vazio, não "null")
+            fun isValidUuid(value: String?): Boolean {
+                return !value.isNullOrEmpty() && value != "null" && value.isNotEmpty()
+            }
+
             val body = buildString {
                 append("{")
                 append("\"user_id\":\"${transaction.userId}\",")
                 append("\"type\":\"${transaction.type}\",")
                 append("\"amount\":${transaction.amount},")
-                append("\"description\":\"${transaction.description}\",")
+                append("\"description\":\"${jsonEscape(transaction.description)}\",")
                 append("\"date\":\"${transaction.date}\"")
-                if (transaction.categoryId.isNotEmpty()) {
+                // categoryId: só enviar se for UUID válido
+                if (isValidUuid(transaction.categoryId)) {
                     append(",\"category_id\":\"${transaction.categoryId}\"")
                 }
+                // notes: só enviar se não for vazio
                 if (!transaction.notes.isNullOrEmpty()) {
-                    append(",\"notes\":\"${transaction.notes}\"")
+                    append(",\"notes\":\"${jsonEscape(transaction.notes!!)}\"")
                 }
-                if (transaction.creditCardId != null) {
+                // creditCardId: só enviar se for UUID válido
+                if (isValidUuid(transaction.creditCardId)) {
                     append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
                 }
-                // Conta associada
-                if (transaction.accountId != null) {
+                // accountId: só enviar se for UUID válido
+                if (isValidUuid(transaction.accountId)) {
                     append(",\"account_id\":\"${transaction.accountId}\"")
                 }
-                // Campos de transferencia
-                if (transaction.fromAccountId != null) {
+                // fromAccountId: só enviar se for UUID válido
+                if (isValidUuid(transaction.fromAccountId)) {
                     append(",\"from_account_id\":\"${transaction.fromAccountId}\"")
                 }
-                if (transaction.toAccountId != null) {
+                // toAccountId: só enviar se for UUID válido
+                if (isValidUuid(transaction.toAccountId)) {
                     append(",\"to_account_id\":\"${transaction.toAccountId}\"")
                 }
-                // Status
-                if (transaction.status != null) {
+                // status: só enviar se não for vazio
+                if (!transaction.status.isNullOrEmpty()) {
                     append(",\"status\":\"${transaction.status}\"")
                 }
                 // Recorrência
                 if (transaction.isRecurring) {
                     append(",\"is_recurring\":true")
-                    if (transaction.recurringType != null) {
+                    if (!transaction.recurringType.isNullOrEmpty()) {
                         append(",\"recurring_type\":\"${transaction.recurringType}\"")
                     }
-                    if (transaction.recurringCount != null) {
+                    if (transaction.recurringCount != null && transaction.recurringCount > 0) {
                         append(",\"recurring_count\":${transaction.recurringCount}")
                     }
-                    if (transaction.recurringUntil != null) {
+                    if (!transaction.recurringUntil.isNullOrEmpty()) {
                         append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
                     }
                 }
-                // Recurring ID (para todas as transações da série)
-                if (transaction.recurringId != null) {
+                // recurringId: só enviar se for UUID válido
+                if (isValidUuid(transaction.recurringId)) {
                     append(",\"recurring_id\":\"${transaction.recurringId}\"")
                 }
                 append("}")
@@ -1350,49 +1359,61 @@ object SupabaseService {
             conn.setRequestProperty("Prefer", "return=minimal")
             conn.doOutput = true
             
+            // Helper: verifica se string é UUID válido (não nulo, não vazio, não "null")
+            fun isValidUuid(value: String?): Boolean {
+                return !value.isNullOrEmpty() && value != "null" && value.isNotEmpty()
+            }
+
             val body = buildString {
                 append("{")
                 append("\"type\":\"${transaction.type}\",")
                 append("\"amount\":${transaction.amount},")
                 append("\"description\":\"${jsonEscape(transaction.description)}\",")
                 append("\"date\":\"${transaction.date}\"")
-                if (transaction.categoryId.isNotEmpty()) {
+                // categoryId: só enviar se for UUID válido
+                if (isValidUuid(transaction.categoryId)) {
                     append(",\"category_id\":\"${transaction.categoryId}\"")
                 }
-                if (transaction.accountId != null) {
+                // accountId: só enviar se for UUID válido
+                if (isValidUuid(transaction.accountId)) {
                     append(",\"account_id\":\"${transaction.accountId}\"")
                 }
-                if (transaction.fromAccountId != null) {
+                // fromAccountId: só enviar se for UUID válido
+                if (isValidUuid(transaction.fromAccountId)) {
                     append(",\"from_account_id\":\"${transaction.fromAccountId}\"")
                 }
-                if (transaction.toAccountId != null) {
+                // toAccountId: só enviar se for UUID válido
+                if (isValidUuid(transaction.toAccountId)) {
                     append(",\"to_account_id\":\"${transaction.toAccountId}\"")
                 }
-                if (transaction.status != null) {
+                // status: só enviar se não for nulo
+                if (!transaction.status.isNullOrEmpty()) {
                     append(",\"status\":\"${transaction.status}\"")
                 }
+                // notes: só enviar se não for vazio
                 if (!transaction.notes.isNullOrEmpty()) {
                     append(",\"notes\":\"${jsonEscape(transaction.notes!!)}\"")
                 }
-                if (transaction.creditCardId != null) {
+                // creditCardId: só enviar se for UUID válido
+                if (isValidUuid(transaction.creditCardId)) {
                     append(",\"credit_card_id\":\"${transaction.creditCardId}\"")
                 }
                 if (transaction.isRecurring) {
                     append(",\"is_recurring\":true")
-                    if (transaction.recurringType != null) {
+                    if (!transaction.recurringType.isNullOrEmpty()) {
                         append(",\"recurring_type\":\"${transaction.recurringType}\"")
                     }
-                    if (transaction.recurringCount != null) {
+                    if (transaction.recurringCount != null && transaction.recurringCount > 0) {
                         append(",\"recurring_count\":${transaction.recurringCount}")
                     }
-                    if (transaction.recurringUntil != null) {
+                    if (!transaction.recurringUntil.isNullOrEmpty()) {
                         append(",\"recurring_until\":\"${transaction.recurringUntil}\"")
                     }
                 } else {
                     append(",\"is_recurring\":false")
                 }
-                // Recurring ID (preservar ou atualizar)
-                if (transaction.recurringId != null) {
+                // recurringId: só enviar se for UUID válido
+                if (isValidUuid(transaction.recurringId)) {
                     append(",\"recurring_id\":\"${transaction.recurringId}\"")
                 }
                 append("}")
