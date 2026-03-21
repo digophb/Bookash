@@ -1,5 +1,6 @@
 package com.bookash.app
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -20,7 +21,8 @@ class PendingTransactionsFragment : Fragment() {
 
     companion object {
         private const val ARG_TYPE = "type"
-        
+        private const val REQUEST_EDIT_TRANSACTION = 1001
+
         fun newInstance(type: String): PendingTransactionsFragment {
             return PendingTransactionsFragment().apply {
                 arguments = Bundle().apply {
@@ -162,7 +164,7 @@ class PendingTransactionsFragment : Fragment() {
     private fun openTransactionDetail(transaction: Transaction) {
         val intent = Intent(requireContext(), AddTransactionActivity::class.java)
         intent.putExtra(AddTransactionActivity.EXTRA_TRANSACTION_ID, transaction.id)
-        startActivity(intent)
+        startActivityForResult(intent, REQUEST_EDIT_TRANSACTION)
     }
     
     private fun loadTransactions() {

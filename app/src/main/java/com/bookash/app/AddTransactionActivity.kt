@@ -59,6 +59,8 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var btnExpense: MaterialButton
     private lateinit var btnTransfer: MaterialButton
     private lateinit var titleText: TextView
+    private lateinit var backButton: ImageView
+    private lateinit var deleteButton: ImageView
     private lateinit var valueInput: TextInputEditText
     private lateinit var descriptionInput: TextInputEditText
     private lateinit var categoryField: LinearLayout
@@ -190,6 +192,7 @@ class AddTransactionActivity : AppCompatActivity() {
         // Título modo edição (após initViews)
         if (editingTransactionId != null) {
             titleText.text = "Editar Transação"
+            deleteButton.visibility = View.VISIBLE
         }
         
         loadData()
@@ -206,6 +209,8 @@ class AddTransactionActivity : AppCompatActivity() {
         btnExpense = findViewById(R.id.btnExpense)
         btnTransfer = findViewById(R.id.btnTransfer)
         titleText = findViewById(R.id.titleText)
+        backButton = findViewById(R.id.backButton)
+        deleteButton = findViewById(R.id.deleteButton)
         valueInput = findViewById(R.id.valueInput)
         descriptionInput = findViewById(R.id.descriptionInput)
         categoryField = findViewById(R.id.categoryField)
@@ -272,6 +277,12 @@ class AddTransactionActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // Botão voltar
+        backButton.setOnClickListener { finish() }
+
+        // Botão deletar (só visível em modo edição)
+        deleteButton.setOnClickListener { confirmDelete() }
+
         // Toggle de tipo
         typeToggle.addOnButtonCheckedListener { group, checkedId, isChecked ->
             if (isChecked) {
@@ -1037,6 +1048,105 @@ class AddTransactionActivity : AppCompatActivity() {
         }
     }
 
+    private fun confirmDelete() {
+        val tx = editingTransaction ?: return
+
+        val message = if (tx.isRecurring) {
+            "Esta é uma transação recorrente. Deseja excluir apenas esta ocorrência ou todas as futuras?"
+        } else {
+            "Tem certeza que deseja excluir esta transação?\n\n${tx.description}"
+        }
+
+        if (tx.isRecurring) {
+            val options = arrayOf("Excluir somente esta", "Excluir esta e futuras")
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Excluir Transação")
+                .setItems(options) { dialog, which ->
+                    when (which) {
+                        0 -> deleteSingleTransaction()
+                        1 -> deleteThisAndFutureTransactions()
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        } else {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Excluir Transação")
+                .setMessage(message)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Excluir") { _, _ ->
+                    deleteSingleTransaction()
+                }
+                .show()
+        }
+    }
+
+    private fun deleteSingleTransaction() {
+        val txId = editingTransactionId ?: return
+
+        lifecycleScope.launch {
+            try {
+                val success = withContext(Dispatchers.IO) {
+                    SupabaseService.deleteTransaction(txId)
+                }
+
+                if (success) {
+                    // Retornar resultado para a activity anterior
+                    val resultIntent = Intent().apply {
+                        putExtra("action", "deleted")
+                        putExtra("message", "Transação excluída com sucesso!")
+                    }
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
+                } else {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro ao excluir transação")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao excluir transação", e)
+                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+            }
+        }
+    }
+
+    private fun deleteThisAndFutureTransactions() {
+        val recurringId = editingTransaction?.recurringId ?: return
+
+        lifecycleScope.launch {
+            try {
+                // Buscar todas as transações da série
+                val allRecurring = withContext(Dispatchers.IO) {
+                    SupabaseService.getTransactionsByRecurringId(recurringId)
+                }
+
+                // Filtrar transações futuras (incluindo a atual)
+                val currentDate = editingTransaction?.date ?: ""
+                val toDelete = allRecurring.filter { it.date >= currentDate }
+
+                var deletedCount = 0
+                for (tx in toDelete) {
+                    val success = withContext(Dispatchers.IO) {
+                        SupabaseService.deleteTransaction(tx.id)
+                    }
+                    if (success) deletedCount++
+                }
+
+                if (deletedCount > 0) {
+                    val resultIntent = Intent().apply {
+                        putExtra("action", "deleted")
+                        putExtra("message", "$deletedCount transações excluídas!")
+                    }
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
+                } else {
+                    ToastManager.showError(this@AddTransactionActivity, "Erro ao excluir transações")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao excluir transações recorrentes", e)
+                ToastManager.showError(this@AddTransactionActivity, "Erro: ${e.message}")
+            }
+        }
+    }
+
     private fun saveTransaction() {
         val value = CurrencyTextWatcher.parseValue(valueInput.text.toString())
         
@@ -1258,16 +1368,22 @@ class AddTransactionActivity : AppCompatActivity() {
                 }
                 
                 Log.d(TAG, "[EDIT_SERIES] Resultado: $successCount sucessos, $failedCount falhas")
-                
+
                 when {
                     successCount == futureTransactions.size -> {
-                        ToastManager.showSuccess(this@AddTransactionActivity, "$successCount transações atualizadas!")
-                        setResult(RESULT_OK)
+                        val resultIntent = Intent().apply {
+                            putExtra("action", "updated")
+                            putExtra("message", "$successCount transações atualizadas!")
+                        }
+                        setResult(RESULT_OK, resultIntent)
                         finish()
                     }
                     successCount > 0 -> {
-                        ToastManager.showWarning(this@AddTransactionActivity, "$successCount de ${futureTransactions.size} transações atualizadas")
-                        setResult(RESULT_OK)
+                        val resultIntent = Intent().apply {
+                            putExtra("action", "updated")
+                            putExtra("message", "$successCount de ${futureTransactions.size} transações atualizadas")
+                        }
+                        setResult(RESULT_OK, resultIntent)
                         finish()
                     }
                     else -> {
@@ -1379,8 +1495,12 @@ class AddTransactionActivity : AppCompatActivity() {
                 withContext(Dispatchers.IO) {
                     SupabaseService.saveTransactionTags(editingTransactionId!!, tagsToSave.map { it.id })
                 }
-                ToastManager.showSuccess(this@AddTransactionActivity, "Transação atualizada!")
-                setResult(RESULT_OK)
+                // Retornar resultado para a activity anterior
+                val resultIntent = Intent().apply {
+                    putExtra("action", "updated")
+                    putExtra("message", "Transação atualizada!")
+                }
+                setResult(RESULT_OK, resultIntent)
                 finish()
             } else {
                 val errorMsg = SupabaseService.lastUpdateError ?: "Erro desconhecido"

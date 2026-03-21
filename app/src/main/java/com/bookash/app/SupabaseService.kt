@@ -1487,6 +1487,47 @@ object SupabaseService {
     }
 
     /**
+     * Busca todas as transações pendentes do usuário atual.
+     */
+    suspend fun getPendingTransactions(): List<Transaction> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "[TRANSACTIONS] GET_PENDING - Iniciando")
+
+        try {
+            val token = UserSession.getAccessToken()
+            val userId = UserSession.getCurrentUserId()
+
+            if (token == null || userId == null) {
+                Log.e(TAG, "[TRANSACTIONS] GET_PENDING - Erro: usuário não autenticado")
+                return@withContext emptyList()
+            }
+
+            val endpoint = "$BASE_URL/rest/v1/transactions?user_id=eq.$userId&status=eq.pending&select=*&order=date.asc"
+            val conn = URL(endpoint).openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", API_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+
+            val responseCode = conn.responseCode
+            val duration = System.currentTimeMillis() - startTime
+
+            if (responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().readText()
+                val transactions = parseTransactions(response)
+                Log.i(TAG, "[TRANSACTIONS] GET_PENDING - Sucesso: ${transactions.size} transações (${duration}ms)")
+                transactions
+            } else {
+                Log.w(TAG, "[TRANSACTIONS] GET_PENDING - Falha: HTTP $responseCode (${duration}ms)")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+            Log.e(TAG, "[TRANSACTIONS] GET_PENDING - Erro após ${duration}ms", e)
+            emptyList()
+        }
+    }
+
+    /**
      * Lê um campo booleano do JSON que pode vir como boolean ou string ("true"/"false").
      */
     private fun jsonBoolean(json: org.json.JSONObject, key: String, default: Boolean = false): Boolean {
